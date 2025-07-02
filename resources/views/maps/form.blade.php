@@ -7,8 +7,13 @@
 
     <div class="mb-4">
         <label class="block font-medium">Nama Peta</label>
-        <input type="text" name="name" class="w-full border rounded px-2 py-1"
-               value="{{ old('name', $map->name) }}" required>
+        <input type="text" name="title" class="w-full border rounded px-2 py-1"
+               value="{{ old('title', $map->title) }}" required>
+    </div>
+
+    <div class="mb-4">
+        <label class="block font-medium">Deskripsi Peta</label>
+        <textarea name="description" class="w-full border rounded px-2 py-1" rows="4">{{ old('description', $map->description) }}</textarea>
     </div>
 
     <div class="mb-4">

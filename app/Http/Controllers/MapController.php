@@ -40,10 +40,33 @@ class MapController extends Controller
         return redirect()->route('maps.index');
     }
 
+    public function edit(Map $map)
+    {
+        return view('maps.edit', compact('map'));
+    }
+
+    public function show(Map $map)
+    {
+        return view('maps.show', compact('map'));
+    }
+
+
     public function destroy(Map $map)
     {
         Storage::disk('public')->delete($map->file_path);
         $map->delete();
         return back();
+    }
+
+    public function geojson(Map $map)
+    {
+        $path = storage_path('app/public/' . $map->file_path);
+
+        if (!file_exists($path)) {
+            return response()->json(['error' => 'File tidak ditemukan.'], 404);
+        }
+
+        $content = file_get_contents($path);
+        return response($content, 200)->header('Content-Type', 'application/json');
     }
 }

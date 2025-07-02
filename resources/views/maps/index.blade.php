@@ -8,23 +8,22 @@
         <table class="table-auto w-full mt-4 border">
             <thead>
                 <tr>
-                    <th>Nama</th>
-                    <th>File</th>
-                    <th>Aksi</th>
+                    <th class="border px-2 py-1">Nama</th>
+                    <th class="border px-2 py-1">Deskripsi</th>
+                    <th class="border px-2 py-1">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($maps as $map)
                     <tr>
-                        <td>{{ $map->name }}</td>
-                        <td><a href="{{ asset('storage/' . $map->file_path) }}" target="_blank">Lihat File</a></td>
-                        <td>
-                            <a href="{{ route('maps.show', $map) }}">Lihat</a> |
+                        <td class="border px-2 py-1">{{ $map->title }}</td>
+                        <td class="border px-2 py-1">{{ $map->description }}</td>
+                        <td class="border px-2 py-1">
                             <a href="{{ route('maps.edit', $map) }}">Edit</a> |
                             <form action="{{ route('maps.destroy', $map) }}" method="POST" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" onclick="return confirm('Yakin?')">Hapus</button>
+                                <button type="submit" onclick="return confirm('Yakin ingin menghapus?')">Hapus</button>
                             </form>
                         </td>
                     </tr>

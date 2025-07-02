@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Models\Article;
 use App\Models\Map;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +35,15 @@ Route::get('/dashboard', function () {
         default => redirect()->route('home'),
     };
 })->middleware(['auth'])->name('dashboard');
+
+// Route visualisasi halaman
+Route::get('/visualisasi-peta', function () {
+    $maps = \App\Models\Map::all();
+    return view('visualisasi.index', compact('maps'));
+})->name('visualisasi.index');
+
+// Route untuk mengambil file GeoJSON dari database
+Route::get('/map-geojson/{map}', [MapController::class, 'geojson'])->name('maps.geojson');
 
 /*
 |--------------------------------------------------------------------------
