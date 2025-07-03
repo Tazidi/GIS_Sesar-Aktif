@@ -16,7 +16,7 @@ class HomeController extends Controller
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        $articles = $query->get();
+        $articles = $query->paginate(6)->onEachSide(2);
         $maps = Map::all();
 
         return view('home', compact('articles', 'maps'));
