@@ -4,14 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Map;
-use Illuminate\Support\Facades\Storage;
-
+use Illuminate\Support\Facades\File;
 
 class MapController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $maps = Map::all();
@@ -29,12 +25,22 @@ class MapController extends Controller
             'title' => 'required',
             'file' => 'required|mimes:json,csv,zip'
         ]);
-        $path = $request->file('file')->store('maps', 'public');
+
+        $file = $request->file('file');
+        $filename = time() . '_' . $file->getClientOriginalName();
+        $destination = public_path('map_files');
+
+        // Pastikan folder public/maps ada
+        if (!File::exists($destination)) {
+            File::makeDirectory($destination, 0755, true);
+        }
+
+        $file->move($destination, $filename);
 
         Map::create([
             'title' => $data['title'],
             'description' => $request->description,
-            'file_path' => $path
+            'file_path' => 'map_files/' . $filename
         ]);
 
         return redirect()->route('maps.index');
@@ -50,17 +56,21 @@ class MapController extends Controller
         return view('maps.show', compact('map'));
     }
 
-
     public function destroy(Map $map)
     {
-        Storage::disk('public')->delete($map->file_path);
+        $path = public_path($map->file_path);
+
+        if (file_exists($path)) {
+            unlink($path);
+        }
+
         $map->delete();
         return back();
     }
 
     public function geojson(Map $map)
     {
-        $path = storage_path('app/public/' . $map->file_path);
+        $path = public_path($map->file_path);
 
         if (!file_exists($path)) {
             return response()->json(['error' => 'File tidak ditemukan.'], 404);

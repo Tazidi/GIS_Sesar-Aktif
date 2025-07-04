@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Article;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Storage;
 
 class ArticleController extends Controller
 {
@@ -32,9 +33,19 @@ class ArticleController extends Controller
         $data = $request->validate([
             'title' => 'required',
             'content' => 'required',
+            'thumbnail' => 'nullable|image|max:2048',
         ]);
 
+        if ($request->hasFile('thumbnail')) {
+            $file = $request->file('thumbnail');
+            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('thumbnails'), $filename);
+            $data['thumbnail'] = 'thumbnails/' . $filename;
+        }
+
         $data['user_id'] = Auth::id();
+        $data['status'] = 'pending';
+
         Article::create($data);
 
         return redirect()->route('articles.index')->with('success', 'Artikel disimpan!');
@@ -51,9 +62,23 @@ class ArticleController extends Controller
         $data = $request->validate([
             'title' => 'required',
             'content' => 'required',
+            'thumbnail' => 'nullable|image|max:2048',
         ]);
 
+        if ($request->hasFile('thumbnail')) {
+            // Hapus thumbnail lama dari public/thumbnails
+            if ($article->thumbnail && file_exists(public_path($article->thumbnail))) {
+                unlink(public_path($article->thumbnail));
+            }
+
+            $file = $request->file('thumbnail');
+            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('thumbnails'), $filename);
+            $data['thumbnail'] = 'thumbnails/' . $filename;
+        }
+
         $article->update($data);
+
         return redirect()->route('articles.index')->with('success', 'Artikel diperbarui!');
     }
 
