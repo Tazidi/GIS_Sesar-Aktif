@@ -42,8 +42,8 @@ Route::get('/visualisasi-peta', function () {
     return view('visualisasi.index', compact('maps'));
 })->name('visualisasi.index');
 
-// Route untuk mengambil file GeoJSON dari database
-Route::get('/map-geojson/{map}', [MapController::class, 'geojson'])->name('maps.geojson');
+// Route untuk ambil GeoJSON via visualisasi
+Route::get('/maps/{map}/geojson', [MapController::class, 'geojson'])->name('maps.geojson');
 
 /*
 |--------------------------------------------------------------------------
