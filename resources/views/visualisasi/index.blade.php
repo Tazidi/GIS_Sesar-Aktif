@@ -328,13 +328,20 @@
             @foreach ($maps as $map)
                 <div class="layer-item">
                     <label>
-                        <input type="checkbox" class="layer-toggle" data-id="{{ $map->id }}"
+                        <input type="checkbox" class="layer-toggle"
+                            data-id="{{ $map->id }}"
                             data-layer-type="{{ $map->layer_type ?? 'marker' }}"
                             data-stroke-color="{{ $map->stroke_color ?? '#000000' }}"
-                            data-fill-color="{{ $map->fill_color ?? '#ff0000' }}" data-opacity="{{ $map->opacity ?? 0.8 }}"
-                            data-weight="{{ $map->weight ?? 2 }}" data-radius="{{ $map->radius ?? 300 }}"
-                            data-icon-url="{{ $map->icon_url ?? '' }}" checked>
-                        {{ $map->title }}
+                            data-fill-color="{{ $map->fill_color ?? '#ff0000' }}"
+                            data-opacity="{{ $map->opacity ?? 0.8 }}"
+                            data-weight="{{ $map->weight ?? 2 }}"
+                            data-radius="{{ $map->radius ?? 300 }}"
+                            data-icon-url="{{ $map->icon_url ?? '' }}"
+                            data-lat="{{ $map->lat }}"
+                            data-lng="{{ $map->lng }}"
+                            data-layer="{{ $map->layer }}"
+                            checked>
+                        {{ $map->layer ?? 'Layer Tanpa Nama' }}
                     </label>
                 </div>
             @endforeach
@@ -664,62 +671,72 @@
                     const layerType = layerData.getAttribute('data-layer-type') || 'marker';
                     const radius = parseFloat(layerData.getAttribute('data-radius')) || 300;
                     const iconUrl = layerData.getAttribute('data-icon-url') || '';
+                    const lat = parseFloat(layerData.getAttribute('data-lat'));
+                    const lng = parseFloat(layerData.getAttribute('data-lng'));
+                    const title = layerData.getAttribute('data-title') || 'Informasi';
 
                     fetch(url)
                         .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                            }
+                            if (!response.ok) throw new Error('No GeoJSON found');
                             return response.json();
                         })
                         .then(data => {
                             const layer = L.geoJSON(data, {
-                                style: function(feature) {
+                                style: function (feature) {
                                     return style;
                                 },
-                                onEachFeature: function(feature, layer) {
-                                    // Create enhanced popup with "Selengkapnya" button
+                                onEachFeature: function (feature, layer) {
                                     const popupContent = createPopupContent(feature);
-                                    layer.bindPopup(popupContent, {
-                                        maxWidth: 300,
-                                        className: 'custom-popup'
-                                    });
+                                    layer.bindPopup(popupContent, { maxWidth: 300, className: 'custom-popup' });
                                 },
-                                pointToLayer: function(feature, latlng) {
+                                pointToLayer: function (feature, latlng) {
                                     if (layerType === 'circle') {
-                                        return L.circle(latlng, {
-                                            radius: radius,
-                                            ...style
-                                        });
+                                        return L.circle(latlng, { radius, ...style });
                                     } else if (layerType === 'marker' && iconUrl) {
                                         const customIcon = L.icon({
-                                            iconUrl: iconUrl,
+                                            iconUrl,
                                             iconSize: [32, 32],
                                             iconAnchor: [16, 16],
                                             popupAnchor: [0, -16]
                                         });
-                                        return L.marker(latlng, {
-                                            icon: customIcon
-                                        });
+                                        return L.marker(latlng, { icon: customIcon });
                                     } else {
-                                        return L.circleMarker(latlng, {
-                                            radius: 8,
-                                            ...style
-                                        });
+                                        return L.circleMarker(latlng, { radius: 8, ...style });
                                     }
                                 }
                             });
 
                             mapLayers[mapId] = layer;
                             layer.addTo(map);
-
-                            // Simpan bounds jika valid
                             if (layer.getBounds && layer.getBounds().isValid()) {
                                 allBounds.push(layer.getBounds());
                             }
                         })
-                        .catch(error => {
-                            console.error(`Gagal memuat data untuk map ${mapId}:`, error);
+                        .catch(() => {
+                            // Fallback ke lat/lng jika GeoJSON tidak ada
+                            if (!isNaN(lat) && !isNaN(lng)) {
+                                const latlng = L.latLng(lat, lng);
+                                let layer;
+
+                                if (layerType === 'circle') {
+                                    layer = L.circle(latlng, { radius, ...style });
+                                } else if (layerType === 'marker' && iconUrl) {
+                                    const customIcon = L.icon({
+                                        iconUrl,
+                                        iconSize: [32, 32],
+                                        iconAnchor: [16, 16],
+                                        popupAnchor: [0, -16]
+                                    });
+                                    layer = L.marker(latlng, { icon: customIcon });
+                                } else {
+                                    layer = L.circleMarker(latlng, { radius: 8, ...style });
+                                }
+
+                                layer.bindPopup(`<div class="popup-title">${title}</div>`);
+                                mapLayers[mapId] = L.layerGroup([layer]);
+                                mapLayers[mapId].addTo(map);
+                                allBounds.push(L.latLngBounds([latlng]));
+                            }
                         })
                         .finally(() => {
                             loadedCount++;

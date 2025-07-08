@@ -8,6 +8,7 @@
         <li><a href="{{ route('articles.index') }}" class="text-blue-600 hover:underline">Kelola Artikel</a></li>
         <li><a href="{{ route('maps.index') }}" class="text-blue-600 hover:underline">Kelola Peta</a></li>
         <li><a href="{{ route('users.index') }}" class="text-blue-600 hover:underline">Kelola User</a></li>
+        <li><a href="{{ route('layers.index') }}" class="text-blue-600 hover:underline">Kelola Layer</a></li>
     </ul>
 </div>
 @endsection

@@ -15,12 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('title');
+            $table->string('author'); // Tambahan kolom author
             $table->text('content');
+            $table->string('thumbnail')->nullable(); // Tambahan kolom untuk nama file thumbnail
             $table->enum('status', ['pending', 'approved', 'rejected', 'revision'])->default('pending');
             $table->timestamps();
         });
     }
-
 
     /**
      * Reverse the migrations.

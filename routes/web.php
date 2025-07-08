@@ -86,6 +86,7 @@ Route::middleware(['auth', 'role:editor,admin'])->group(function () {
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('/maps', MapController::class);
     Route::resource('/users', UserController::class);
+    Route::resource('/layers', \App\Http\Controllers\LayerController::class);
 });
 
 /*

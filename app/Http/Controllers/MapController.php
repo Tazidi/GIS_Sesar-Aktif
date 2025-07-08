@@ -4,112 +4,109 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Map;
-use Illuminate\Support\Facades\File;
+use App\Models\Layer;
 
 class MapController extends Controller
 {
     public function index()
     {
-        $maps = Map::all();
+        $maps = Map::with('layer')->get();
         return view('maps.index', compact('maps'));
     }
 
     public function create()
     {
-        $map = new Map(); // Tambahkan ini untuk konsistensi
-        return view('maps.create', compact('map'));
+        $map = new Map();
+        $layers = Layer::all(); // ambil dari model Layer, bukan dari kolom Map
+        return view('maps.create', compact('map', 'layers'));
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'title' => 'required',
-            'description' => 'nullable|string', // Tambahkan validasi untuk description
-            'file' => 'required|mimes:json,csv,zip',
-            'layer_type' => 'required|string', // Ubah dari nullable ke required
-            'stroke_color' => 'nullable|string',
-            'fill_color' => 'nullable|string',
-            'opacity' => 'nullable|numeric',
-            'weight' => 'nullable|numeric',
-            'radius' => 'nullable|numeric',
-            'icon_url' => 'nullable|string',
+            'name' => 'required|string|max:100',
+            'description' => 'nullable|string',
+            'layer_id' => 'nullable|exists:layers,id',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
+            'distance' => 'nullable|numeric',
+            'image_path' => 'nullable|image|max:2048',
+            'icon_url' => 'nullable|string|max:255',
+            'layer_type' => 'required|string|max:50',
+            'stroke_color' => 'nullable|string|max:10',
+            'fill_color' => 'nullable|string|max:10',
+            'opacity' => 'nullable|numeric|between:0,1',
+            'weight' => 'nullable|integer|min:0',
+            'radius' => 'nullable|numeric|min:0',
+            'file' => 'nullable|file|mimetypes:application/json,text/plain,text/json,text/geojson,text/csv,application/octet-stream|max:4096',
         ]);
 
-        $file = $request->file('file');
-        $filename = time() . '_' . $file->getClientOriginalName();
-        $destination = public_path('map_files');
-
-        if (!File::exists($destination)) {
-            File::makeDirectory($destination, 0755, true);
+        if ($request->hasFile('image_path')) {
+            $image = $request->file('image_path');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('map_images'), $imageName);
+            $data['image_path'] = 'map_images/' . $imageName;
         }
 
-        $file->move($destination, $filename);
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('map_files'), $fileName);
+            $data['file_path'] = 'map_files/' . $fileName;
+        }
 
-        $map = new Map();
-        $map->title = $data['title'];
-        $map->description = $data['description'] ?? null; // Perbaiki assignment
-        $map->file_path = 'map_files/' . $filename;
-        $map->layer_type = $data['layer_type'];
-        $map->stroke_color = $data['stroke_color'] ?? null;
-        $map->fill_color = $data['fill_color'] ?? null;
-        $map->opacity = $data['opacity'] ?? null;
-        $map->weight = $data['weight'] ?? null;
-        $map->radius = $data['radius'] ?? null;
-        $map->icon_url = $data['icon_url'] ?? null;
-        $map->save();
+        Map::create($data);
 
-        return redirect()->route('maps.index')->with('success', 'Peta berhasil disimpan!');
+        return redirect()->route('maps.index')->with('success', 'Peta berhasil ditambahkan!');
     }
 
     public function edit(Map $map)
     {
-        return view('maps.edit', compact('map'));
+        $layers = Layer::all();
+        return view('maps.edit', compact('map', 'layers'));
     }
 
     public function update(Request $request, Map $map)
     {
         $data = $request->validate([
-            'title' => 'required',
+            'name' => 'required|string|max:100',
             'description' => 'nullable|string',
-            'file' => 'nullable|mimes:json,csv,zip',
-            'layer_type' => 'required|string',
-            'stroke_color' => 'nullable|string',
-            'fill_color' => 'nullable|string',
-            'opacity' => 'nullable|numeric',
-            'weight' => 'nullable|numeric',
-            'radius' => 'nullable|numeric',
-            'icon_url' => 'nullable|string',
+            'layer_id' => 'nullable|exists:layers,id',
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
+            'distance' => 'nullable|numeric',
+            'image_path' => 'nullable|image|max:2048',
+            'icon_url' => 'nullable|string|max:255',
+            'layer_type' => 'required|string|max:50',
+            'stroke_color' => 'nullable|string|max:10',
+            'fill_color' => 'nullable|string|max:10',
+            'opacity' => 'nullable|numeric|between:0,1',
+            'weight' => 'nullable|integer|min:0',
+            'radius' => 'nullable|numeric|min:0',
+            'file' => 'nullable|file|mimes:json,csv,zip,geojson|max:4096',
         ]);
 
-        if ($request->hasFile('file')) {
-            // Hapus file lama
-            $oldPath = public_path($map->file_path);
-            if (file_exists($oldPath)) {
-                unlink($oldPath);
+        if ($request->hasFile('image_path')) {
+            if ($map->image_path && file_exists(public_path($map->image_path))) {
+                unlink(public_path($map->image_path));
             }
-
-            $file = $request->file('file');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $destination = public_path('map_files');
-
-            if (!File::exists($destination)) {
-                File::makeDirectory($destination, 0755, true);
-            }
-
-            $file->move($destination, $filename);
-            $map->file_path = 'map_files/' . $filename;
+            $image = $request->file('image_path');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->move(public_path('map_images'), $imageName);
+            $data['image_path'] = 'map_images/' . $imageName;
         }
 
-        $map->title = $data['title'];
-        $map->description = $data['description'] ?? null;
-        $map->layer_type = $data['layer_type'];
-        $map->stroke_color = $data['stroke_color'] ?? null;
-        $map->fill_color = $data['fill_color'] ?? null;
-        $map->opacity = $data['opacity'] ?? null;
-        $map->weight = $data['weight'] ?? null;
-        $map->radius = $data['radius'] ?? null;
-        $map->icon_url = $data['icon_url'] ?? null;
-        $map->save();
+        if ($request->hasFile('file')) {
+            if ($map->file_path && file_exists(public_path($map->file_path))) {
+                unlink(public_path($map->file_path));
+            }
+            $file = $request->file('file');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('map_files'), $fileName);
+            $data['file_path'] = 'map_files/' . $fileName;
+        }
+
+        $map->update($data);
 
         return redirect()->route('maps.index')->with('success', 'Peta berhasil diperbarui!');
     }
@@ -121,9 +118,12 @@ class MapController extends Controller
 
     public function destroy(Map $map)
     {
-        $path = public_path($map->file_path);
-        if (file_exists($path)) {
-            unlink($path);
+        if ($map->image_path && file_exists(public_path($map->image_path))) {
+            unlink(public_path($map->image_path));
+        }
+
+        if ($map->file_path && file_exists(public_path($map->file_path))) {
+            unlink(public_path($map->file_path));
         }
 
         $map->delete();
@@ -133,14 +133,13 @@ class MapController extends Controller
     public function geojson(Map $map)
     {
         $path = public_path($map->file_path);
-        
+
         if (!file_exists($path)) {
             return response()->json(['error' => 'File tidak ditemukan'], 404);
         }
 
         $content = file_get_contents($path);
-        
-        // Cek apakah file adalah JSON yang valid
+
         $decoded = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             return response()->json(['error' => 'File bukan JSON yang valid'], 400);
