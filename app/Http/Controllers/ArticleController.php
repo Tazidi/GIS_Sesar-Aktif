@@ -2,99 +2,113 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Article;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ArticleController extends Controller
 {
     use AuthorizesRequests;
 
+    // Menampilkan halaman daftar artikel untuk PUBLIK
     public function index()
     {
-        if (Auth::user()->role === 'admin') {
-            $articles = Article::latest()->get();
-        } else {
-            $articles = Article::where('user_id', Auth::id())->latest()->get();
-        }
-
+        $articles = Article::where('status', 'approved')->latest()->paginate(10);
         return view('articles.index', compact('articles'));
     }
 
+    // Menampilkan halaman detail artikel untuk PUBLIK
+    public function show(Article $article)
+    {
+        // Pastikan hanya artikel yang sudah 'approved' yang bisa dilihat publik
+        if ($article->status !== 'approved' && (!Auth::check() || !in_array(Auth::user()->role, ['admin', 'editor']))) {
+            abort(404);
+        }
+        return view('articles.show', compact('article'));
+    }
+
+    // Menampilkan form untuk membuat artikel baru
     public function create()
     {
         return view('articles.create');
     }
 
+    // Menyimpan artikel baru
     public function store(Request $request)
     {
         $data = $request->validate([
-            'title' => 'required',
+            'title' => 'required|max:255',
             'content' => 'required',
-            'thumbnail' => 'nullable|image|max:2048',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($request->hasFile('thumbnail')) {
-            $file = $request->file('thumbnail');
-            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('thumbnails'), $filename);
-            $data['thumbnail'] = 'thumbnails/' . $filename;
+            // Simpan gambar ke storage/app/public/thumbnails
+            $path = $request->file('thumbnail')->store('thumbnails', 'public');
+            $data['thumbnail'] = $path;
         }
 
         $data['user_id'] = Auth::id();
-        $data['status'] = 'pending';
+        $data['status'] = Auth::user()->role === 'admin' ? 'approved' : 'pending'; // Admin langsung approve
 
         Article::create($data);
 
-        return redirect()->route('articles.index')->with('success', 'Artikel disimpan!');
+        return redirect()->route('home')->with('success', 'Artikel berhasil disimpan dan menunggu persetujuan.'); // Arahkan ke home atau halaman manajemen
     }
 
+    // Menampilkan form untuk mengedit artikel
     public function edit(Article $article)
     {
-        $this->authorize('update', $article); // optional
+        $this->authorize('update', $article);
         return view('articles.edit', compact('article'));
     }
 
+    // Mengupdate artikel
     public function update(Request $request, Article $article)
     {
+        $this->authorize('update', $article);
+
         $data = $request->validate([
-            'title' => 'required',
+            'title' => 'required|max:255',
             'content' => 'required',
-            'thumbnail' => 'nullable|image|max:2048',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($request->hasFile('thumbnail')) {
-            // Hapus thumbnail lama dari public/thumbnails
-            if ($article->thumbnail && file_exists(public_path($article->thumbnail))) {
-                unlink(public_path($article->thumbnail));
+            // Hapus gambar lama jika ada
+            if ($article->thumbnail) {
+                Storage::disk('public')->delete($article->thumbnail);
             }
-
-            $file = $request->file('thumbnail');
-            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('thumbnails'), $filename);
-            $data['thumbnail'] = 'thumbnails/' . $filename;
+            $path = $request->file('thumbnail')->store('thumbnails', 'public');
+            $data['thumbnail'] = $path;
         }
 
         $article->update($data);
 
-        return redirect()->route('articles.index')->with('success', 'Artikel diperbarui!');
+        return redirect()->route('home')->with('success', 'Artikel berhasil diperbarui.'); // Arahkan ke home atau halaman manajemen
     }
 
+    // Menghapus artikel
     public function destroy(Article $article)
     {
+        $this->authorize('delete', $article);
+
+        // Hapus gambar dari storage
+        if ($article->thumbnail) {
+            Storage::disk('public')->delete($article->thumbnail);
+        }
+
         $article->delete();
-        return back()->with('success', 'Artikel dihapus.');
+        return back()->with('success', 'Artikel berhasil dihapus.');
     }
-
-    public function show(Article $article)
-    {
-        return view('articles.show', compact('article'));
-    }
-
+    
+    // (Khusus Admin) Mengupdate status
     public function updateStatus(Request $request, Article $article)
     {
+        $this->authorize('admin'); // Pastikan hanya admin
+
         $request->validate([
             'status' => 'required|in:pending,approved,rejected,revision',
         ]);
@@ -102,6 +116,6 @@ class ArticleController extends Controller
         $article->status = $request->status;
         $article->save();
 
-        return redirect()->back()->with('success', 'Status artikel diperbarui.');
+        return back()->with('success', 'Status artikel diperbarui.');
     }
 }

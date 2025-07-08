@@ -13,12 +13,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        // Panggil ArticleSeeder yang baru kita buat
         $this->call([
+            UserSeeder::class,
             ArticleSeeder::class,
-            // Anda bisa menambahkan Seeder lain di sini jika ada
         ]);
     }
 }

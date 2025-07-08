@@ -8,19 +8,19 @@ use App\Models\Map;
 
 class HomeController extends Controller
 {
-    public function index(Request $request)
-    {
-        $query = Article::where('status', 'approved');
+public function index()
+{
+    $todayPosts = Article::where('status', 'approved')->latest()->take(2)->get();
 
-        if ($request->search) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
+    // REVISI: Ubah take(5) menjadi take(3) untuk menampilkan 1 besar + 2 kecil
+    $mainStories = Article::where('status', 'approved')->latest()->skip(2)->take(3)->get();
 
-        $articles = $query->paginate(6)->onEachSide(2);
-        $maps = Map::all();
+    $popularArticles = Article::where('status', 'approved')->inRandomOrder()->take(5)->get();
 
-        return view('home', compact('articles', 'maps'));
-    }
+    $maps = Map::all();
+
+    return view('home', compact('todayPosts', 'mainStories', 'popularArticles', 'maps'));
+}
 
     public function show($id)
     {

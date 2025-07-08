@@ -1,54 +1,64 @@
 @extends('layouts.app')
 
 @section('content')
-<h1 class="text-2xl font-bold mb-4">Daftar Artikel Saya</h1>
+<div class="py-12">
+    <div class="px-4 sm:px-6 lg:px-8">
+        {{-- Judul Halaman --}}
+        <div class="mb-8 border-b border-gray-300">
+            <h2 class="text-3xl font-bold inline-block pb-2 border-b-4 border-red-600">Semua Artikel</h2>
+        </div>
 
-<a href="{{ route('articles.create') }}" class="bg-blue-500 text-white px-3 py-1 rounded inline-block mb-4">
-    + Tambah Artikel
-</a>
-
-@foreach($articles as $a)
-    <div class="border p-4 mb-4 rounded shadow-sm bg-white flex gap-4">
-        {{-- Thumbnail --}}
-        @if($a->thumbnail)
-            <img src="{{ asset($a->thumbnail) }}" alt="Thumbnail" class="w-32 h-32 object-cover">
-        @endif
-
-        <div class="flex-grow">
-            <h3 class="text-xl font-semibold">{{ $a->title }}</h3>
-            <p class="text-sm text-gray-500">Status: 
-                @auth
-                    @if(auth()->user()->role === 'admin')
-                        <form method="POST" action="{{ route('articles.updateStatus', $a) }}">
-                            @csrf
-                            @method('PATCH')
-                            <select name="status" onchange="this.form.submit()" class="text-sm">
-                                <option value="pending" {{ $a->status == 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="approved" {{ $a->status == 'approved' ? 'selected' : '' }}>Approved</option>
-                                <option value="rejected" {{ $a->status == 'rejected' ? 'selected' : '' }}>Rejected</option>
-                                <option value="revision" {{ $a->status == 'revision' ? 'selected' : '' }}>Revision</option>
-                            </select>
-                        </form>
-                    @else
-                        <span class="inline-block bg-gray-200 px-2 py-1 rounded text-sm">{{ ucfirst($a->status) }}</span>
-                    @endif
-                @endauth
-            </p>
-
-            <div class="space-x-2 mt-2">
-                <a href="{{ route('articles.show', $a) }}" class="text-blue-600 underline">Preview</a>
-                <a href="{{ route('articles.edit', $a) }}" class="text-yellow-600 underline">Edit</a>
-                <form method="POST" action="{{ route('articles.destroy', $a) }}" class="inline">
-                    @csrf
-                    @method('DELETE')
-                    <button onclick="return confirm('Hapus artikel ini?')" class="text-red-600 underline">Hapus</button>
-                </form>
+        {{-- Wadah untuk daftar artikel --}}
+        <div class="space-y-8">
+            @forelse ($articles as $article)
+                {{-- Setiap item artikel --}}
+        {{-- 1. Tambahkan tinggi tetap di sini (misal: h-64 atau sekitar 256px) --}}
+        <div class="flex flex-col md:flex-row bg-white shadow-md overflow-hidden h-64">
+            {{-- Gambar Thumbnail --}}
+            @if($article->thumbnail)
+            <div class="md:w-1/3 h-full">
+                <a href="{{ route('articles.show', $article) }}">
+                    {{-- 2. Pastikan gambar mengisi tinggi penuh (h-full) dari wadahnya --}}
+                    <img src="{{ asset('storage/' . $article->thumbnail) }}" alt="Thumbnail for {{ $article->title }}" class="w-full h-full object-cover hover:opacity-80 transition-opacity">
+                </a>
+            </div>
+            @endif
+            
+            {{-- Detail Artikel --}}
+            <div class="p-6 flex flex-col justify-between {{ $article->thumbnail ? 'md:w-2/3' : 'w-full' }}">
+                <div>
+                    <h3 class="font-bold text-2xl mb-2">
+                        <a href="{{ route('articles.show', $article) }}" class="hover:text-red-600 transition-colors">
+                            {{ $article->title }}
+                        </a>
+                    </h3>
+                    <p class="text-gray-600 text-sm mb-4">
+                        {{ Str::limit(strip_tags($article->content), 200) }}
+                    </p>
+                </div>
+                <div class="text-xs text-gray-500 mt-4 flex items-center justify-between">
+                    <span>Oleh {{ $article->user->name ?? 'N/A' }} &bull; {{ $article->created_at->format('d M Y') }}</span>
+                    <a href="{{ route('articles.show', $article) }}" class="font-semibold text-indigo-600 hover:text-indigo-900">
+                        Baca Selengkapnya &rarr;
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
-@endforeach
+        {{-- ========================================================= --}}
+        {{-- BATAS AKHIR BLOK ARTIKEL --}}
+        {{-- ========================================================= --}}
+    @empty
+        <div class="bg-white shadow-md p-12 text-center text-gray-500">
+            <p>Belum ada artikel yang dipublikasikan.</p>
+        </div>
+    @endforelse
+</div>
 
-@if($articles->isEmpty())
-    <p class="text-gray-500">Belum ada artikel.</p>
-@endif
+        {{-- Link Pagination --}}
+        <div class="mt-8">
+            {{ $articles->links() }}
+        </div>
+
+    </div>
+</div>
 @endsection

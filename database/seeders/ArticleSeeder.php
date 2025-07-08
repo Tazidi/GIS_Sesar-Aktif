@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\Article; // <-- Import model Article
+use App\Models\Article;
 
 class ArticleSeeder extends Seeder
 {
@@ -13,8 +13,7 @@ class ArticleSeeder extends Seeder
      */
     public function run(): void
     {
-        // Perintah ini akan memanggil ArticleFactory sebanyak 6 kali
-        // dan menyimpannya ke database.
+        // Membuat 20 artikel dummy dengan factory
         Article::factory()->count(20)->create();
     }
 }

@@ -15,14 +15,15 @@ class ArticleFactory extends Factory
      *
      * @return array<string, mixed>
      */
-    public function definition(): array
-    {
-        return [
-            'user_id' => User::factory(), // <-- Membuat user baru untuk setiap artikel, atau bisa diganti User::first()->id jika sudah ada user
-            'title' => $this->faker->sentence(6), // Membuat judul dari 6 kata acak
-            'content' => $this->faker->paragraphs(5, true), // Membuat 5 paragraf acak
-            'thumbnail' => $this->faker->imageUrl(640, 480, 'nature', true),
-            'status' => 'approved', // Langsung set statusnya menjadi 'approved'
-        ];
-    }
+public function definition(): array
+{
+    return [
+        'user_id'  => \App\Models\User::factory(),
+        'title'     => $this->faker->sentence(6),
+        'content'   => $this->faker->paragraphs(5, true),
+        'author'    => fake()->name(),
+        'thumbnail' => 'thumbnails/' . $this->faker->numberBetween(1, 4) . '.jpg',
+        'status'    => 'approved', // <-- PASTIKAN BARIS INI ADA
+    ];
+}
 }

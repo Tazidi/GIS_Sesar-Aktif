@@ -4,9 +4,9 @@
         <div class="px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center">
                 <div class="flex items-center flex-grow min-w-0">
-                    <span class="bg-red-600 font-bold py-1 px-3 flex items-center space-x-2">
+                    <span class="bg-red-600 font-bold py-1 px-3 rounded-md mr-4 flex items-center space-x-2 whitespace-nowrap">
                         <i class="fas fa-fire"></i>
-                        <span>Trending</span>
+                        <span>Trending News</span>
                     </span>
                     <div class="ticker-wrap flex-grow">
                         <div class="ticker-move">
