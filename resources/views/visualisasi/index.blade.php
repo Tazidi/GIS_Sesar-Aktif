@@ -328,19 +328,13 @@
             @foreach ($maps as $map)
                 <div class="layer-item">
                     <label>
-                        <input type="checkbox" class="layer-toggle"
-                            data-id="{{ $map->id }}"
+                        <input type="checkbox" class="layer-toggle" data-id="{{ $map->id }}"
                             data-layer-type="{{ $map->layer_type ?? 'marker' }}"
                             data-stroke-color="{{ $map->stroke_color ?? '#000000' }}"
-                            data-fill-color="{{ $map->fill_color ?? '#ff0000' }}"
-                            data-opacity="{{ $map->opacity ?? 0.8 }}"
-                            data-weight="{{ $map->weight ?? 2 }}"
-                            data-radius="{{ $map->radius ?? 300 }}"
-                            data-icon-url="{{ $map->icon_url ?? '' }}"
-                            data-lat="{{ $map->lat }}"
-                            data-lng="{{ $map->lng }}"
-                            data-layer="{{ $map->layer }}"
-                            checked>
+                            data-fill-color="{{ $map->fill_color ?? '#ff0000' }}" data-opacity="{{ $map->opacity ?? 0.8 }}"
+                            data-weight="{{ $map->weight ?? 2 }}" data-radius="{{ $map->radius ?? 300 }}"
+                            data-icon-url="{{ $map->icon_url ?? '' }}" data-lat="{{ $map->lat }}"
+                            data-lng="{{ $map->lng }}" data-layer="{{ $map->layer }}" checked>
                         {{ $map->layer ?? 'Layer Tanpa Nama' }}
                     </label>
                 </div>
@@ -588,11 +582,25 @@
                     zoomControl: true
                 }).setView([-7.5, 107.5], 7);
 
-                // Tambahkan base layer
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap contributors',
-                    maxZoom: 18
-                }).addTo(map);
+                // Base maps
+                var baseLayers = {
+                    "OSM Standard": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors',
+                        maxZoom: 18
+                    }),
+                    "OSM HOT": L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors, Tiles style by Humanitarian OSM Team',
+                        maxZoom: 18
+                    }),
+                    "OpenTopoMap": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                        attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)',
+                        maxZoom: 17
+                    })
+                };
+
+                // Pasang default base layer
+                baseLayers["OSM Standard"].addTo(map);
+
 
                 // Fix ukuran peta
                 setTimeout(() => map.invalidateSize(), 500);
@@ -682,16 +690,22 @@
                         })
                         .then(data => {
                             const layer = L.geoJSON(data, {
-                                style: function (feature) {
+                                style: function(feature) {
                                     return style;
                                 },
-                                onEachFeature: function (feature, layer) {
+                                onEachFeature: function(feature, layer) {
                                     const popupContent = createPopupContent(feature);
-                                    layer.bindPopup(popupContent, { maxWidth: 300, className: 'custom-popup' });
+                                    layer.bindPopup(popupContent, {
+                                        maxWidth: 300,
+                                        className: 'custom-popup'
+                                    });
                                 },
-                                pointToLayer: function (feature, latlng) {
+                                pointToLayer: function(feature, latlng) {
                                     if (layerType === 'circle') {
-                                        return L.circle(latlng, { radius, ...style });
+                                        return L.circle(latlng, {
+                                            radius,
+                                            ...style
+                                        });
                                     } else if (layerType === 'marker' && iconUrl) {
                                         const customIcon = L.icon({
                                             iconUrl,
@@ -699,9 +713,14 @@
                                             iconAnchor: [16, 16],
                                             popupAnchor: [0, -16]
                                         });
-                                        return L.marker(latlng, { icon: customIcon });
+                                        return L.marker(latlng, {
+                                            icon: customIcon
+                                        });
                                     } else {
-                                        return L.circleMarker(latlng, { radius: 8, ...style });
+                                        return L.circleMarker(latlng, {
+                                            radius: 8,
+                                            ...style
+                                        });
                                     }
                                 }
                             });
@@ -719,7 +738,10 @@
                                 let layer;
 
                                 if (layerType === 'circle') {
-                                    layer = L.circle(latlng, { radius, ...style });
+                                    layer = L.circle(latlng, {
+                                        radius,
+                                        ...style
+                                    });
                                 } else if (layerType === 'marker' && iconUrl) {
                                     const customIcon = L.icon({
                                         iconUrl,
@@ -727,9 +749,14 @@
                                         iconAnchor: [16, 16],
                                         popupAnchor: [0, -16]
                                     });
-                                    layer = L.marker(latlng, { icon: customIcon });
+                                    layer = L.marker(latlng, {
+                                        icon: customIcon
+                                    });
                                 } else {
-                                    layer = L.circleMarker(latlng, { radius: 8, ...style });
+                                    layer = L.circleMarker(latlng, {
+                                        radius: 8,
+                                        ...style
+                                    });
                                 }
 
                                 layer.bindPopup(`<div class="popup-title">${title}</div>`);
@@ -745,6 +772,24 @@
                             }
                         });
                 }
+
+                setTimeout(() => {
+                    const overlayLayers = {};
+
+                    // Ambil semua layer yang dimuat
+                    Object.keys(mapLayers).forEach(id => {
+                        const checkbox = document.querySelector(
+                            `.layer-toggle[data-id="${id}"]`);
+                        const label = checkbox?.dataset.layer || checkbox?.parentElement
+                            ?.textContent.trim() || `Layer ${id}`;
+                        overlayLayers[label] = mapLayers[id];
+                    });
+
+                    // Tambahkan ke control box Leaflet
+                    L.control.layers(baseLayers, overlayLayers, {
+                        collapsed: false
+                    }).addTo(map);
+                }, 1000);
 
                 // Load semua peta
                 @foreach ($maps as $map)

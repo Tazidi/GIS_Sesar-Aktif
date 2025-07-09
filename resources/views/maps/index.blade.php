@@ -11,6 +11,7 @@
             border-radius: 8px;
             border: 1px solid #ccc;
         }
+
         img.thumbnail {
             width: 60px;
             border-radius: 4px;
@@ -41,7 +42,7 @@
                 @foreach ($maps as $map)
                     <tr>
                         <td class="border px-2 py-1">{{ $map->name }}</td>
-                        <td class="border px-2 py-1">{{ $map->feature_type }}</td>
+                        <td class="border px-2 py-1">{{ $map->layer_type }}</td>
                         <td class="border px-2 py-1">{{ $map->lat ?? '-' }}</td>
                         <td class="border px-2 py-1">{{ $map->lng ?? '-' }}</td>
                         <td class="border px-2 py-1">{{ $map->distance ?? '-' }} m</td>
@@ -54,8 +55,7 @@
                         </td>
                         <td class="border px-2 py-1">
                             @if ($map->file_path ?? false)
-                                <a href="{{ asset($map->file_path) }}" target="_blank"
-                                    class="text-blue-600 underline">Lihat File</a>
+                                <a href="{{ asset($map->file_path) }}" target="_blank" class="text-blue-600 underline">Lihat File</a>
                             @else
                                 <span class="text-gray-500 italic">Tidak ada file</span>
                             @endif
@@ -86,69 +86,94 @@
         document.addEventListener('DOMContentLoaded', function () {
             @foreach ($maps as $map)
                 (function () {
-                    const mapDivId = 'map-{{ $map->id }}';
+                    const divId = 'map-{{ $map->id }}';
                     const geojsonUrl = "{{ route('maps.geojson', $map->id) }}";
-                    const mapLeaflet = L.map(mapDivId).setView([-7.5, 107.5], 8);
+                    const mapInstance = L.map(divId, { zoomControl: false }).setView([-7.5, 107.5], 8);
 
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 18,
-                        attribution: '&copy; OpenStreetMap'
-                    }).addTo(mapLeaflet);
+                        attribution: '&copy; OpenStreetMap contributors',
+                        maxZoom: 18
+                    }).addTo(mapInstance);
 
-                    // Tambahkan marker manual jika lat/lng tersedia
-                    @if ($map->lat && $map->lng)
-                        const markerLatLng = [{{ $map->lat }}, {{ $map->lng }}];
+                    const fallbackLat = {{ $map->lat ?? 'null' }};
+                    const fallbackLng = {{ $map->lng ?? 'null' }};
+                    const fallbackLatLng = (!isNaN(fallbackLat) && !isNaN(fallbackLng)) ? L.latLng(fallbackLat, fallbackLng) : null;
 
-                        @if ($map->icon_url)
-                            const customIcon = L.icon({
-                                iconUrl: "{{ asset($map->icon_url) }}".replace('public/', ''), // pastikan path benar
-                                iconSize: [25, 41],
-                                iconAnchor: [12, 41],
-                                popupAnchor: [1, -34],
-                                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-                                shadowSize: [41, 41]
-                            });
-
-                            L.marker(markerLatLng, { icon: customIcon })
-                                .addTo(mapLeaflet)
-                                .bindPopup("{{ $map->name }}");
-                        @else
-                            L.marker(markerLatLng)
-                                .addTo(mapLeaflet)
-                                .bindPopup("{{ $map->name }}");
-                        @endif
-
-                        mapLeaflet.setView(markerLatLng, 13);
-                    @endif
-
-                    // Tambahkan layer dari GeoJSON (jika ada)
                     fetch(geojsonUrl)
                         .then(res => res.json())
                         .then(data => {
-                            const layer = L.geoJSON(data, {
-                                onEachFeature: function (feature, layer) {
-                                    let props = feature.properties || {};
-                                    let content = Object.entries(props).map(([k, v]) => `<b>${k}</b>: ${v}`).join('<br>');
-                                    layer.bindPopup(content);
+                            const geoLayer = L.geoJSON(data, {
+                                style: function (feature) {
+                                    const p = feature.properties || {};
+                                    return {
+                                        color: p.stroke || p.stroke_color || '#000000',
+                                        fillColor: p.fill || p.fill_color || '#FF0000',
+                                        opacity: p.opacity ?? 0.8,
+                                        weight: p.weight ?? 2,
+                                        fillOpacity: (p.opacity ?? 0.8) * 0.7
+                                    };
                                 },
                                 pointToLayer: function (feature, latlng) {
-                                    return L.circleMarker(latlng, {
-                                        radius: 6,
-                                        fillColor: "blue",
-                                        color: "#000",
-                                        weight: 1,
-                                        opacity: 1,
-                                        fillOpacity: 0.8
-                                    });
-                                }
-                            }).addTo(mapLeaflet);
+                                    const p = feature.properties || {};
+                                    const type = p.layer_type || 'marker';
 
-                            if (layer.getBounds().isValid()) {
-                                mapLeaflet.fitBounds(layer.getBounds());
+                                    if (type === 'circle') {
+                                        return L.circle(latlng, {
+                                            radius: p.radius || 300,
+                                            color: p.stroke || p.stroke_color || '#000000',
+                                            fillColor: p.fill || p.fill_color || '#FF0000',
+                                            fillOpacity: p.opacity ?? 0.6
+                                        });
+                                    }
+
+                                    if (type === 'marker' && p.icon_url) {
+                                        const icon = L.icon({
+                                            iconUrl: p.icon_url,
+                                            iconSize: [28, 28],
+                                            iconAnchor: [14, 14]
+                                        });
+                                        return L.marker(latlng, { icon });
+                                    }
+
+                                    return L.circleMarker(latlng, {
+                                        radius: 8,
+                                        color: p.stroke || p.stroke_color || '#000000',
+                                        fillColor: p.fill || p.fill_color || '#FF0000',
+                                        fillOpacity: p.opacity ?? 0.6
+                                    });
+                                },
+                                onEachFeature: function (feature, layer) {
+                                    const props = feature.properties || {};
+                                    let popupContent = `<strong>${props.name || props.title || 'Informasi'}</strong><br>`;
+                                    popupContent += Object.entries(props)
+                                        .filter(([k]) => !['name', 'title', 'photo', 'image', 'gambar', 'icon_url', 'layer_type', 'stroke_color', 'fill_color', 'opacity', 'weight', 'radius'].includes(k))
+                                        .map(([k, v]) => `<b>${k}</b>: ${v}`).join('<br>');
+
+                                    layer.bindPopup(popupContent);
+                                }
+                            }).addTo(mapInstance);
+
+                            if (geoLayer.getBounds().isValid()) {
+                                mapInstance.fitBounds(geoLayer.getBounds());
                             }
                         })
-                        .catch(err => {
-                            console.error(`Gagal memuat GeoJSON untuk Map ID {{ $map->id }}`, err);
+                        .catch(() => {
+                            if (fallbackLatLng) {
+                                let marker;
+                                const iconUrl = "{{ $map->icon_url }}";
+                                if (iconUrl) {
+                                    const customIcon = L.icon({
+                                        iconUrl: iconUrl.replace('public/', ''),
+                                        iconSize: [28, 28],
+                                        iconAnchor: [14, 28],
+                                    });
+                                    marker = L.marker(fallbackLatLng, { icon: customIcon });
+                                } else {
+                                    marker = L.marker(fallbackLatLng);
+                                }
+                                marker.bindPopup("{{ $map->name }}").addTo(mapInstance);
+                                mapInstance.setView(fallbackLatLng, 13);
+                            }
                         });
                 })();
             @endforeach

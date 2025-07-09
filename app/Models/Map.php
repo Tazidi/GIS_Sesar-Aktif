@@ -20,8 +20,13 @@ class Map extends Model
         'opacity',
         'weight',
         'radius',
+        'geometry',
         'file_path',
         'layer_type',
+    ];
+
+    protected $casts = [
+        'geometry' => 'array', // penting agar tidak perlu decode manual
     ];
 
     public $timestamps = false; // Ubah ke true jika ingin pakai created_at & updated_at

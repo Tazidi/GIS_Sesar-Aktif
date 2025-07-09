@@ -38,6 +38,7 @@ class MapController extends Controller
             'opacity' => 'nullable|numeric|between:0,1',
             'weight' => 'nullable|integer|min:0',
             'radius' => 'nullable|numeric|min:0',
+            'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimetypes:application/json,text/plain,text/json,text/geojson,text/csv,application/octet-stream|max:4096',
         ]);
 
@@ -83,6 +84,7 @@ class MapController extends Controller
             'opacity' => 'nullable|numeric|between:0,1',
             'weight' => 'nullable|integer|min:0',
             'radius' => 'nullable|numeric|min:0',
+            'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimes:json,csv,zip,geojson|max:4096',
         ]);
 
@@ -132,19 +134,29 @@ class MapController extends Controller
 
     public function geojson(Map $map)
     {
-        $path = public_path($map->file_path);
-
-        if (!file_exists($path)) {
-            return response()->json(['error' => 'File tidak ditemukan'], 404);
+        if ($map->geometry) {
+            return response()->json([
+                'type' => 'Feature',
+                'geometry' => json_decode($map->geometry, true),
+                'properties' => [
+                    'name' => $map->name,
+                    'description' => $map->description,
+                    'layer_type' => $map->layer_type,
+                ]
+            ]);
         }
 
-        $content = file_get_contents($path);
+        if ($map->file_path && file_exists(public_path($map->file_path))) {
+            $content = file_get_contents(public_path($map->file_path));
 
-        $decoded = json_decode($content, true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return response()->json(['error' => 'File bukan JSON yang valid'], 400);
+            $decoded = json_decode($content, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json(['error' => 'File bukan JSON yang valid'], 400);
+            }
+
+            return response($content, 200)->header('Content-Type', 'application/json');
         }
 
-        return response($content, 200)->header('Content-Type', 'application/json');
+        return response()->json(['error' => 'Tidak ada data GeoJSON yang tersedia'], 404);
     }
 }
