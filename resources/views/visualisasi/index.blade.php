@@ -33,11 +33,7 @@
         }
 
         .layer-controls {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            display: none !important;
         }
 
         .layer-item {
@@ -334,8 +330,9 @@
                             data-fill-color="{{ $map->fill_color ?? '#ff0000' }}" data-opacity="{{ $map->opacity ?? 0.8 }}"
                             data-weight="{{ $map->weight ?? 2 }}" data-radius="{{ $map->radius ?? 300 }}"
                             data-icon-url="{{ $map->icon_url ?? '' }}" data-lat="{{ $map->lat }}"
-                            data-lng="{{ $map->lng }}" data-layer="{{ $map->layer }}" checked>
-                        {{ $map->layer ?? 'Layer Tanpa Nama' }}
+                            data-lng="{{ $map->lng }}"
+                            data-layer="{{ $map->layer->nama_layer ?? 'Layer Tanpa Nama' }}" checked>
+                        {{ $map->layer->nama_layer ?? 'Layer Tanpa Nama' }}
                     </label>
                 </div>
             @endforeach
@@ -374,7 +371,7 @@
                                 @endif
                             </div>
                             <div class="legend-text">
-                                {{ $map->title }}
+                                {{ $map->layer->nama_layer ?? 'Layer Tanpa Nama' }}
                                 <br>
                                 <small style="color: #777;">
                                     @if (($map->layer_type ?? 'marker') == 'marker')
