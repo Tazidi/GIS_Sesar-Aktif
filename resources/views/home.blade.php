@@ -33,7 +33,7 @@
                 <div class="flex flex-col space-y-6 flex-grow">
                     @forelse($todayPosts as $post)
                         <a href="{{ route('articles.show', $post) }}" class="flex-1 block group relative overflow-hidden shadow-md rounded-md">
-                            <img src="{{ asset('storage/' . $post->thumbnail) }}" alt="{{ $post->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                            <img src="{{ asset('thumbnails/' . basename($post->thumbnail)) }}" alt="{{ $post->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                             <div class="absolute bottom-0 p-4 text-white z-10">
                                 <span class="bg-red-600 text-white text-xs font-bold py-1 px-2 rounded-md">Latest</span>
@@ -55,7 +55,7 @@
                 @if($mainStories->isNotEmpty())
                     <div class="grid grid-cols-1 gap-6">
                         <a href="{{ route('articles.show', $mainStories->first()) }}" class="block group relative overflow-hidden shadow-md h-80 rounded-md">
-                            <img src="{{ asset('storage/' . $mainStories->first()->thumbnail) }}" alt="{{ $mainStories->first()->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                            <img src="{{ asset('thumbnails/' . basename($mainStories->first()->thumbnail)) }}" alt="{{ $mainStories->first()->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                             <div class="absolute bottom-0 p-6 text-white z-10">
                                 <h3 class="font-bold text-3xl">{{ $mainStories->first()->title }}</h3>
@@ -64,7 +64,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             @foreach($mainStories->skip(1) as $story)
                                 <a href="{{ route('articles.show', $story) }}" class="block group relative overflow-hidden shadow-md h-40 rounded-md">
-                                     <img src="{{ asset('storage/' . $story->thumbnail) }}" alt="{{ $story->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                                     <img src="{{ asset('thumbnails/' . basename($story->thumbnail)) }}" alt="{{ $story->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                                     <div class="absolute inset-0 bg-black opacity-0 group-hover:opacity-60 transition-opacity duration-300"></div>
                                     <div class="absolute inset-0 p-4 flex flex-col justify-end transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-in-out">
                                         <h4 class="font-semibold text-white">{{ $story->title }}</h4>

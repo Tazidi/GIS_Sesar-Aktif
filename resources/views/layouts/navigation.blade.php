@@ -17,20 +17,30 @@
 
                 <a href="#"
                    class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700">
-                    Edit Peta
-                </a>
-
-                <a href="#"
-                   class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700">
                     Galeri
                 </a>
 
-                <a href="{{ route('articles.index') }}"
+                <a href="{{ route('artikel.publik') }}"
                    class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium
-                          {{ request()->routeIs('articles.index') ? 'border-red-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
+                          {{ request()->routeIs('artikel.publik') ? 'border-red-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
                     Artikel
                 </a>
 
+                @auth
+                    @if(auth()->user()->role === 'admin')
+                        <a href="{{ route('admin.index') }}"
+                           class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium
+                                  {{ request()->routeIs('admin.index') ? 'border-red-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
+                            Admin Dashboard
+                        </a>
+                    @elseif(auth()->user()->role === 'editor')
+                        <a href="{{ route('editor.index') }}"
+                           class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium
+                                  {{ request()->routeIs('editor.index') ? 'border-red-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
+                            Editor Dashboard
+                        </a>
+                    @endif
+                @endauth
 
             </div>
 

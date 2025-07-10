@@ -5,6 +5,7 @@
     @endif
 
     <input name="title" value="{{ old('title', $article->title ?? '') }}" placeholder="Judul" class="block mb-2 w-full border px-2 py-1">
+    <input name="author" value="{{ old('author', $article->author ?? '') }}" placeholder="Penulis" class="block mb-2 w-full border px-2 py-1">
 
     <textarea name="content" class="block mb-2 w-full border px-2 py-1" rows="6">{{ old('content', $article->content ?? '') }}</textarea>
 

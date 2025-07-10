@@ -1,11 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <h1 class="text-2xl font-bold mb-6">Dashboard Editor</h1>
+<div class="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">Dashboard Editor</h1>
 
-    <ul class="list-disc pl-6 space-y-2">
-        <li><a href="{{ route('articles.index') }}" class="text-blue-600 hover:underline">Kelola Artikel Saya</a></li>
-    </ul>
+    <div class="grid grid-cols-1 gap-6">
+        <a href="{{ route('articles.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
+            <h2 class="text-lg font-semibold text-blue-600 mb-1"><i class="fas fa-pen-nib mr-2"></i>Kelola Artikel Saya</h2>
+            <p class="text-gray-500 text-sm">Lihat dan kelola artikel yang Anda buat.</p>
+        </a>
+    </div>
 </div>
 @endsection

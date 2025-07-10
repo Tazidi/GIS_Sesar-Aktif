@@ -11,6 +11,7 @@ use App\Http\Controllers\LayerController;
 use App\Models\Article;
 use App\Models\Map;
 use App\Models\User;
+use App\Http\Controllers\PublicArticleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,6 +33,9 @@ Route::get('/visualisasi-peta', function () {
 
 // Endpoint GeoJSON untuk peta
 Route::get('/maps/{map}/geojson', [MapController::class, 'geojson'])->name('maps.geojson');
+
+// Halaman publik yang bisa dibaca semua user
+Route::get('/artikel-publik', [PublicArticleController::class, 'index'])->name('artikel.publik');
 
 /*
 |--------------------------------------------------------------------------

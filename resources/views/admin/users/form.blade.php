@@ -1,24 +1,27 @@
-<form action="{{ $user->exists ? route('users.update', $user) : route('users.store') }}" method="POST">
+<form action="{{ $user->exists ? route('users.update', $user) : route('users.store') }}" method="POST" class="bg-white shadow-md rounded px-6 py-6 space-y-6">
     @csrf
     @if ($user->exists)
         @method('PUT')
     @endif
 
-    <div class="mb-4">
-        <label class="block font-medium">Nama</label>
-        <input type="text" name="name" class="w-full border rounded px-2 py-1"
-               value="{{ old('name', $user->name) }}" required>
+    <div>
+        <label class="block font-semibold text-gray-700 mb-1">Nama</label>
+        <input type="text" name="name" required
+               class="w-full border-gray-300 rounded px-3 py-2 shadow-sm focus:ring focus:ring-red-200"
+               value="{{ old('name', $user->name) }}">
     </div>
 
-    <div class="mb-4">
-        <label class="block font-medium">Email</label>
-        <input type="email" name="email" class="w-full border rounded px-2 py-1"
-               value="{{ old('email', $user->email) }}" required>
+    <div>
+        <label class="block font-semibold text-gray-700 mb-1">Email</label>
+        <input type="email" name="email" required
+               class="w-full border-gray-300 rounded px-3 py-2 shadow-sm focus:ring focus:ring-red-200"
+               value="{{ old('email', $user->email) }}">
     </div>
 
-    <div class="mb-4">
-        <label class="block font-medium">Role</label>
-        <select name="role" class="w-full border rounded px-2 py-1" required>
+    <div>
+        <label class="block font-semibold text-gray-700 mb-1">Role</label>
+        <select name="role" required
+                class="w-full border-gray-300 rounded px-3 py-2 shadow-sm focus:ring focus:ring-red-200">
             <option value="admin" {{ old('role', $user->role) == 'admin' ? 'selected' : '' }}>Admin</option>
             <option value="editor" {{ old('role', $user->role) == 'editor' ? 'selected' : '' }}>Editor</option>
             <option value="user" {{ old('role', $user->role) == 'user' ? 'selected' : '' }}>User</option>
@@ -26,13 +29,17 @@
     </div>
 
     @if (!$user->exists)
-    <div class="mb-4">
-        <label class="block font-medium">Password</label>
-        <input type="password" name="password" class="w-full border rounded px-2 py-1" required>
-    </div>
+        <div>
+            <label class="block font-semibold text-gray-700 mb-1">Password</label>
+            <input type="password" name="password" required
+                   class="w-full border-gray-300 rounded px-3 py-2 shadow-sm focus:ring focus:ring-red-200">
+        </div>
     @endif
 
-    <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">
-        {{ $user->exists ? 'Perbarui' : 'Simpan' }}
-    </button>
+    <div class="pt-4">
+        <button type="submit"
+                class="bg-green-600 text-white font-semibold px-5 py-2 rounded hover:bg-green-700 transition">
+            {{ $user->exists ? 'Perbarui' : 'Simpan' }}
+        </button>
+    </div>
 </form>

@@ -45,14 +45,35 @@
                 </p>
             </div>
 
-            <div class="flex items-center space-x-4">
-                <button class="text-gray-500 hover:text-gray-800 text-xl"><i class="fas fa-bell"></i></button>
+            <div class="flex items-center space-x-4 relative">
+                <button class="text-gray-500 hover:text-gray-800 text-xl relative"><i class="fas fa-bell"></i></button>
+                @auth
+                    <div x-data="{ open: false }" class="relative">
+                        <button @click="open = !open" class="text-gray-500 hover:text-gray-800 text-xl focus:outline-none">
+                            <i class="fas fa-user"></i>
+                        </button>
+
+                        <div
+                            x-show="open"
+                            @click.away="open = false"
+                            x-transition
+                            class="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50"
+                        >
+                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Profil</a>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                    Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @endauth
+
                 @guest
                     <a href="{{ route('login') }}" class="text-gray-500 hover:text-gray-800 text-xl"><i class="fas fa-user"></i></a>
                 @endguest
-                @auth
-                    <a href="{{ route('profile.edit') }}" class="text-gray-500 hover:text-gray-800 text-xl"><i class="fas fa-user"></i></a>
-                @endauth
+
                 <a href="#" class="bg-red-600 text-white text-sm font-bold py-2 px-4 rounded-md hover:bg-red-700 transition duration-300">
                     Subscribe
                 </a>
