@@ -12,6 +12,7 @@ use App\Models\Article;
 use App\Models\Map;
 use App\Models\User;
 use App\Http\Controllers\PublicArticleController;
+use App\Http\Controllers\GalleryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -77,6 +78,7 @@ Route::middleware(['auth', 'role:editor'])->get('/editor', function () {
 */
 Route::middleware(['auth', 'role:admin,editor'])->group(function () {
     Route::resource('articles', ArticleController::class);
+    Route::resource('gallery', App\Http\Controllers\GalleryController::class)->only(['create', 'store', 'destroy']);
     Route::patch('articles/{article}/status', [ArticleController::class, 'updateStatus'])->name('articles.updateStatus');
 });
 
@@ -108,3 +110,13 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 require __DIR__.'/auth.php';
+
+
+Route::get('/galeri', [GalleryController::class, 'index'])->name('gallery.index');
+
+// Rute untuk Manajemen Galeri (Khusus Admin)
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    // Rute untuk menampilkan form dan menyimpan gambar
+    Route::get('/gallery/create', [GalleryController::class, 'create'])->name('gallery.create');
+    Route::post('/gallery', [GalleryController::class, 'store'])->name('gallery.store');
+});

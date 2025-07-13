@@ -15,8 +15,8 @@
                     Visualisasi Peta
                 </a>
 
-                <a href="#"
-                   class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700">
+                <a href="{{ route('gallery.index') }}"
+                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('gallery.index') ? 'border-red-500' : 'border-transparent' }} ...">
                     Galeri
                 </a>
 
