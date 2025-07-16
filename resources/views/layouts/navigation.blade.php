@@ -15,8 +15,8 @@
                     Visualisasi Peta
                 </a>
 
-                <a href="{{ route('gallery.index') }}"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('gallery.index') ? 'border-red-500' : 'border-transparent' }} ...">
+                <a href="{{ route('gallery.publik') }}"
+                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('gallery.publik') ? 'border-red-500' : 'border-transparent' }} ...">
                     Galeri
                 </a>
 

@@ -21,7 +21,7 @@ class HomeController extends Controller
         // Artikel yang di-approve sebelum hari ini (Main Story)
         $mainStories = Article::where('status', 'approved')
             ->whereDate('created_at', '<', Carbon::today())
-            ->latest()
+            ->orderByDesc('visit_count')
             ->take(3)
             ->get();
 
@@ -39,6 +39,15 @@ class HomeController extends Controller
     public function show($id)
     {
         $article = Article::findOrFail($id);
+
+        $ip = request()->ip();
+        $key = 'article_viewed_' . $article->id . '_' . $ip;
+
+        if (!cache()->has($key)) {
+            $article->increment('visit_count');
+            cache()->put($key, true, now()->addHours(6)); // Hindari view spam dari IP yg sama
+        }
+
         return view('articles.show', compact('article'));
     }
 }

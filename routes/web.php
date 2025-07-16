@@ -8,11 +8,9 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\LayerController;
-use App\Models\Article;
-use App\Models\Map;
-use App\Models\User;
 use App\Http\Controllers\PublicArticleController;
 use App\Http\Controllers\GalleryController;
+use App\Models\Map;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,23 +18,27 @@ use App\Http\Controllers\GalleryController;
 |--------------------------------------------------------------------------
 */
 
-// Beranda
+// Halaman Utama
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Detail artikel publik
+// Detail Artikel
 Route::get('/article/{id}', [HomeController::class, 'show'])->name('article.show');
 
-// Halaman visualisasi peta publik
+// Halaman Visualisasi Peta Publik
 Route::get('/visualisasi-peta', function () {
     $maps = Map::all();
     return view('visualisasi.index', compact('maps'));
 })->name('visualisasi.index');
 
-// Endpoint GeoJSON untuk peta
+// Endpoint GeoJSON
 Route::get('/maps/{map}/geojson', [MapController::class, 'geojson'])->name('maps.geojson');
 
-// Halaman publik yang bisa dibaca semua user
+// Artikel Publik
 Route::get('/artikel-publik', [PublicArticleController::class, 'index'])->name('artikel.publik');
+
+// ✅ Galeri Publik (tanpa login)
+Route::get('/galeri-publik', [GalleryController::class, 'publik'])->name('gallery.publik');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -73,21 +75,29 @@ Route::middleware(['auth', 'role:editor'])->get('/editor', function () {
 
 /*
 |--------------------------------------------------------------------------
-| Admin & Editor - Manajemen Artikel (CRUD)
+| Admin & Editor - Manajemen Artikel
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin,editor'])->group(function () {
     Route::resource('articles', ArticleController::class);
-    Route::resource('gallery', App\Http\Controllers\GalleryController::class)->only(['create', 'store', 'destroy']);
     Route::patch('articles/{article}/status', [ArticleController::class, 'updateStatus'])->name('articles.updateStatus');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Admin Only - Manajemen Peta, User, Layer (CRUD)
+| Admin Only - Manajemen Galeri, Peta, User, Layer
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin'])->group(function () {
+    // Galeri Admin (CRUD)
+    Route::get('/galeri', [GalleryController::class, 'index'])->name('gallery.index');
+    Route::get('/galeri/create', [GalleryController::class, 'create'])->name('gallery.create');
+    Route::post('/galeri', [GalleryController::class, 'store'])->name('gallery.store');
+    Route::get('/galeri/{gallery}/edit', [GalleryController::class, 'edit'])->name('gallery.edit');
+    Route::put('/galeri/{gallery}', [GalleryController::class, 'update'])->name('gallery.update');
+    Route::delete('/galeri/{gallery}', [GalleryController::class, 'destroy'])->name('gallery.destroy');
+
+    // Admin lainnya
     Route::resource('maps', MapController::class);
     Route::resource('users', UserController::class);
     Route::resource('layers', LayerController::class);
@@ -110,13 +120,3 @@ Route::middleware(['auth'])->group(function () {
 |--------------------------------------------------------------------------
 */
 require __DIR__.'/auth.php';
-
-
-Route::get('/galeri', [GalleryController::class, 'index'])->name('gallery.index');
-
-// Rute untuk Manajemen Galeri (Khusus Admin)
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    // Rute untuk menampilkan form dan menyimpan gambar
-    Route::get('/gallery/create', [GalleryController::class, 'create'])->name('gallery.create');
-    Route::post('/gallery', [GalleryController::class, 'store'])->name('gallery.store');
-});

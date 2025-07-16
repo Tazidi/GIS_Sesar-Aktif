@@ -45,7 +45,16 @@
                         </div>
 
                         <div class="text-xs text-gray-500 mt-4 flex items-center justify-between">
-                            <span>Oleh {{ $article->author ?? 'N/A' }} • {{ $article->created_at->format('d M Y') }}</span>
+                            <div class="flex flex-col">
+                                <span>Oleh {{ $article->author ?? 'N/A' }} • {{ $article->created_at->format('d M Y') }}</span>
+                                <span class="mt-1">
+                                    👁️ {{ $article->visit_count ?? 0 }} views
+                                    @if ($article->visit_count >= 100) {{-- kamu bisa sesuaikan angka thresholdnya --}}
+                                        • <span class="text-red-600 font-semibold">Main Story</span>
+                                    @endif
+                                </span>
+                            </div>
+
                             <a href="{{ route('articles.show', $article) }}"
                             class="font-semibold text-indigo-600 hover:text-indigo-900 text-sm">
                                 Baca Selengkapnya →

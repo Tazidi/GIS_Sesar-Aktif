@@ -39,6 +39,15 @@ class ArticleController extends Controller
             abort(404);
         }
 
+        // Hitung visitor berdasarkan IP
+        $ip = request()->ip();
+        $key = 'article_viewed_' . $article->id . '_' . $ip;
+
+        if (!cache()->has($key)) {
+            $article->increment('visit_count');
+            cache()->put($key, true, now()->addHours(6));
+        }
+
         return view('articles.show', compact('article'));
     }
 

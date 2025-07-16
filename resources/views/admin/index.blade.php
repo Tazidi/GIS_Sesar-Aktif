@@ -8,7 +8,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
         {{-- Kartu Kelola Galeri --}}
-        <a href="{{ route('admin.gallery.create') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
+        <a href="{{ route('gallery.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
             <h2 class="text-lg font-semibold text-green-600 mb-1"><i class="fas fa-images mr-2"></i>Kelola Galeri</h2>
             <p class="text-gray-500 text-sm">Tambah atau hapus gambar dari galeri publik.</p>
         </a>
