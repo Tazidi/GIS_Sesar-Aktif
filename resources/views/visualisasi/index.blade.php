@@ -325,6 +325,8 @@
                 <div class="layer-item">
                     <label>
                         <input type="checkbox" class="layer-toggle" data-id="{{ $map->id }}"
+                            data-name="{{ $map->name }}" data-description="{{ $map->description }}"
+                            data-photo="{{ $map->image_path ? asset($map->image_path) : '' }}"
                             data-layer-type="{{ $map->layer_type ?? 'marker' }}"
                             data-stroke-color="{{ $map->stroke_color ?? '#000000' }}"
                             data-fill-color="{{ $map->fill_color ?? '#ff0000' }}" data-opacity="{{ $map->opacity ?? 0.8 }}"
@@ -483,42 +485,77 @@
 
         function displayDetailContent(featureData) {
             const detailContent = document.getElementById('detail-content');
-            const props = featureData.properties || {};
+            let props = featureData.properties || featureData;
 
             let content = '';
 
-            // Title
-            if (props.name || props.title || props.nama) {
-                content += `<div class="detail-item">
-                    <div class="detail-label">Nama/Judul:</div>
-                    <div class="detail-value">${props.name || props.title || props.nama}</div>
-                </div>`;
-            }
+            if (Object.keys(props).length === 0) {
+                // Input Manual → ambil dari data-* atribut
+                const nama = currentFeatureData.getAttribute('data-name') || 'Tidak ada nama';
+                const deskripsi = currentFeatureData.getAttribute('data-description') || 'Tidak ada deskripsi';
+                const foto = currentFeatureData.getAttribute('data-photo') || '';
 
-            // Display all properties
-            Object.entries(props).forEach(([key, value]) => {
-                if (key !== 'name' && key !== 'title' && key !== 'nama' && key !== 'photo' && key !== 'foto' &&
-                    key !== 'image' && key !== 'gambar') {
-                    content += `<div class="detail-item">
-                        <div class="detail-label">${formatLabel(key)}:</div>
-                        <div class="detail-value">${value || 'Tidak ada data'}</div>
+                // Tampilkan Nama
+                content += `<div class="detail-item">
+                    <div class="detail-label">Nama:</div>
+                    <div class="detail-value">${nama}</div>
+                </div>`;
+
+                // Tampilkan Deskripsi
+                content += `<div class="detail-item">
+                    <div class="detail-label">Deskripsi:</div>
+                    <div class="detail-value">${deskripsi}</div>
+                </div>`;
+
+                // Tampilkan Foto
+                if (foto) {
+                    content += `<div class="photo-container">
+                        <div class="detail-label">Foto:</div>
+                        <img src="${foto}" alt="Foto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="no-photo" style="display: none;">Foto tidak dapat dimuat</div>
+                    </div>`;
+                } else {
+                    content += `<div class="photo-container">
+                        <div class="detail-label">Foto:</div>
+                        <div class="no-photo">Tidak ada foto</div>
                     </div>`;
                 }
-            });
 
-            // Photo section
-            const photoUrl = props.photo || props.foto || props.image || props.gambar;
-            if (photoUrl) {
-                content += `<div class="photo-container">
-                    <div class="detail-label">Foto:</div>
-                    <img src="${photoUrl}" alt="Foto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                    <div class="no-photo" style="display: none;">Foto tidak dapat dimuat</div>
-                </div>`;
             } else {
-                content += `<div class="photo-container">
-                    <div class="detail-label">Foto:</div>
-                    <div class="no-photo">Tidak ada foto</div>
-                </div>`;
+                // GeoJSON → tampilkan semua key-value
+                // Nama
+                if (props.name || props.title || props.nama) {
+                    content += `<div class="detail-item">
+                        <div class="detail-label">Nama:</div>
+                        <div class="detail-value">${props.name || props.title || props.nama}</div>
+                    </div>`;
+                }
+
+                // Key-value lainnya
+                Object.entries(props).forEach(([key, value]) => {
+                    if (key !== 'name' && key !== 'title' && key !== 'nama' && key !== 'photo' && key !== 'foto' &&
+                        key !== 'image' && key !== 'gambar') {
+                        content += `<div class="detail-item">
+                            <div class="detail-label">${formatLabel(key)}:</div>
+                            <div class="detail-value">${value || 'Tidak ada data'}</div>
+                        </div>`;
+                    }
+                });
+
+                // Foto
+                const photoUrl = props.photo || props.foto || props.image || props.gambar;
+                if (photoUrl) {
+                    content += `<div class="photo-container">
+                        <div class="detail-label">Foto:</div>
+                        <img src="${photoUrl}" alt="Foto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div class="no-photo" style="display: none;">Foto tidak dapat dimuat</div>
+                    </div>`;
+                } else {
+                    content += `<div class="photo-container">
+                        <div class="detail-label">Foto:</div>
+                        <div class="no-photo">Tidak ada foto</div>
+                    </div>`;
+                }
             }
 
             detailContent.innerHTML = content;
@@ -529,29 +566,39 @@
             return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
 
-        function createPopupContent(feature) {
+        function createPopupContent(feature, fallbackData) {
             const props = feature.properties || {};
+            const name = props.name || fallbackData.dataset.name || 'Informasi';
+            const title = props.name || props.title || props.nama || fallbackData.dataset.name || 'Informasi';
 
-            // Get main title
-            const title = props.name || props.title || props.nama || 'Informasi';
-
-            // Get first 2-3 most important properties for quick preview
             const quickInfo = [];
-            Object.entries(props).slice(0, 3).forEach(([key, value]) => {
-                if (key !== 'name' && key !== 'title' && key !== 'nama' && value) {
-                    quickInfo.push(`<div class="popup-info-item">
-                        <span class="popup-info-label">${formatLabel(key)}:</span>
-                        <span class="popup-info-value">${value}</span>
-                    </div>`);
-                }
-            });
+
+            if (Object.keys(props).length > 0) {
+                // GeoJSON → Tampilkan max 3 properti
+                Object.entries(props).slice(0, 3).forEach(([key, value]) => {
+                    if (key !== 'name' && key !== 'title' && key !== 'nama' && value) {
+                        quickInfo.push(`<div class="popup-info-item">
+                            <span class="popup-info-label">${formatLabel(key)}:</span>
+                            <span class="popup-info-value">${value}</span>
+                        </div>`);
+                    }
+                });
+            }
+
+            const encodedData = Object.keys(props).length === 0 ?
+                encodeURIComponent(JSON.stringify({
+                    nama: fallbackData.dataset.name || 'Tidak ada nama',
+                    deskripsi: fallbackData.dataset.description || 'Tidak ada deskripsi',
+                    foto: fallbackData.dataset.photo || ''
+                })) :
+                encodeURIComponent(JSON.stringify(props));
 
             return `
                 <div class="popup-title">${title}</div>
                 <div class="popup-info">
                     ${quickInfo.join('')}
                 </div>
-                <button class="btn-detail" onclick="openModal(${JSON.stringify(feature).replace(/"/g, '&quot;')})">
+                <button class="btn-detail open-detail-btn" data-feature="${encodedData}">
                     Selengkapnya
                 </button>
             `;
@@ -565,11 +612,13 @@
         });
 
         // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && document.getElementById('detail-modal').style.display === 'block') {
-                closeModal();
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('open-detail-btn')) {
+                const featureData = JSON.parse(decodeURIComponent(e.target.getAttribute('data-feature')));
+                openModal(featureData);
             }
         });
+
 
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
@@ -691,7 +740,8 @@
                                     return style;
                                 },
                                 onEachFeature: function(feature, layer) {
-                                    const popupContent = createPopupContent(feature);
+                                    const popupContent = createPopupContent(feature,
+                                        layerData);
                                     layer.bindPopup(popupContent, {
                                         maxWidth: 300,
                                         className: 'custom-popup'
@@ -756,7 +806,14 @@
                                     });
                                 }
 
-                                layer.bindPopup(`<div class="popup-title">${title}</div>`);
+                                const popupContent = createPopupContent({
+                                    properties: {}
+                                }, layerData);
+                                layer.bindPopup(popupContent, {
+                                    maxWidth: 300,
+                                    className: 'custom-popup'
+                                });
+
                                 mapLayers[mapId] = L.layerGroup([layer]);
                                 mapLayers[mapId].addTo(map);
                                 allBounds.push(L.latLngBounds([latlng]));
