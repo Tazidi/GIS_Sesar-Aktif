@@ -653,7 +653,7 @@
                     }
                 }
 
-                // Fungsi untuk membuat style berdasarkan layer type
+                // Fungsi membuat style berdasarkan layer type
                 function createLayerStyle(layerData) {
                     const layerType = layerData.getAttribute('data-layer-type') || 'marker';
                     const strokeColor = layerData.getAttribute('data-stroke-color') || '#000000';
