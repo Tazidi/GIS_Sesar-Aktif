@@ -325,8 +325,6 @@
                 <div class="layer-item">
                     <label>
                         <input type="checkbox" class="layer-toggle" data-id="{{ $map->id }}"
-                            data-name="{{ $map->name }}" data-description="{{ $map->description }}"
-                            data-photo="{{ $map->image_path ? asset($map->image_path) : '' }}"
                             data-layer-type="{{ $map->layer_type ?? 'marker' }}"
                             data-stroke-color="{{ $map->stroke_color ?? '#000000' }}"
                             data-fill-color="{{ $map->fill_color ?? '#ff0000' }}" data-opacity="{{ $map->opacity ?? 0.8 }}"
@@ -341,54 +339,54 @@
         </div>
 
         <div class="map-container">
-            <div id="map"></div>
-
-            <!-- Legend Box -->
-            <div class="legend-box">
-                <div class="legend-title">Keterangan Peta</div>
-                <div id="legend-content">
-                    @foreach ($maps as $map)
-                        <div class="legend-item" data-legend-id="{{ $map->id }}">
-                            <div class="legend-symbol {{ $map->layer_type ?? 'marker' }}"
-                                style="
-                                    @if (($map->layer_type ?? 'marker') == 'marker') background-color: {{ $map->fill_color ?? '#ff0000' }};
-                                        border-color: {{ $map->stroke_color ?? '#000000' }};
-                                    @elseif(($map->layer_type ?? 'marker') == 'circle')
-                                        border-color: {{ $map->stroke_color ?? '#000000' }};
-                                        background-color: {{ $map->fill_color ?? '#ff0000' }};
-                                        opacity: {{ $map->opacity ?? 0.8 }};
-                                        border-width: {{ $map->weight ?? 2 }}px;
-                                    @elseif(($map->layer_type ?? 'marker') == 'polyline')
-                                        background-color: {{ $map->stroke_color ?? '#000000' }};
-                                        height: {{ $map->weight ?? 2 }}px;
-                                    @elseif(($map->layer_type ?? 'marker') == 'polygon')
-                                        background-color: {{ $map->fill_color ?? '#ff0000' }};
-                                        border-color: {{ $map->stroke_color ?? '#000000' }};
-                                        opacity: {{ $map->opacity ?? 0.8 }};
-                                        border-width: {{ $map->weight ?? 2 }}px; @endif
-                                ">
-                                @if (($map->layer_type ?? 'marker') == 'marker' && $map->icon_url)
-                                    <img src="{{ $map->icon_url }}" style="width: 16px; height: 16px; border-radius: 50%;"
-                                        alt="icon">
-                                @endif
-                            </div>
-                            <div class="legend-text">
-                                {{ $map->layer->nama_layer ?? 'Layer Tanpa Nama' }}
-                                <br>
-                                <small style="color: #777;">
-                                    @if (($map->layer_type ?? 'marker') == 'marker')
-                                        Penanda Lokasi
-                                    @elseif(($map->layer_type ?? 'marker') == 'circle')
-                                        Lingkaran ({{ $map->radius ?? 300 }}m)
-                                    @elseif(($map->layer_type ?? 'marker') == 'polyline')
-                                        Garis/Jalur
-                                    @elseif(($map->layer_type ?? 'marker') == 'polygon')
-                                        Area/Wilayah
+            <div id="map">
+                <!-- Legend Box -->
+                <div class="legend-box">
+                    <div class="legend-title">Keterangan Peta</div>
+                    <div id="legend-content">
+                        @foreach ($maps as $map)
+                            <div class="legend-item" data-legend-id="{{ $map->id }}">
+                                <div class="legend-symbol {{ $map->layer_type ?? 'marker' }}"
+                                    style="
+                                        @if (($map->layer_type ?? 'marker') == 'marker') background-color: {{ $map->fill_color ?? '#ff0000' }};
+                                            border-color: {{ $map->stroke_color ?? '#000000' }};
+                                        @elseif(($map->layer_type ?? 'marker') == 'circle')
+                                            border-color: {{ $map->stroke_color ?? '#000000' }};
+                                            background-color: {{ $map->fill_color ?? '#ff0000' }};
+                                            opacity: {{ $map->opacity ?? 0.8 }};
+                                            border-width: {{ $map->weight ?? 2 }}px;
+                                        @elseif(($map->layer_type ?? 'marker') == 'polyline')
+                                            background-color: {{ $map->stroke_color ?? '#000000' }};
+                                            height: {{ $map->weight ?? 2 }}px;
+                                        @elseif(($map->layer_type ?? 'marker') == 'polygon')
+                                            background-color: {{ $map->fill_color ?? '#ff0000' }};
+                                            border-color: {{ $map->stroke_color ?? '#000000' }};
+                                            opacity: {{ $map->opacity ?? 0.8 }};
+                                            border-width: {{ $map->weight ?? 2 }}px; @endif
+                                    ">
+                                    @if (($map->layer_type ?? 'marker') == 'marker' && $map->icon_url)
+                                        <img src="{{ $map->icon_url }}"
+                                            style="width: 16px; height: 16px; border-radius: 50%;" alt="icon">
                                     @endif
-                                </small>
+                                </div>
+                                <div class="legend-text">
+                                    {{ $map->layer->nama_layer ?? 'Layer Tanpa Nama' }}
+                                    <br>
+                                    <small style="color: #777;">
+                                        @if (($map->layer_type ?? 'marker') == 'marker')
+                                            Penanda Lokasi
+                                        @elseif(($map->layer_type ?? 'marker') == 'circle')
+                                            Lingkaran ({{ $map->radius ?? 300 }}m)
+                                        @elseif(($map->layer_type ?? 'marker') == 'polyline')
+                                            Garis/Jalur
+                                        @elseif(($map->layer_type ?? 'marker') == 'polygon')
+                                            Area/Wilayah
+                                        @endif
+                                    </small>
+                                </div>
                             </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    </div>
                 </div>
             </div>
         </div>
@@ -411,6 +409,7 @@
 @section('scripts')
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    z
     <script>
         function updateLegend() {
             const legendContent = document.getElementById('legend-content');
@@ -485,77 +484,42 @@
 
         function displayDetailContent(featureData) {
             const detailContent = document.getElementById('detail-content');
-            let props = featureData.properties || featureData;
+            const props = featureData.properties || {};
 
             let content = '';
 
-            if (Object.keys(props).length === 0) {
-                // Input Manual → ambil dari data-* atribut
-                const nama = currentFeatureData.getAttribute('data-name') || 'Tidak ada nama';
-                const deskripsi = currentFeatureData.getAttribute('data-description') || 'Tidak ada deskripsi';
-                const foto = currentFeatureData.getAttribute('data-photo') || '';
-
-                // Tampilkan Nama
+            // Title
+            if (props.name || props.title || props.nama) {
                 content += `<div class="detail-item">
-                    <div class="detail-label">Nama:</div>
-                    <div class="detail-value">${nama}</div>
+                    <div class="detail-label">Nama/Judul:</div>
+                    <div class="detail-value">${props.name || props.title || props.nama}</div>
                 </div>`;
+            }
 
-                // Tampilkan Deskripsi
-                content += `<div class="detail-item">
-                    <div class="detail-label">Deskripsi:</div>
-                    <div class="detail-value">${deskripsi}</div>
-                </div>`;
-
-                // Tampilkan Foto
-                if (foto) {
-                    content += `<div class="photo-container">
-                        <div class="detail-label">Foto:</div>
-                        <img src="${foto}" alt="Foto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="no-photo" style="display: none;">Foto tidak dapat dimuat</div>
-                    </div>`;
-                } else {
-                    content += `<div class="photo-container">
-                        <div class="detail-label">Foto:</div>
-                        <div class="no-photo">Tidak ada foto</div>
-                    </div>`;
-                }
-
-            } else {
-                // GeoJSON → tampilkan semua key-value
-                // Nama
-                if (props.name || props.title || props.nama) {
+            // Display all properties
+            Object.entries(props).forEach(([key, value]) => {
+                if (key !== 'name' && key !== 'title' && key !== 'nama' && key !== 'photo' && key !== 'foto' &&
+                    key !== 'image' && key !== 'gambar') {
                     content += `<div class="detail-item">
-                        <div class="detail-label">Nama:</div>
-                        <div class="detail-value">${props.name || props.title || props.nama}</div>
+                        <div class="detail-label">${formatLabel(key)}:</div>
+                        <div class="detail-value">${value || 'Tidak ada data'}</div>
                     </div>`;
                 }
+            });
 
-                // Key-value lainnya
-                Object.entries(props).forEach(([key, value]) => {
-                    if (key !== 'name' && key !== 'title' && key !== 'nama' && key !== 'photo' && key !== 'foto' &&
-                        key !== 'image' && key !== 'gambar') {
-                        content += `<div class="detail-item">
-                            <div class="detail-label">${formatLabel(key)}:</div>
-                            <div class="detail-value">${value || 'Tidak ada data'}</div>
-                        </div>`;
-                    }
-                });
-
-                // Foto
-                const photoUrl = props.photo || props.foto || props.image || props.gambar;
-                if (photoUrl) {
-                    content += `<div class="photo-container">
-                        <div class="detail-label">Foto:</div>
-                        <img src="${photoUrl}" alt="Foto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                        <div class="no-photo" style="display: none;">Foto tidak dapat dimuat</div>
-                    </div>`;
-                } else {
-                    content += `<div class="photo-container">
-                        <div class="detail-label">Foto:</div>
-                        <div class="no-photo">Tidak ada foto</div>
-                    </div>`;
-                }
+            // Photo section
+            const photoUrl = props.photo || props.foto || props.image || props.gambar;
+            if (photoUrl) {
+                content += `<div class="photo-container">
+                    <div class="detail-label">Foto:</div>
+                    <img src="${photoUrl}" alt="Foto" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="no-photo" style="display: none;">Foto tidak dapat dimuat</div>
+                </div>`;
+            } else {
+                content += `<div class="photo-container">
+                    <div class="detail-label">Foto:</div>
+                    <div class="no-photo">Tidak ada foto</div>
+                </div>`;
             }
 
             detailContent.innerHTML = content;
@@ -566,39 +530,29 @@
             return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
 
-        function createPopupContent(feature, fallbackData) {
+        function createPopupContent(feature) {
             const props = feature.properties || {};
-            const name = props.name || fallbackData.dataset.name || 'Informasi';
-            const title = props.name || props.title || props.nama || fallbackData.dataset.name || 'Informasi';
 
+            // Get main title
+            const title = props.name || props.title || props.nama || 'Informasi';
+
+            // Get first 2-3 most important properties for quick preview
             const quickInfo = [];
-
-            if (Object.keys(props).length > 0) {
-                // GeoJSON → Tampilkan max 3 properti
-                Object.entries(props).slice(0, 3).forEach(([key, value]) => {
-                    if (key !== 'name' && key !== 'title' && key !== 'nama' && value) {
-                        quickInfo.push(`<div class="popup-info-item">
-                            <span class="popup-info-label">${formatLabel(key)}:</span>
-                            <span class="popup-info-value">${value}</span>
-                        </div>`);
-                    }
-                });
-            }
-
-            const encodedData = Object.keys(props).length === 0 ?
-                encodeURIComponent(JSON.stringify({
-                    nama: fallbackData.dataset.name || 'Tidak ada nama',
-                    deskripsi: fallbackData.dataset.description || 'Tidak ada deskripsi',
-                    foto: fallbackData.dataset.photo || ''
-                })) :
-                encodeURIComponent(JSON.stringify(props));
+            Object.entries(props).slice(0, 3).forEach(([key, value]) => {
+                if (key !== 'name' && key !== 'title' && key !== 'nama' && value) {
+                    quickInfo.push(`<div class="popup-info-item">
+                        <span class="popup-info-label">${formatLabel(key)}:</span>
+                        <span class="popup-info-value">${value}</span>
+                    </div>`);
+                }
+            });
 
             return `
                 <div class="popup-title">${title}</div>
                 <div class="popup-info">
                     ${quickInfo.join('')}
                 </div>
-                <button class="btn-detail open-detail-btn" data-feature="${encodedData}">
+                <button class="btn-detail" onclick="openModal(${JSON.stringify(feature).replace(/"/g, '&quot;')})">
                     Selengkapnya
                 </button>
             `;
@@ -612,13 +566,11 @@
         });
 
         // Close modal with Escape key
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('open-detail-btn')) {
-                const featureData = JSON.parse(decodeURIComponent(e.target.getAttribute('data-feature')));
-                openModal(featureData);
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('detail-modal').style.display === 'block') {
+                closeModal();
             }
         });
-
 
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
@@ -740,8 +692,7 @@
                                     return style;
                                 },
                                 onEachFeature: function(feature, layer) {
-                                    const popupContent = createPopupContent(feature,
-                                        layerData);
+                                    const popupContent = createPopupContent(feature);
                                     layer.bindPopup(popupContent, {
                                         maxWidth: 300,
                                         className: 'custom-popup'
@@ -806,14 +757,7 @@
                                     });
                                 }
 
-                                const popupContent = createPopupContent({
-                                    properties: {}
-                                }, layerData);
-                                layer.bindPopup(popupContent, {
-                                    maxWidth: 300,
-                                    className: 'custom-popup'
-                                });
-
+                                layer.bindPopup(`<div class="popup-title">${title}</div>`);
                                 mapLayers[mapId] = L.layerGroup([layer]);
                                 mapLayers[mapId].addTo(map);
                                 allBounds.push(L.latLngBounds([latlng]));
@@ -823,27 +767,23 @@
                             loadedCount++;
                             if (loadedCount === totalMaps) {
                                 setTimeout(() => fitAllBounds(), 500);
+
+                                // Tambahkan control box di sini agar muncul pasti
+                                const overlayLayers = {};
+                                Object.keys(mapLayers).forEach(id => {
+                                    const checkbox = document.querySelector(
+                                        `.layer-toggle[data-id="${id}"]`);
+                                    const label = checkbox?.dataset.layer || checkbox
+                                        ?.parentElement?.textContent.trim() || `Layer ${id}`;
+                                    overlayLayers[label] = mapLayers[id];
+                                });
+
+                                L.control.layers(baseLayers, overlayLayers, {
+                                    collapsed: false
+                                }).addTo(map);
                             }
                         });
                 }
-
-                setTimeout(() => {
-                    const overlayLayers = {};
-
-                    // Ambil semua layer yang dimuat
-                    Object.keys(mapLayers).forEach(id => {
-                        const checkbox = document.querySelector(
-                            `.layer-toggle[data-id="${id}"]`);
-                        const label = checkbox?.dataset.layer || checkbox?.parentElement
-                            ?.textContent.trim() || `Layer ${id}`;
-                        overlayLayers[label] = mapLayers[id];
-                    });
-
-                    // Tambahkan ke control box Leaflet
-                    L.control.layers(baseLayers, overlayLayers, {
-                        collapsed: false
-                    }).addTo(map);
-                }, 1000);
 
                 // Load semua peta
                 @foreach ($maps as $map)
