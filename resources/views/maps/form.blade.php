@@ -46,7 +46,7 @@
 
                 <div>
                     <label for="layer-select" class="block text-sm font-medium text-gray-700">Layer</label>
-                    <select name="layer_id" id="layer-select" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
+                    <select name="layer_id" id="layer-select" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" >
                         <option value="">-- Pilih Layer --</option>
                         @foreach ($layers as $layer)
                             <option value="{{ $layer->id }}" {{ old('layer_id', $map->layer_id) == $layer->id ? 'selected' : '' }}>
@@ -70,7 +70,7 @@
                     </div>
                     <div>
                         <label for="map_file" class="block text-sm font-medium text-gray-700">File Peta (GeoJSON/CSV)</label>
-                        <input type="file" name="file" id="map_file" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
+                        <input type="file" name="file" id="file" accept=".geojson,.json,.csv" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
                     </div>
                 </div>
             </div>
@@ -82,7 +82,7 @@
                     <div id="drawing-toolbar" class="mt-1 mb-2 p-1 bg-gray-100 border border-gray-200 rounded-md inline-flex items-center space-x-1">
                         <button type="button" class="draw-tool-btn p-2 rounded hover:bg-gray-200" data-type="marker" title="Marker">📍</button>
                         <button type="button" class="draw-tool-btn p-2 rounded hover:bg-gray-200" data-type="polyline" title="Polyline">〰️</button>
-                        <button type="button" class="draw-tool-btn px-3 py-2 rounded hover:bg-gray-200 text-sm" data-type="polygon" title="Polygon">polygons</button>
+                        <button type="button" class="draw-tool-btn px-3 py-2 rounded hover:bg-gray-200 text-sm" data-type="polygon" title="Polygon">⬠</button>
                         <button type="button" class="draw-tool-btn p-2 rounded hover:bg-gray-200" data-type="circle" title="Circle">⭕</button>
                     </div>
 
@@ -95,14 +95,79 @@
         <div id="dynamic-options-container" class="mt-6 border border-gray-300 rounded-md p-4 space-y-4" style="display: none;">
             <h3 class="text-sm font-medium text-gray-900">Opsi Fitur Terpilih</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="layer-dependent" id="lat-field"><label class="block text-sm font-medium text-gray-700">Latitude</label><input type="number" step="any" name="lat" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                <div class="layer-dependent" id="lng-field"><label class="block text-sm font-medium text-gray-700">Longitude</label><input type="number" step="any" name="lng" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                <div class="layer-dependent" id="radius-field"><label class="block text-sm font-medium text-gray-700">Radius (m)</label><input type="number" step="1" name="radius" class="mt-1 w-full border-gray-300 rounded-md shadow-sm" value="300"></div>
-                <div class="layer-dependent" id="weight-field"><label class="block text-sm font-medium text-gray-700">Tebal Garis</label><input type="number" step="1" min="0" name="weight" class="mt-1 w-full border-gray-300 rounded-md shadow-sm" value="3"></div>
-                <div class="layer-dependent" id="opacity-field"><label class="block text-sm font-medium text-gray-700">Opacity (0-1)</label><input type="number" step="0.1" max="1" min="0" name="opacity" class="mt-1 w-full border-gray-300 rounded-md shadow-sm" value="0.5"></div>
-                <div class="layer-dependent" id="stroke-field"><label class="block text-sm font-medium text-gray-700">Warna Garis</label><input type="color" name="stroke_color" value="#3388ff" class="mt-1 h-8 w-full border-gray-300 rounded-md"></div>
-                <div class="layer-dependent" id="fill-field"><label class="block text-sm font-medium text-gray-700">Warna Isi</label><input type="color" name="fill_color" value="#3388ff" class="mt-1 h-8 w-full border-gray-300 rounded-md"></div>
-                <div class="layer-dependent" id="icon-field"><label class="block text-sm font-medium text-gray-700">Ikon Marker</label><select name="icon_url" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="">-- Default --</option><option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png">Hijau</option><option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png">Kuning</option><option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png">Merah</option><option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png">Abu-abu</option></select></div>
+                <div class="layer-dependent" id="lat-field">
+                    <label class="block text-sm font-medium text-gray-700">Latitude</label>
+                    <input type="number" step="any" name="lat"
+                        value="{{ old('lat', $map->lat) }}"
+                        class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="layer-dependent" id="lng-field">
+                    <label class="block text-sm font-medium text-gray-700">Longitude</label>
+                    <input type="number" step="any" name="lng"
+                        value="{{ old('lng', $map->lng) }}"
+                        class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="layer-dependent" id="radius-field">
+                    <label class="block text-sm font-medium text-gray-700">Radius (m)</label>
+                    <input type="number" step="1" name="radius"
+                        value="{{ old('radius', $map->radius) }}"
+                        class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="layer-dependent" id="weight-field">
+                    <label class="block text-sm font-medium text-gray-700">Tebal Garis</label>
+                    <input type="number" step="1" min="0" name="weight"
+                        value="{{ old('weight', $map->weight) }}"
+                        class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="layer-dependent" id="opacity-field">
+                    <label class="block text-sm font-medium text-gray-700">Opacity (0-1)</label>
+                    <input type="number" step="0.1" max="1" min="0" name="opacity"
+                        value="{{ old('opacity', $map->opacity) }}"
+                        class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                </div>
+                <div class="layer-dependent" id="stroke-field">
+                    <label class="block text-sm font-medium text-gray-700">Warna Garis</label>
+                    <input type="color" name="stroke_color"
+                        value="{{ old('stroke_color', $map->stroke_color ?? '#3388ff') }}"
+                        class="mt-1 h-8 w-full border-gray-300 rounded-md">
+                </div>
+                <div class="layer-dependent" id="fill-field">
+                    <label class="block text-sm font-medium text-gray-700">Warna Isi</label>
+                    <input type="color" name="fill_color"
+                        value="{{ old('fill_color', $map->fill_color ?? '#3388ff') }}"
+                        class="mt-1 h-8 w-full border-gray-300 rounded-md">
+                </div>
+                <div class="layer-dependent" id="icon-field">
+                    <label class="block text-sm font-medium text-gray-700">Ikon Marker</label>
+                    @php
+                        $selectedIcon = old('icon_url', $map->icon_url);
+                        $layerType = old('layer_type', $map->layer_type);
+                    @endphp
+
+                    @if ($layerType === 'marker')
+                        <select name="icon_url" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                            <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png"
+                                {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png' ? 'selected' : '' }}>
+                                Hijau (Default)
+                            </option>
+                            <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png"
+                                {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png' ? 'selected' : '' }}>
+                                Kuning
+                            </option>
+                            <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png"
+                                {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png' ? 'selected' : '' }}>
+                                Merah
+                            </option>
+                            <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png"
+                                {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png' ? 'selected' : '' }}>
+                                Abu-abu
+                            </option>
+                        </select>
+                    @else
+                        <input type="hidden" name="icon_url" value="">
+                        <p class="text-sm text-gray-500 italic">Ikon hanya berlaku untuk marker</p>
+                    @endif
+                </div>
             </div>
         </div>
 
@@ -146,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const toolbarButtons = document.querySelectorAll('.draw-tool-btn');
     const optionsContainer = document.getElementById('dynamic-options-container');
     const dynamicFields = { lat: document.getElementById('lat-field'), lng: document.getElementById('lng-field'), radius: document.getElementById('radius-field'), icon: document.getElementById('icon-field'), stroke: document.getElementById('stroke-field'), fill: document.getElementById('fill-field'), opacity: document.getElementById('opacity-field'), weight: document.getElementById('weight-field') };
-    
+
     const imageInput = document.getElementById('image_path');
     const imagePreview = document.getElementById('image-preview');
     const existingImage = document.getElementById('existing-image');
@@ -204,9 +269,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     map.on('click', function (e) {
+        if (latInput && lngInput) {
+            latInput.value = e.latlng.lat.toFixed(6);
+            lngInput.value = e.latlng.lng.toFixed(6);
+        }
+
         if (!currentLayerType) return;
-        latInput.value = e.latlng.lat.toFixed(6);
-        lngInput.value = e.latlng.lng.toFixed(6);
 
         const style = {
             color: document.querySelector('input[name="stroke_color"]').value,
@@ -218,13 +286,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (currentLayerType === 'marker' || currentLayerType === 'circle') {
             clearDrawing();
-            drawnLayer = currentLayerType === 'marker' ? L.marker(e.latlng).addTo(map) : L.circle(e.latlng, { ...style, weight: 1 }).addTo(map);
+            if (currentLayerType === 'marker') {
+                drawnLayer = L.marker(e.latlng).addTo(map);
+            } else {
+                drawnLayer = L.circle(e.latlng, { ...style, weight: 1 }).addTo(map);
+            }
+
+            // Update lat/lng for marker or circle
+            if (latInput && lngInput) {
+                latInput.value = e.latlng.lat.toFixed(6);
+                lngInput.value = e.latlng.lng.toFixed(6);
+            }
+
         } else if (['polygon', 'polyline'].includes(currentLayerType)) {
             polygonPoints.push(e.latlng);
             if (drawnLayer) map.removeLayer(drawnLayer);
-            drawnLayer = (currentLayerType === 'polygon') ? L.polygon(polygonPoints, style).addTo(map) : L.polyline(polygonPoints, style).addTo(map);
+            if (currentLayerType === 'polygon') {
+                drawnLayer = L.polygon(polygonPoints, style).addTo(map);
+            } else {
+                drawnLayer = L.polyline(polygonPoints, style).addTo(map);
+            }
         }
-        if (drawnLayer) geometryInput.value = JSON.stringify(drawnLayer.toGeoJSON().geometry);
+
+        if (drawnLayer) {
+            const geojson = drawnLayer.toGeoJSON().geometry;
+            geometryInput.value = JSON.stringify(geojson);
+        }
     });
 
     @if ($map->geometry)
