@@ -1,5 +1,7 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+{{-- 1. State 'searchOpen' ditambahkan untuk mengontrol form pencarian mobile --}}
+<nav x-data="{ open: false, searchOpen: false }" class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
+    {{-- 2. Kelas 'max-w-7xl mx-auto' dihapus agar navigasi memenuhi lebar layar --}}
+    <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
 
             {{-- GRUP KIRI: Tampil di Desktop --}}
@@ -12,7 +14,6 @@
 
             {{-- GRUP KANAN: Tampil di Desktop --}}
             <div class="hidden lg:flex items-center space-x-4">
-                {{-- Search Bar --}}
                 <form action="#" method="GET" class="relative">
                     <input type="search" name="keyword" placeholder="Cari..." class="w-48 pl-4 pr-10 py-2 border border-gray-300 rounded-full focus:ring-red-500 focus:border-red-500 text-sm">
                     <button type="submit" class="absolute right-0 top-0 mt-2 mr-3 text-gray-400 hover:text-gray-900"><i class="fas fa-search"></i></button>
@@ -35,7 +36,7 @@
                     </div>
                 @else
                     <a href="{{ route('login') }}" class="font-semibold text-gray-600 hover:text-gray-900 text-sm">Log in</a>
-                    <a href="{{ route('register') }}" class="bg-red-600 text-white text-sm font-bold py-2 px-4 rounded-md hover:bg-red-700 transition duration-300">Register</a>
+                    <a href="{{ route('register') }}" class="bg-red-600 text-white text-sm font-bold py-2 px-4 rounded-md hover:bg-red-700">Register</a>
                 @endguest
             </div>
 
@@ -43,16 +44,34 @@
             {{-- TAMPILAN MOBILE --}}
             {{-- =============================================== --}}
             <div class="flex lg:hidden flex-1 justify-between items-center">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path :class="{'hidden': open, 'inline-flex': ! open }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /><path :class="{'hidden': ! open, 'inline-flex': open }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-                
-                <a href="{{ route('home') }}" class="text-xl font-bold text-gray-800"><span class="text-red-600">S</span>ISIRAJA</a>
+                {{-- Tampilan header mobile standar (burger, logo, ikon search) --}}
+                {{-- Akan disembunyikan saat search aktif --}}
+                <div x-show="!searchOpen" class="flex flex-1 justify-between items-center">
+                    <button @click="open = !open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400">
+                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path :class="{'hidden': open, 'inline-flex': ! open }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /><path :class="{'hidden': ! open, 'inline-flex': open }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    
+                    <a href="{{ route('home') }}" class="text-xl font-bold text-gray-800"><span class="text-red-600">S</span>ISIRAJA</a>
 
-                <button class="text-gray-500 hover:text-gray-800"><i class="fas fa-search"></i></button>
+                    {{-- Tombol search ini sekarang membuka form pencarian --}}
+                    <button @click="searchOpen = true" class="text-gray-500 hover:text-gray-800 p-2">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+
+                {{-- Form pencarian mobile yang akan muncul --}}
+                <div x-show="searchOpen" x-transition class="w-full">
+                    <form action="#" method="GET" class="relative w-full">
+                        <input type="search" name="keyword" placeholder="Ketik untuk mencari..." class="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-full focus:ring-red-500 focus:border-red-500 text-sm">
+                        <button @click="searchOpen = false" type="button" class="absolute right-0 top-0 mt-2 mr-3 text-gray-400 hover:text-gray-900">
+                            <i class="fas fa-times"></i> {{-- Tombol close --}}
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
+
 
     <div :class="{'block': open, 'hidden': ! open}" class="hidden lg:hidden">
         <div class="pt-2 pb-3 space-y-1">

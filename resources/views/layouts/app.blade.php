@@ -18,14 +18,20 @@
     @yield('styles')
 </head>
 <body class="font-sans antialiased">
-    <div class="min-h-screen bg-gray-100">
+    <div class="min-h-screen bg-gray-100 flex flex-col">
         @include('layouts.header')
         @include('layouts.navigation')
 
-        <main>
+        {{-- Konten utama dibuat agar bisa tumbuh mengisi ruang --}}
+        <main class="flex-grow">
             @yield('content')
         </main>
+
+        {{-- TAMBAHKAN BARIS INI UNTUK MEMANGGIL FOOTER --}}
+        @include('layouts.footer')
+        
     </div>
+
 
     {{-- Memuat Library JavaScript --}}
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -33,10 +39,31 @@
     <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
 
     @yield('scripts')
+    @stack('scripts')
 
-    {{-- Script Jam --}}
+    {{-- SCRIPT UNTUK JAM DAN TANGGAL WIDGET --}}
     <script>
-        //... script jam ...
+        function updateTime() {
+
+            const timeElement = document.getElementById('datetime-widget');
+            if (!timeElement) return;
+            const now = new Date();
+            const options = {
+                weekday: 'long', 
+                day: 'numeric',  
+                month: 'long',   
+                year: 'numeric'  
+            };
+
+            const dateString = now.toLocaleDateString('id-ID', options);
+            const timeString = now.toLocaleTimeString('id-ID');
+
+            timeElement.textContent = `${dateString} | ${timeString}`;
+        }
+
+        updateTime();
+
+        setInterval(updateTime, 1000);
     </script>
 </body>
 </html>
