@@ -44,4 +44,9 @@ class Map extends Model
         return $this->belongsTo(\App\Models\Layer::class);
     }
 
+    public function features()
+    {
+        return $this->hasMany(MapFeature::class);
+    }
+
 }

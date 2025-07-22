@@ -88,6 +88,7 @@
                                 <div id="map-{{ $map->id }}" class="leaflet-map"></div>
                             </td>
                             <td class="border px-2 py-1 text-center">
+                                <a href="{{ route('map-features.index', ['map' => $map->id]) }}" class="text-green-600 hover:underline">Lihat Fitur</a> |
                                 <a href="{{ route('maps.edit', $map) }}" class="text-yellow-600 hover:underline">Edit</a> |
                                 <form action="{{ route('maps.destroy', $map) }}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus peta ini?');">
                                     @csrf

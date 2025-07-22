@@ -11,6 +11,7 @@ use App\Http\Controllers\LayerController;
 use App\Http\Controllers\PublicArticleController;
 use App\Http\Controllers\GalleryController;
 use App\Models\Map;
+use App\Http\Controllers\MapFeatureController;
 
 /*
 |--------------------------------------------------------------------------
@@ -85,7 +86,7 @@ Route::middleware(['auth', 'role:admin,editor'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Admin Only - Manajemen Galeri, Peta, User, Layer
+| Admin Only - Manajemen Galeri, Peta, User, Layer, dan Fitur Peta
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin'])->group(function () {
@@ -101,6 +102,13 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('maps', MapController::class);
     Route::resource('users', UserController::class);
     Route::resource('layers', LayerController::class);
+
+    // Menampilkan daftar fitur untuk sebuah peta
+    Route::get('/maps/{map}/features', [MapFeatureController::class, 'index'])->name('map-features.index');
+    // Menampilkan form edit untuk sebuah fitur
+    Route::get('/map-features/{mapFeature}/edit', [MapFeatureController::class, 'edit'])->name('map-features.edit');
+    // Mengirim data pembaruan untuk sebuah fitur
+    Route::put('/map-features/{mapFeature}', [MapFeatureController::class, 'update'])->name('map-features.update');
 });
 
 /*

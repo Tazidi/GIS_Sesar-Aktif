@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Map;
 use App\Models\Layer;
+use App\Models\MapFeature;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class MapController extends Controller
 {
@@ -56,7 +59,35 @@ class MapController extends Controller
             $data['file_path'] = 'map_files/' . $fileName;
         }
 
-        Map::create($data);
+        $map = Map::create($data);
+
+        // Ambil fitur dari geometry kolom (bukan file)
+        if ($request->filled('geometry')) {
+            $geojson = json_decode($request->geometry, true);
+
+            if (isset($geojson['type']) && $geojson['type'] === 'FeatureCollection') {
+                $featureImages = $request->file('feature_images', []);
+
+                foreach ($geojson['features'] as $index => $feature) {
+                    if (!isset($feature['geometry'])) continue;
+
+                    $imagePath = null;
+                    if (isset($featureImages[$index]) && $featureImages[$index]->isValid()) {
+                        $image = $featureImages[$index];
+                        $imageName = time() . '_' . $image->getClientOriginalName();
+                        $image->move(public_path('map_feature_images'), $imageName);
+                        $imagePath = 'map_feature_images/' . $imageName;
+                    }
+
+                    MapFeature::create([
+                        'map_id' => $map->id,
+                        'geometry' => $feature['geometry'],
+                        'properties' => $feature['properties'] ?? [],
+                        'image_path' => $imagePath,
+                    ]);
+                }
+            }
+        }
 
         return redirect()->route('maps.index')->with('success', 'Peta berhasil ditambahkan!');
     }
@@ -142,6 +173,7 @@ class MapController extends Controller
                     'name' => $map->name,
                     'description' => $map->description,
                     'layer_type' => $map->layer_type,
+                    'photo' => $map->image_path ? asset($map->image_path) : null,
                 ]
             ]);
         }
