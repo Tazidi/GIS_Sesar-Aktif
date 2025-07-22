@@ -30,7 +30,16 @@
                     "lat": {{ $map->lat ?? 0 }},
                     "lng": {{ $map->lng ?? 0 }},
                     "layer_name": "{{ addslashes($map->layer->nama_layer ?? 'Layer Tanpa Nama') }}",
-                    "geometry": {!! $map->geometry ? json_encode(json_decode($map->geometry)) : 'null' !!}
+                    "geometry": {!! $map->geometry ? json_encode(json_decode($map->geometry)) : 'null' !!},
+                    "features": [
+                        @foreach ($map->features as $feature)
+                        {
+                            "geometry": {!! $feature->geometry ? json_encode($feature->geometry) : 'null' !!},
+                            "properties": {!! $feature->properties ? json_encode($feature->properties) : 'null' !!},
+                            "image_path": "{{ $feature->image_path ? asset($feature->image_path) : '' }}"
+                        }@if(!$loop->last),@endif
+                        @endforeach
+                    ]
                 }@if(!$loop->last),@endif
                 @endforeach
             ]
@@ -211,7 +220,7 @@
             const detailContent = document.getElementById('detail-content');
             let content = '';
 
-            // KONDISI #1: Untuk data manual
+            // KONDISI #1: Untuk data manual (dari maps table)
             if (featureData.dataSource === 'manual') {
                 const name = featureData.name || 'Tidak ada nama';
                 const description = featureData.description || 'Tidak ada deskripsi';
@@ -224,10 +233,7 @@
 
                 // Tampilkan foto dari public/map_images
                 if (photo) {
-                    // Jika photo sudah berupa URL lengkap, gunakan langsung
-                    // Jika tidak, gabungkan dengan path map_images
                     const photoUrl = photo.includes('http') ? photo : `/map_images/${photo.replace(/^.*[\\\/]/, '')}`;
-
                     content += `<div style="margin-top: 15px;">
                         <div style="font-weight: bold; margin-bottom: 8px; color: #333;">Foto:</div>
                         <div style="text-align: center;">
@@ -241,57 +247,56 @@
                             </div>
                         </div>
                     </div>`;
-                } else {
-                    content += `<div style="margin-top: 15px;">
-                        <div style="font-weight: bold; margin-bottom: 8px; color: #333;">Foto:</div>
-                        <div style="padding: 20px; background: #f5f5f5; border-radius: 8px; color: #666; text-align: center;">
-                            Tidak ada foto
-                        </div>
-                    </div>`;
                 }
-
-                // KONDISI #2: Untuk data GeoJSON
-            } else if (featureData.dataSource === 'geojson') {
-                const title = featureData.name || featureData.title || featureData.nama || 'Detail Fitur';
+            }
+            // KONDISI #2: Untuk data GeoJSON (dari map_features table)
+            else if (featureData.dataSource === 'geojson') {
+                const title = featureData.name || featureData.title || featureData.nama || featureData.Name ||
+                    'Detail Fitur';
                 content +=
                     `<div class="detail-item"><div class="detail-label">Nama:</div><div class="detail-value">${title}</div></div>`;
 
-                if (featureData.description) {
+                if (featureData.description || featureData.descriptio) {
+                    const desc = featureData.description || featureData.descriptio;
                     content +=
-                        `<div class="detail-item"><div class="detail-label">Deskripsi:</div><div class="detail-value">${featureData.description}</div></div>`;
+                        `<div class="detail-item"><div class="detail-label">Deskripsi:</div><div class="detail-value">${desc}</div></div>`;
                 }
 
-                // Loop melalui properti lain
+                // Loop melalui properti lain dari map_features.properties
                 Object.entries(featureData).forEach(([key, value]) => {
                     const label = formatLabel(key);
-                    if (label && key !== 'name' && key !== 'title' && key !== 'nama' && key !== 'description' &&
+                    if (label && key !== 'name' && key !== 'title' && key !== 'nama' && key !== 'Name' &&
+                        key !== 'description' && key !== 'descriptio' &&
                         !key.toLowerCase().includes('photo') && !key.toLowerCase().includes('foto') &&
                         !key.toLowerCase().includes('image') && !key.toLowerCase().includes('gambar') &&
-                        key !== 'layer_type' && key !== 'dataSource' && value) {
+                        key !== 'layer_type' && key !== 'dataSource' && key !== 'feature_image_path' &&
+                        key !== 'timestamp' && value) {
                         content +=
                             `<div class="detail-item"><div class="detail-label">${label}:</div><div class="detail-value">${value}</div></div>`;
                     }
                 });
 
-                // Cari field foto dengan berbagai kemungkinan nama
-                const photoUrl = featureData.photo || featureData.foto || featureData.image || featureData.gambar;
-                if (photoUrl) {
-                    // Jika photoUrl sudah berupa URL lengkap, gunakan langsung
-                    // Jika tidak, gabungkan dengan path map_images
-                    const fullPhotoUrl = photoUrl.includes('http') ? photoUrl :
-                        `/map_images/${photoUrl.replace(/^.*[\\\/]/, '')}`;
-
+                // Tampilkan foto dari public/map_feature_images
+                if (featureData.feature_image_path) {
+                    const photoUrl = featureData.feature_image_path;
                     content += `<div style="margin-top: 15px;">
                         <div style="font-weight: bold; margin-bottom: 8px; color: #333;">Foto:</div>
                         <div style="text-align: center;">
-                            <img src="${fullPhotoUrl}" 
+                            <img src="${photoUrl}" 
                                 alt="Foto ${title}" 
                                 style="max-width: 100%; max-height: 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;"
-                                onclick="window.open('${fullPhotoUrl}', '_blank')"
+                                onclick="window.open('${photoUrl}', '_blank')"
                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                             <div style="display: none; padding: 20px; background: #f5f5f5; border-radius: 8px; color: #666; text-align: center;">
                                 Foto tidak dapat dimuat
                             </div>
+                        </div>
+                    </div>`;
+                } else {
+                    content += `<div style="margin-top: 15px;">
+                        <div style="font-weight: bold; margin-bottom: 8px; color: #333;">Foto:</div>
+                        <div style="padding: 20px; background: #f5f5f5; border-radius: 8px; color: #666; text-align: center;">
+                            Tidak ada foto
                         </div>
                     </div>`;
                 }
@@ -312,12 +317,15 @@
             let title;
 
             if (isGeoJSON) {
+                // Data dari map_features table
                 title = props.Name || props.name || props.title || props.nama || 'Informasi';
                 dataForModal = {
                     ...props,
-                    dataSource: 'geojson'
+                    dataSource: 'geojson',
+                    feature_image_path: feature.feature_image_path || ''
                 };
             } else {
+                // Data manual dari maps table
                 title = mapData.name || 'Informasi';
                 dataForModal = {
                     dataSource: 'manual',
@@ -330,7 +338,13 @@
             let quickInfoHTML = '';
 
             if (isGeoJSON) {
-                const keys = Object.keys(props).filter(key => key !== 'geometry' && props[key]);
+                // Tampilkan 3 properti teratas dari map_features.properties
+                const keys = Object.keys(props).filter(key =>
+                    key !== 'geometry' &&
+                    key !== 'timestamp' &&
+                    props[key] &&
+                    props[key].toString().trim() !== ''
+                );
                 const topThree = keys.slice(0, 3);
 
                 topThree.forEach(key => {
@@ -480,13 +494,91 @@
                         layerGroups[layerName] = L.layerGroup();
                     }
 
-                    // Cek apakah ada data geometry (GeoJSON) dari database
-                    if (mapData.geometry && typeof mapData.geometry === 'object') {
+                    // Proses features dari map_features table
+                    if (mapData.features && mapData.features.length > 0) {
+                        mapData.features.forEach(featureData => {
+                            try {
+                                let geoData = featureData.geometry;
+
+                                // Jika bukan FeatureCollection, buat sebagai Feature tunggal
+                                if (geoData.type !== 'FeatureCollection') {
+                                    if (geoData.type === 'Feature') {
+                                        geoData = {
+                                            type: 'FeatureCollection',
+                                            features: [geoData]
+                                        };
+                                    } else {
+                                        // Jika hanya geometry saja
+                                        geoData = {
+                                            type: 'FeatureCollection',
+                                            features: [{
+                                                type: 'Feature',
+                                                geometry: geoData,
+                                                properties: featureData.properties || {}
+                                            }]
+                                        };
+                                    }
+                                }
+
+                                const layer = L.geoJSON(geoData, {
+                                    style: function(feature) {
+                                        return style;
+                                    },
+                                    onEachFeature: function(feature, layer) {
+                                        // Gabungkan properties dengan image_path
+                                        feature.feature_image_path = featureData
+                                            .image_path;
+                                        const popupContent = createPopupContent(feature,
+                                            mapData);
+                                        layer.bindPopup(popupContent, {
+                                            maxWidth: 300,
+                                            className: 'custom-popup'
+                                        });
+                                    },
+                                    pointToLayer: function(feature, latlng) {
+                                        if (layerType === 'circle') {
+                                            return L.circle(latlng, {
+                                                radius,
+                                                ...style
+                                            });
+                                        } else if (layerType === 'marker' && iconUrl) {
+                                            const customIcon = L.icon({
+                                                iconUrl,
+                                                iconSize: [32, 32],
+                                                iconAnchor: [16, 16],
+                                                popupAnchor: [0, -16]
+                                            });
+                                            return L.marker(latlng, {
+                                                icon: customIcon
+                                            });
+                                        } else {
+                                            return L.circleMarker(latlng, {
+                                                radius: 8,
+                                                ...style
+                                            });
+                                        }
+                                    }
+                                });
+
+                                // Tambahkan ke layer group
+                                layerGroups[layerName].addLayer(layer);
+
+                                // Tambahkan bounds
+                                if (layer.getBounds && layer.getBounds().isValid && layer
+                                    .getBounds().isValid()) {
+                                    allBounds.push(layer.getBounds());
+                                }
+                            } catch (error) {
+                                console.error('Error processing feature data:', error);
+                            }
+                        });
+                    }
+                    // Fallback ke data geometry dari maps table jika ada
+                    else if (mapData.geometry && typeof mapData.geometry === 'object' && mapData
+                        .geometry !== null) {
                         try {
-                            // Jika geometry berupa FeatureCollection
                             let geoData = mapData.geometry;
 
-                            // Jika bukan FeatureCollection, buat sebagai Feature tunggal
                             if (geoData.type !== 'FeatureCollection') {
                                 if (geoData.type === 'Feature') {
                                     geoData = {
@@ -494,7 +586,6 @@
                                         features: [geoData]
                                     };
                                 } else {
-                                    // Jika hanya geometry saja
                                     geoData = {
                                         type: 'FeatureCollection',
                                         features: [{
@@ -542,17 +633,13 @@
                                 }
                             });
 
-                            // Tambahkan ke layer group
                             layerGroups[layerName].addLayer(layer);
-
-                            // Tambahkan bounds
                             if (layer.getBounds && layer.getBounds().isValid && layer.getBounds()
                                 .isValid()) {
                                 allBounds.push(layer.getBounds());
                             }
                         } catch (error) {
                             console.error('Error processing geometry data for map ID:', mapData.id, error);
-                            // Fallback ke manual layer jika ada error
                             createManualLayer(mapData, layerName, lat, lng, style, layerType, radius,
                                 iconUrl);
                         }
@@ -563,7 +650,6 @@
 
                     loadedCount++;
                     if (loadedCount === totalMaps) {
-                        // Tambahkan layer groups ke overlay layers
                         Object.keys(layerGroups).forEach(layerName => {
                             overlayLayers[layerName] = layerGroups[layerName];
                             layerGroups[layerName].addTo(map);
