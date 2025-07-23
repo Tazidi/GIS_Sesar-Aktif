@@ -21,6 +21,7 @@
                 @include('gallery.form', ['submit' => 'Upload'])
             </form>
         </div>
+        
     </div>
 </div>
 @endsection

@@ -27,6 +27,8 @@
                             <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil Saya</a>
                             @if(auth()->user()->role === 'admin')
                                 <a href="{{ route('admin.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
+                            @elseif(auth()->user()->role === 'editor')
+                                <a href="{{ route('editor.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Editor Dashboard</a>
                             @endif
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf

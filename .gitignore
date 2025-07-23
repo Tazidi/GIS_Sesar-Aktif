@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/public/gallery
+/public/map_feature_images
+/public/map_images
+/public/thumbnails

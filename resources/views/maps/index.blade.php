@@ -6,104 +6,106 @@
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <style>
         /* Gaya untuk peta pratinjau di dalam tabel */
-        .leaflet-map {
-            height: 200px; /* Sedikit lebih kecil agar tabel tidak terlalu tinggi */
+        .preview-map {
+            height: 150px; /* Ukuran lebih ringkas untuk tabel */
             width: 100%;
-            margin-top: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
+            border-radius: 0.5rem; /* 8px */
+            border: 1px solid #e2e8f0; /* gray-200 */
         }
 
-        /* Gaya untuk thumbnail gambar */
-        img.thumbnail {
-            width: 60px;
-            height: auto;
-            border-radius: 4px;
+        /* Gaya untuk thumbnail gambar dan ikon */
+        .map-thumbnail {
+            width: 48px; /* Ukuran konsisten */
+            height: 48px;
+            object-fit: contain; /* Agar gambar tidak terdistorsi */
+            border-radius: 0.25rem; /* 4px */
+            border: 1px solid #cbd5e1; /* gray-300 */
         }
 
-        /* Nonaktifkan interaksi pada peta pratinjau */
-        .leaflet-container {
-            background-color: #f0f0f0;
+        /* Menonaktifkan interaksi pada peta pratinjau */
+        .preview-map.leaflet-container {
+            background-color: #f7fafc; /* gray-100 */
         }
     </style>
 @endsection
 
 @section('content')
-    <div class="max-w-7xl mx-auto py-6">
-        <h1 class="text-xl font-bold mb-4">Daftar Peta</h1>
-        <a href="{{ route('maps.create') }}" class="bg-blue-500 text-white px-4 py-2 rounded">Tambah Peta</a>
+    <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Daftar Peta</h1>
+            <a href="{{ route('maps.create') }}"
+                class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-500 focus:outline-none focus:border-blue-700 focus:ring focus:ring-blue-200 active:bg-blue-600 disabled:opacity-25 transition">
+                Tambah Peta Baru
+            </a>
+        </div>
 
-        <div class="overflow-x-auto mt-4">
-            <table class="table-auto w-full border text-sm">
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="border px-2 py-1">Nama</th>
-                        <th class="border px-2 py-1">Fitur</th>
-                        <th class="border px-2 py-1">Latitude</th>
-                        <th class="border px-2 py-1">Longitude</th>
-                        <th class="border px-2 py-1">Radius</th>
-                        <th class="border px-2 py-1">Ikon/Gambar</th>
-                        <th class="border px-2 py-1">File GeoJSON</th>
-                        <th class="border px-2 py-1 w-1/4">Peta Pratinjau</th>
-                        <th class="border px-2 py-1">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($maps as $map)
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-600">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
-                            <td class="border px-2 py-1 font-semibold">{{ $map->name }}</td>
-                            <td class="border px-2 py-1">{{ ucfirst($map->layer_type) }}</td>
-                            <td class="border px-2 py-1">{{ $map->lat ?? '-' }}</td>
-                            <td class="border px-2 py-1">{{ $map->lng ?? '-' }}</td>
-                            <td class="border px-2 py-1">{{ $map->layer_type == 'circle' ? ($map->radius ?? '-') . ' m' : '-' }}</td>
-                            <td class="border px-2 py-1">
-                                {{-- Cek apakah salah satu atau keduanya ada isinya --}}
-                                @if ($map->icon_url || $map->image_path)
-                                    <div class="flex items-center gap-2">
-                                        {{-- Tampilkan Ikon jika ada --}}
-                                        @if ($map->icon_url)
-                                            <img src="{{ asset($map->icon_url) }}" alt="Ikon" title="Ikon: {{ basename($map->icon_url) }}" 
-                                                style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid #ddd; object-fit: contain;">
-                                        @endif
-
-                                        {{-- Tampilkan Gambar jika ada --}}
-                                        @if ($map->image_path)
-                                            <img src="{{ asset($map->image_path) }}" alt="Gambar" title="Gambar: {{ basename($map->image_path) }}" class="thumbnail">
-                                        @endif
-                                    </div>
-                                @else
-                                    {{-- Tampilkan placeholder jika keduanya tidak ada --}}
-                                    <span class="text-gray-500 italic">-</span>
-                                @endif
-                            </td>
-                            <td class="border px-2 py-1">
-                                @if ($map->file_path)
-                                    <a href="{{ asset($map->file_path) }}" target="_blank" class="text-blue-600 underline">Lihat File</a>
-                                @else
-                                    <span class="text-gray-500 italic">Tidak ada</span>
-                                @endif
-                            </td>
-                            <td class="border px-2 py-1">
-                                {{-- Container untuk peta Leaflet --}}
-                                <div id="map-{{ $map->id }}" class="leaflet-map"></div>
-                            </td>
-                            <td class="border px-2 py-1 text-center">
-                                <a href="{{ route('map-features.index', ['map' => $map->id]) }}" class="text-green-600 hover:underline">Lihat Fitur</a> |
-                                <a href="{{ route('maps.edit', $map) }}" class="text-yellow-600 hover:underline">Edit</a> |
-                                <form action="{{ route('maps.destroy', $map) }}" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus peta ini?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:underline">Hapus</button>
-                                </form>
-                            </td>
+                            <th scope="col" class="px-4 py-3">Nama Peta</th>
+                            <th scope="col" class="px-4 py-3">Jenis Fitur</th>
+                            <th scope="col" class="px-4 py-3">Koordinat</th>
+                            <th scope="col" class="px-4 py-3">Radius</th>
+                            <th scope="col" class="px-4 py-3">Aset Visual</th>
+                            <th scope="col" class="px-4 py-3">GeoJSON</th>
+                            <th scope="col" class="px-4 py-3 min-w-[200px]">Pratinjau Peta</th>
+                            <th scope="col" class="px-4 py-3 text-center">Aksi</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="9" class="text-center border py-4">Belum ada data peta.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse ($maps as $map)
+                            <tr class="bg-white border-b hover:bg-gray-50">
+                                <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">{{ $map->name }}</td>
+                                <td class="px-4 py-2">{{ ucfirst($map->layer_type) }}</td>
+                                <td class="px-4 py-2">{{ $map->lat && $map->lng ? $map->lat . ', ' . $map->lng : '-' }}</td>
+                                <td class="px-4 py-2">{{ $map->layer_type == 'circle' ? ($map->radius ?? '-') . ' m' : '-' }}</td>
+                                <td class="px-4 py-2">
+                                    @if ($map->icon_url || $map->image_path)
+                                        <div class="flex items-center gap-2">
+                                            @if ($map->icon_url)
+                                                <img src="{{ asset($map->icon_url) }}" alt="Ikon untuk {{ $map->name }}" title="Ikon: {{ basename($map->icon_url) }}" class="map-thumbnail">
+                                            @endif
+                                            @if ($map->image_path)
+                                                <img src="{{ asset($map->image_path) }}" alt="Gambar untuk {{ $map->name }}" title="Gambar: {{ basename($map->image_path) }}" class="map-thumbnail">
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400 italic">Tidak ada</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-2">
+                                    @if ($map->file_path)
+                                        <a href="{{ asset($map->file_path) }}" target="_blank" class="text-blue-600 hover:underline">Lihat File</a>
+                                    @else
+                                        <span class="text-gray-400 italic">Tidak ada</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-2">
+                                    {{-- Container untuk peta pratinjau Leaflet --}}
+                                    <div id="map-{{ $map->id }}" class="preview-map"></div>
+                                </td>
+                                <td class="px-4 py-2 text-center whitespace-nowrap">
+                                    <a href="{{ route('map-features.index', ['map' => $map->id]) }}" class="text-green-600 hover:text-green-900 font-medium">Fitur</a>
+                                    <a href="{{ route('maps.edit', $map) }}" class="text-indigo-600 hover:text-indigo-900 font-medium ml-2">Edit</a>
+                                    <form action="{{ route('maps.destroy', $map) }}" method="POST" class="inline ml-2" onsubmit="return confirm('Apakah Anda yakin ingin menghapus peta ini?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-900 font-medium">Hapus</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="text-center py-6 text-gray-500">
+                                    Belum ada data peta yang ditambahkan.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 @endsection
@@ -115,122 +117,105 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Loop melalui setiap data peta dari controller
-            @foreach ($maps as $map)
-                (function() {
-                    // Mengambil semua data map sebagai objek JSON untuk digunakan di JS
-                    const mapData = @json($map);
-                    const divId = `map-${mapData.id}`;
-                    const geojsonUrl = "{{ route('maps.geojson', ':id') }}".replace(':id', mapData.id);
+            // Data semua peta dari controller
+            const mapsData = @json($maps);
 
-                    // Inisialisasi peta pratinjau
-                    // Interaksi pengguna seperti zoom dan drag dinonaktifkan
-                    const mapInstance = L.map(divId, {
-                        zoomControl: false,
-                        scrollWheelZoom: false,
-                        dragging: false,
-                        doubleClickZoom: false,
-                        touchZoom: false
-                    }).setView([-7.5, 107.5], 5);
+            // Fungsi untuk inisialisasi setiap peta pratinjau
+            const initPreviewMap = (mapData) => {
+                const mapContainerId = `map-${mapData.id}`;
+                const geojsonUrl = `{{ url('maps') }}/${mapData.id}/geojson`;
 
-                    // Menambahkan base layer OpenStreetMap
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; OpenStreetMap',
-                        maxZoom: 18
-                    }).addTo(mapInstance);
+                // Inisialisasi peta dengan opsi interaksi dinonaktifkan
+                const previewMap = L.map(mapContainerId, {
+                    zoomControl: false,
+                    scrollWheelZoom: false,
+                    dragging: false,
+                    doubleClickZoom: false,
+                    touchZoom: false,
+                }).setView([-2.54, 118.01], 5); // Center of Indonesia
 
-                    // Fungsi untuk membuat style layer (garis, poligon, lingkaran)
-                    function createStyle(props) {
-                        const p = props || {};
-                        return {
-                            color: p.stroke_color || mapData.stroke_color || '#3388ff',
-                            fillColor: p.fill_color || mapData.fill_color || '#3388ff',
-                            weight: p.weight || mapData.weight || 3,
-                            opacity: p.opacity || mapData.opacity || 1.0,
-                            fillOpacity: (p.opacity || mapData.opacity || 0.2) * 0.7,
-                        };
+                // Tambahkan tile layer OpenStreetMap
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap',
+                    maxZoom: 18,
+                }).addTo(previewMap);
+
+                // Fungsi untuk membuat style layer dari properties
+                const createStyle = (props = {}) => ({
+                    color: props.stroke_color || mapData.stroke_color || '#3388ff',
+                    fillColor: props.fill_color || mapData.fill_color || '#3388ff',
+                    weight: props.weight || mapData.weight || 3,
+                    opacity: props.opacity || mapData.opacity || 1.0,
+                    fillOpacity: (props.fill_opacity || mapData.fill_opacity || 0.2) * 0.7, // Sedikit lebih transparan untuk pratinjau
+                });
+                
+                // Fungsi untuk menampilkan fitur GeoJSON atau fallback
+                const renderFeatures = async () => {
+                    try {
+                        const response = await fetch(geojsonUrl);
+                        if (!response.ok) throw new Error('GeoJSON not found');
+                        const geojsonData = await response.json();
+
+                        const geoLayer = L.geoJSON(geojsonData, {
+                            style: (feature) => createStyle(feature.properties),
+                            pointToLayer: (feature, latlng) => {
+                                const props = feature.properties || {};
+                                const type = props.layer_type || mapData.layer_type;
+                                const style = createStyle(props);
+                                const iconUrl = props.icon_url || mapData.icon_url;
+
+                                if (type === 'circle') {
+                                    return L.circle(latlng, { ...style, radius: props.radius || mapData.radius || 300 });
+                                }
+                                if (type === 'marker' && iconUrl) {
+                                    const icon = L.icon({ iconUrl: iconUrl, iconSize: [28, 28], iconAnchor: [14, 14] });
+                                    return L.marker(latlng, { icon });
+                                }
+                                return L.circleMarker(latlng, { ...style, radius: 6 });
+                            },
+                            onEachFeature: (feature, layer) => {
+                                const title = feature.properties.name || mapData.name || 'Info';
+                                layer.bindPopup(`<b>${title}</b>`);
+                            }
+                        }).addTo(previewMap);
+
+                        if (geoLayer.getBounds().isValid()) {
+                            previewMap.fitBounds(geoLayer.getBounds(), { padding: [20, 20], maxZoom: 16 });
+                        }
+
+                    } catch (error) {
+                        // Fallback: Gunakan data lat/lng dari database jika GeoJSON gagal dimuat
+                        const lat = parseFloat(mapData.lat);
+                        const lng = parseFloat(mapData.lng);
+
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            const latlng = L.latLng(lat, lng);
+                            const style = createStyle();
+                            let fallbackLayer;
+
+                            if (mapData.layer_type === 'circle') {
+                                fallbackLayer = L.circle(latlng, { ...style, radius: mapData.radius || 300 });
+                            } else if (mapData.layer_type === 'marker' && mapData.icon_url) {
+                                const icon = L.icon({ iconUrl: mapData.icon_url, iconSize: [28, 28], iconAnchor: [14, 14] });
+                                fallbackLayer = L.marker(latlng, { icon });
+                            } else {
+                                fallbackLayer = L.circleMarker(latlng, { ...style, radius: 6 });
+                            }
+
+                            fallbackLayer.bindPopup(`<b>${mapData.name}</b>`).addTo(previewMap);
+                            previewMap.setView(latlng, 13);
+                        }
+                    } finally {
+                        // Pastikan peta di-render ulang dengan ukuran yang benar
+                        setTimeout(() => previewMap.invalidateSize(), 100);
                     }
+                };
 
-                    // Logika utama: coba muat file GeoJSON
-                    fetch(geojsonUrl)
-                        .then(res => {
-                            if (!res.ok) { // Jika file tidak ditemukan (404), lempar error
-                                throw new Error('GeoJSON not found, using fallback.');
-                            }
-                            return res.json();
-                        })
-                        .then(data => {
-                            // Jika GeoJSON berhasil dimuat
-                            const geoLayer = L.geoJSON(data, {
-                                style: (feature) => createStyle(feature.properties),
-                                pointToLayer: (feature, latlng) => {
-                                    const props = feature.properties || {};
-                                    const type = props.layer_type || mapData.layer_type;
-                                    const style = createStyle(props);
+                renderFeatures();
+            };
 
-                                    if (type === 'circle') {
-                                        return L.circle(latlng, {
-                                            ...style,
-                                            radius: props.radius || mapData.radius || 300
-                                        });
-                                    }
-
-                                    if (type === 'marker' && (props.icon_url || mapData.icon_url)) {
-                                        const icon = L.icon({
-                                            iconUrl: props.icon_url || mapData.icon_url,
-                                            iconSize: [28, 28],
-                                            iconAnchor: [14, 14]
-                                        });
-                                        return L.marker(latlng, { icon });
-                                    }
-
-                                    // Default-nya adalah marker lingkaran kecil
-                                    return L.circleMarker(latlng, { ...style, radius: 6 });
-                                },
-                                onEachFeature: (feature, layer) => {
-                                    const title = feature.properties.name || mapData.name || 'Info';
-                                    layer.bindPopup(`<b>${title}</b>`);
-                                }
-                            }).addTo(mapInstance);
-
-                            // Sesuaikan view peta agar pas dengan layer
-                            if (geoLayer.getBounds().isValid()) {
-                                mapInstance.fitBounds(geoLayer.getBounds(), { padding: [20, 20], maxZoom: 16 });
-                            }
-                        })
-                        .catch(() => {
-                            // FALLBACK: Jika GeoJSON gagal dimuat atau tidak ada
-                            // Gunakan data lat/lng dari database
-                            const fallbackLat = parseFloat(mapData.lat);
-                            const fallbackLng = parseFloat(mapData.lng);
-
-                            if (!isNaN(fallbackLat) && !isNaN(fallbackLng)) {
-                                const latlng = L.latLng(fallbackLat, fallbackLng);
-                                let fallbackLayer;
-                                const style = createStyle();
-                                
-                                if (mapData.layer_type === 'circle') {
-                                    fallbackLayer = L.circle(latlng, {
-                                        ...style,
-                                        radius: mapData.radius || 300
-                                    });
-                                } else if (mapData.layer_type === 'marker' && mapData.icon_url) {
-                                    const icon = L.icon({ iconUrl: mapData.icon_url, iconSize: [28, 28], iconAnchor: [14, 14] });
-                                    fallbackLayer = L.marker(latlng, { icon });
-                                } else {
-                                    fallbackLayer = L.circleMarker(latlng, { ...style, radius: 6 });
-                                }
-                                
-                                fallbackLayer.bindPopup(`<b>${mapData.name}</b>`).addTo(mapInstance);
-                                mapInstance.setView(latlng, 13);
-                            }
-                        });
-
-                    // Trik untuk memastikan peta di-render dengan ukuran yang benar
-                    setTimeout(() => mapInstance.invalidateSize(), 100);
-
-                })();
-            @endforeach
+            // Inisialisasi peta untuk setiap data yang ada
+            mapsData.forEach(initPreviewMap);
         });
     </script>
 @endsection
