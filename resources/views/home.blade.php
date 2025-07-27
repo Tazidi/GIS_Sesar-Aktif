@@ -21,15 +21,13 @@
         </div>
 
         {{-- STRUKTUR GRID TIGA KOLOM --}}
-        {{-- Penambahan 'items-stretch' untuk membantu menyamakan tinggi kolom --}}
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
 
             <div class="lg:col-span-3 flex flex-col">
                 <div class="mb-4 border-b border-gray-300">
-                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Today Post</h2>
+                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Latest Post</h2>
                 </div>
                 
-                {{-- REVISI 1: Menggunakan flex-grow agar kartu mengisi ruang vertikal --}}
                 <div class="flex flex-col space-y-6 flex-grow">
                     @forelse($todayPosts as $post)
                         <a href="{{ route('articles.show', $post) }}" class="flex-1 block group relative overflow-hidden shadow-md rounded-md">
@@ -104,41 +102,90 @@
 
         {{-- BAGIAN GALERI --}}
         <div class="mt-12">
-            <div class="mb-4 border-b border-gray-300">
-                <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Galeri</h2>
-            </div>
-            <div class="min-w-0">
-                <div class="swiper h-80 w-full relative rounded-md overflow-hidden">
-                    <div class="swiper-wrapper">
-                        @for ($i = 1; $i <= 10; $i++)
-                            <div class="swiper-slide group">
-                                <img src="https://picsum.photos/seed/gallery{{$i}}/1200/800" class="w-full h-full object-cover" alt="Gambar Galeri {{$i}}">
-                                <div class="absolute inset-0 bg-black opacity-0 group-hover:opacity-50 transition-opacity duration-300 pointer-events-none"></div>
-                                <div class="absolute inset-0 p-6 flex flex-col justify-end transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-in-out pointer-events-none">
-                                    <h3 class="text-white font-bold text-2xl">Judul Gambar {{$i}}</h3>
-                                    <p class="text-gray-200 text-sm mt-2">Ini adalah deskripsi singkat untuk gambar di galeri.</p>
-                                </div>
-                            </div>
-                        @endfor
-                    </div>
-                    <div class="swiper-button-prev text-white"></div>
-                    <div class="swiper-button-next text-white"></div>
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-300">
+                <div class="flex flex-wrap border-b-0 sm:border-b-0 -mb-px">
+                    <button data-category="Sesar Aktif" class="gallery-tab active-tab text-sm font-bold py-2 px-4 border-b-4 border-red-600 text-red-600">Sesar Aktif</button>
+                    <button data-category="Peta Geologi" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600">Peta Geologi</button>
+                    <button data-category="Mitigasi Bencana" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600">Mitigasi Bencana</button>
+                    <button data-category="Studi Lapangan" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600">Studi Lapangan</button>
+                    <button data-category="Lainnya" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600">Lainnya</button>
                 </div>
+                <a href="{{ route('gallery.publik') }}" class="text-sm mt-2 sm:mt-0 font-semibold text-red-600 hover:underline">Lihat Semua Galeri &rarr;</a>
+            </div>
+
+            <div id="gallery-grid-home" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div class="h-48 col-span-full flex items-center justify-center text-gray-500">Memuat galeri...</div>
             </div>
         </div>
-
     </div>
 </div>
 @endsection
 
 @section('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const swiper = new Swiper('.swiper', {
-            loop: true,
-            autoplay: { delay: 5000, disableOnInteraction: false },
-            navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+document.addEventListener('DOMContentLoaded', function () {
+    const tabs = document.querySelectorAll('.gallery-tab');
+    const gridContainer = document.getElementById('gallery-grid-home');
+    
+    // Definisikan URL dasar menggunakan Blade helper
+    const galleryPageUrl = "{{ route('gallery.publik') }}";
+    const assetBaseUrl = "{{ asset('storage/') }}";
+    const apiBaseUrl = "{{ url('/gallery/category') }}";
+
+    async function fetchHomepageGallery(category) {
+        gridContainer.innerHTML = `<div class="h-48 col-span-full flex items-center justify-center text-gray-500">Memuat galeri...</div>`;
+
+        try {
+            const encodedCategory = encodeURIComponent(category);
+            const response = await fetch(`${apiBaseUrl}/${encodedCategory}/home`);
+            if (!response.ok) throw new Error('Network response was not ok.');
+            const images = await response.json();
+
+            gridContainer.innerHTML = '';
+
+            if (images.length > 0) {
+                images.forEach(image => {
+                    // PERBAIKAN: Buat link yang benar ke halaman galeri publik dengan parameter kategori
+                    const linkUrl = `${galleryPageUrl}?category=${encodeURIComponent(image.category)}`;
+                    const imageUrl = `${assetBaseUrl}/${image.image_path}`;
+
+                    const galleryItem = `
+                        <a href="${linkUrl}" class="relative block aspect-square group overflow-hidden rounded-md shadow-md">
+                            <img src="${imageUrl}" alt="${image.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-3">
+                                <h3 class="font-bold text-white text-sm">${image.title}</h3>
+                            </div>
+                        </a>
+                    `;
+                    gridContainer.insertAdjacentHTML('beforeend', galleryItem);
+                });
+            } else {
+                gridContainer.innerHTML = `<div class="h-48 col-span-full flex items-center justify-center text-gray-400">Tidak ada gambar dalam kategori ini.</div>`;
+            }
+        } catch (error) {
+            console.error('Gagal memuat galeri:', error);
+            gridContainer.innerHTML = `<div class="h-48 col-span-full flex items-center justify-center text-red-500">Gagal memuat galeri.</div>`;
+        }
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function () {
+            tabs.forEach(t => {
+                t.classList.remove('active-tab', 'border-red-600', 'text-red-600');
+                t.classList.add('border-transparent', 'text-gray-500');
+            });
+            this.classList.add('active-tab', 'border-red-600', 'text-red-600');
+            this.classList.remove('border-transparent', 'text-gray-500');
+            const category = this.dataset.category;
+            fetchHomepageGallery(category);
         });
     });
+
+    const initialActiveTab = document.querySelector('.gallery-tab.active-tab');
+    if (initialActiveTab) {
+        const initialCategory = initialActiveTab.dataset.category;
+        fetchHomepageGallery(initialCategory);
+    }
+});
 </script>
 @endsection

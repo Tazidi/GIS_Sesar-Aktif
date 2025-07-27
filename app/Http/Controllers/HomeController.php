@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Article;
 use App\Models\Map;
+use App\Models\Gallery;
 use Illuminate\Support\Carbon;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        // Artikel yang di-approve hari ini (Today Post)
+        // Artikel yang di-approve hari ini (Latest Post)
         $todayPosts = Article::where('status', 'approved')
             ->whereDate('created_at', Carbon::today())
             ->latest()
@@ -31,9 +32,9 @@ class HomeController extends Controller
             ->take(5)
             ->get();
 
-        $maps = Map::all();
+        $galleries = Gallery::latest()->take(10)->get();
 
-        return view('home', compact('todayPosts', 'mainStories', 'popularArticles', 'maps'));
+        return view('home', compact('todayPosts', 'mainStories', 'popularArticles', 'galleries'));
     }
 
     public function show($id)

@@ -14,6 +14,7 @@ class Gallery extends Model
         'image_path',
         'title',
         'description',
+        'category',
     ];
 
     public function user()

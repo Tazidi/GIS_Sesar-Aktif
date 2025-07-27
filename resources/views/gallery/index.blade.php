@@ -20,10 +20,12 @@
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 @foreach ($images as $image)
                     <div class="bg-white rounded-lg shadow-md overflow-hidden relative">
-                        <img class="w-full h-48 object-cover" src="{{ asset('gallery/' . $image->image_path) }}" alt="{{ $image->title }}">
+                        {{-- PERBAIKAN: Gunakan asset('storage/' . $path) untuk memanggil gambar --}}
+                        <img class="w-full h-48 object-cover" src="{{ asset('storage/' . $image->image_path) }}" alt="{{ $image->title }}">
                         <div class="p-4">
                             <h3 class="font-bold text-lg">{{ $image->title }}</h3>
-                            <p class="text-sm text-gray-500 truncate">{{ $image->description }}</p>
+                            <p class="text-sm text-gray-500">{{ $image->category }}</p> {{-- Menampilkan kategori --}}
+                            <p class="text-sm text-gray-500 truncate mt-1">{{ $image->description }}</p>
                             <div class="mt-4 flex justify-between text-sm">
                                 <a href="{{ route('gallery.edit', $image->id) }}" class="text-blue-600 hover:underline">Edit</a>
                                 <form action="{{ route('gallery.destroy', $image->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus gambar ini?');">
@@ -43,6 +45,7 @@
         @else
             <div class="text-center py-12 text-gray-500">
                 <p>Tidak ada gambar yang tersedia.</p>
+                <p class="mt-2">Silakan <a href="{{ route('gallery.create') }}" class="text-indigo-600 hover:underline">tambahkan gambar baru</a>.</p>
             </div>
         @endif
     </div>

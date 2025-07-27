@@ -40,6 +40,9 @@ Route::get('/artikel-publik', [PublicArticleController::class, 'index'])->name('
 // ✅ Galeri Publik (tanpa login)
 Route::get('/galeri-publik', [GalleryController::class, 'publik'])->name('gallery.publik');
 
+Route::get('/gallery/category/{category}', [GalleryController::class, 'getByCategory'])->name('gallery.getByCategory'); 
+
+Route::get('/gallery/category/{category}/home', [GalleryController::class, 'getForHome'])->name('gallery.getForHome');
 
 /*
 |--------------------------------------------------------------------------
