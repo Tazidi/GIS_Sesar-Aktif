@@ -20,8 +20,8 @@
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 @foreach ($images as $image)
                     <div class="bg-white rounded-lg shadow-md overflow-hidden relative">
-                        {{-- PERBAIKAN: Gunakan asset('storage/' . $path) untuk memanggil gambar --}}
-                        <img class="w-full h-48 object-cover" src="{{ asset('storage/' . $image->image_path) }}" alt="{{ $image->title }}">
+                        {{-- PERBAIKAN: Gunakan asset('gallery/' . $path) untuk memanggil gambar --}}
+                        <img class="w-full h-48 object-cover" src="{{ asset('gallery/' . $image->image_path) }}" alt="{{ $image->title }}">
                         <div class="p-4">
                             <h3 class="font-bold text-lg">{{ $image->title }}</h3>
                             <p class="text-sm text-gray-500">{{ $image->category }}</p> {{-- Menampilkan kategori --}}

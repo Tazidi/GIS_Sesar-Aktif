@@ -60,8 +60,8 @@
     @if(isset($image) && $image->image_path)
         <div class="mt-4">
             <p class="text-sm text-gray-500 mb-2">Gambar saat ini:</p>
-            {{-- PERBAIKAN: Gunakan asset('storage/' . $path) untuk memanggil gambar --}}
-            <img src="{{ asset('storage/' . $image->image_path) }}" alt="Pratinjau gambar" class="h-32 w-auto rounded-md shadow-md object-cover">
+            {{-- PERBAIKAN: Gunakan asset('gallery/' . $path) untuk memanggil gambar --}}
+            <img src="{{ asset('gallery/' . $image->image_path) }}" alt="Pratinjau gambar" class="h-32 w-auto rounded-md shadow-md object-cover">
             <p class="text-xs text-gray-500 mt-2">Unggah file baru untuk mengganti gambar ini.</p>
         </div>
     @endif

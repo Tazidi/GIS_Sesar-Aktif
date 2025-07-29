@@ -12,6 +12,7 @@ use App\Http\Controllers\PublicArticleController;
 use App\Http\Controllers\GalleryController;
 use App\Models\Map;
 use App\Http\Controllers\MapFeatureController;
+use App\Http\Controllers\Auth\GoogleLoginController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,7 +41,7 @@ Route::get('/artikel-publik', [PublicArticleController::class, 'index'])->name('
 // ✅ Galeri Publik (tanpa login)
 Route::get('/galeri-publik', [GalleryController::class, 'publik'])->name('gallery.publik');
 
-Route::get('/gallery/category/{category}', [GalleryController::class, 'getByCategory'])->name('gallery.getByCategory'); 
+Route::get('/gallery/category/{category}', [GalleryController::class, 'getByCategory'])->name('gallery.getByCategory');
 
 Route::get('/gallery/category/{category}/home', [GalleryController::class, 'getForHome'])->name('gallery.getForHome');
 
@@ -124,6 +125,18 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Auth (Google Login)
+|--------------------------------------------------------------------------
+*/
+// Rute untuk redirect ke halaman login Google
+Route::get('/auth/google/redirect', [GoogleLoginController::class, 'redirect'])->name('auth.google.redirect');
+
+// Rute untuk callback dari Google
+Route::get('/auth/google/callback', [GoogleLoginController::class, 'callback'])->name('auth.google.callback');
+
 
 /*
 |--------------------------------------------------------------------------
