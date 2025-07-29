@@ -108,7 +108,7 @@
                                     @if (($firstMap->layer_type ?? 'marker') == 'marker')
                                         Penanda Lokasi
                                     @elseif(($firstMap->layer_type ?? 'marker') == 'circle')
-                                        Lingkaran ({{ $firstMap->radius ?? 300 }}m)
+                                        Lingkaran
                                     @elseif(($firstMap->layer_type ?? 'marker') == 'polyline')
                                         Garis/Jalur
                                     @elseif(($firstMap->layer_type ?? 'marker') == 'polygon')
@@ -170,7 +170,7 @@
                             description = 'Penanda Lokasi';
                             break;
                         case 'circle':
-                            description = `Lingkaran (${sampleMap.radius || 300}m)`;
+                            description = `Lingkaran`;
                             break;
                         case 'polyline':
                             description = 'Garis/Jalur';
@@ -398,13 +398,16 @@
 
                 // Base maps
                 var baseLayers = {
-                    "OSM Standard": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; OpenStreetMap contributors',
-                        maxZoom: 18
+                    "Google Maps": L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                        maxZoom: 20,
+                        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                        attribution: '&copy; Google Maps'
                     }),
-                    "OSM HOT": L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-                        attribution: '&copy; OpenStreetMap contributors, Tiles style by Humanitarian OSM Team',
-                        maxZoom: 18
+                    "Google Satellite": L.tileLayer(
+                    'http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                        maxZoom: 20,
+                        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                        attribution: '&copy; Google Satellite'
                     }),
                     "OpenTopoMap": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
                         attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)',
@@ -412,7 +415,7 @@
                     })
                 };
 
-                baseLayers["OSM Standard"].addTo(map);
+                baseLayers["Google Satellite"].addTo(map);
 
                 setTimeout(() => map.invalidateSize(), 500);
                 window.addEventListener('resize', () => setTimeout(() => map.invalidateSize(), 100));
