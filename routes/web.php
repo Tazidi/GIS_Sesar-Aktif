@@ -23,9 +23,6 @@ use App\Http\Controllers\Auth\GoogleLoginController;
 // Halaman Utama
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Detail Artikel
-Route::get('/article/{id}', [HomeController::class, 'show'])->name('article.show');
-
 // Halaman Visualisasi Peta Publik
 Route::get('/visualisasi-peta', function () {
     $maps = Map::all();
@@ -38,7 +35,7 @@ Route::get('/maps/{map}/geojson', [MapController::class, 'geojson'])->name('maps
 // Artikel Publik
 Route::get('/artikel-publik', [PublicArticleController::class, 'index'])->name('artikel.publik');
 
-// ✅ Galeri Publik (tanpa login)
+// Galeri Publik (tanpa login)
 Route::get('/galeri-publik', [GalleryController::class, 'publik'])->name('gallery.publik');
 
 Route::get('/gallery/category/{category}', [GalleryController::class, 'getByCategory'])->name('gallery.getByCategory');
@@ -84,10 +81,11 @@ Route::middleware(['auth', 'role:editor'])->get('/editor', function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin,editor'])->group(function () {
-    Route::resource('articles', ArticleController::class);
+    Route::resource('articles', ArticleController::class)->except(['show']);
     Route::patch('articles/{article}/status', [ArticleController::class, 'updateStatus'])->name('articles.updateStatus');
 });
 
+Route::get('/articles/{article}', [ArticleController::class, 'show'])->name('articles.show');
 /*
 |--------------------------------------------------------------------------
 | Admin Only - Manajemen Galeri, Peta, User, Layer, dan Fitur Peta

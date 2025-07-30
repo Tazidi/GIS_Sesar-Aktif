@@ -44,9 +44,19 @@ class ArticlePolicy
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Article $article): bool
+    public function delete(User $user, Article $article)
     {
-        return false;
+        // Admin bisa hapus semua artikel
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        // Editor hanya bisa hapus artikel miliknya
+        if ($user->role === 'editor' && $user->id === $article->user_id) {
+            return true;
+        }
+
+        return false; // Selain itu ditolak (403)
     }
 
     /**

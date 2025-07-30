@@ -46,6 +46,24 @@
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
+            
+            {{-- Dropdown untuk Tag (TAMBAHAN) --}}
+            <div class="mb-5">
+                <label for="tags" class="block text-sm font-medium text-gray-700 mb-1">Tag (Opsional)</label>
+                <select name="tags" id="tags" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 @error('tags') border-red-500 @enderror">
+                    <option value="">-- Tidak Ada Tag --</option>
+                    @if(isset($tags) && $tags->count() > 0)
+                        @foreach($tags as $tag)
+                            <option value="{{ $tag }}" {{ old('tags', $article->tags) == $tag ? 'selected' : '' }}>
+                                {{ $tag }}
+                            </option>
+                        @endforeach
+                    @endif
+                </select>
+                @error('tags')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
 
             {{-- Thumbnail --}}
             <div class="mb-6">
@@ -68,7 +86,7 @@
 
             {{-- Tombol Aksi --}}
             <div class="flex items-center justify-end pt-6 border-t border-gray-200">
-                <a href="{{ route('articles.index', $article) }}" class="text-sm text-gray-600 hover:text-gray-900 mr-4">
+                <a href="{{ route('articles.index') }}" class="text-sm text-gray-600 hover:text-gray-900 mr-4">
                     Batal
                 </a>
                 <button type="submit"

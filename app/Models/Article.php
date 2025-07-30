@@ -11,7 +11,7 @@ class Article extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title', 'author', 'content', 'thumbnail', 'user_id', 'status', 'visit_count'
+        'title', 'author', 'content', 'tags', 'thumbnail', 'user_id', 'status', 'visit_count'
     ];
 
     public function user()

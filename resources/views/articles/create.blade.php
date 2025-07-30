@@ -11,7 +11,6 @@
 
     {{-- Form Container --}}
     <div class="bg-white p-8 shadow-lg rounded-lg">
-        {{-- Pesan error validasi bisa ditambahkan di sini jika perlu --}}
         @if ($errors->any())
             <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
                 <p class="font-bold text-red-700">Terjadi Kesalahan</p>
@@ -59,26 +58,48 @@
                 @enderror
             </div>
 
+            {{-- Daftar Tag yang Sudah Ada (Klik Cepat) --}}
+            @if(isset($tags) && $tags->count() > 0)
+                <div class="mb-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tag yang Tersedia</label>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($tags as $tag)
+                            <span onclick="document.getElementById('tags').value='{{ $tag }}'"
+                                class="cursor-pointer bg-gray-200 text-gray-700 text-sm px-3 py-1 rounded hover:bg-gray-300 transition">
+                                {{ $tag }}
+                            </span>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Input Tag --}}
+            <div class="mb-5">
+                <label for="tags" class="block text-sm font-medium text-gray-700 mb-1">Tag (Opsional)</label>
+                <input list="tags-list" name="tags" id="tags" value="{{ old('tags') }}"
+                    placeholder="Contoh: Berita, Artikel Ilmiah"
+                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 @error('tags') border-red-500 @enderror">
+
+                <datalist id="tags-list">
+                    @foreach($tags as $tag)
+                        <option value="{{ $tag }}">
+                    @endforeach
+                </datalist>
+
+                @error('tags')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             {{-- Upload Thumbnail --}}
             <div class="mb-6">
-    <label for="thumbnail" class="block text-sm font-medium text-gray-700 mb-2">
-        Thumbnail (Opsional)
-    </label>
-    
-    {{-- Tombol "Choose File" yang sudah digayakan --}}
-    <input id="thumbnail" name="thumbnail" type="file" 
-           class="block w-full text-sm text-gray-500
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-full file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-indigo-50 file:text-indigo-700
-                  hover:file:bg-indigo-100
-           "/>
-
-    @error('thumbnail')
-        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-    @enderror
-</div>
+                <label for="thumbnail" class="block text-sm font-medium text-gray-700 mb-2">Thumbnail (Opsional)</label>
+                <input id="thumbnail" name="thumbnail" type="file" 
+                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                @error('thumbnail')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
 
             {{-- Tombol Aksi --}}
             <div class="flex items-center justify-end pt-4 border-t border-gray-200">

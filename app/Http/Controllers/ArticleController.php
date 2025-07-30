@@ -6,10 +6,12 @@ use App\Models\Article;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\File; // Import File facade
 
 class ArticleController extends Controller
 {
     use AuthorizesRequests;
+
     // Tampilkan daftar artikel untuk publik
     public function index()
     {
@@ -54,7 +56,9 @@ class ArticleController extends Controller
     // Form tambah artikel
     public function create()
     {
-        return view('articles.create');
+        // Ambil semua tag unik yang ada di database untuk ditampilkan di dropdown
+        $tags = Article::whereNotNull('tags')->distinct()->pluck('tags');
+        return view('articles.create', compact('tags'));
     }
 
     // Simpan artikel
@@ -65,6 +69,7 @@ class ArticleController extends Controller
             'author'    => 'required|max:255',
             'content'   => 'required',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'tags'      => 'nullable|string|max:255', // Validasi untuk tags
         ]);
 
         if ($request->hasFile('thumbnail')) {
@@ -86,7 +91,9 @@ class ArticleController extends Controller
     public function edit(Article $article)
     {
         $this->authorize('update', $article);
-        return view('articles.edit', compact('article'));
+        // Ambil semua tag unik untuk dropdown, sama seperti di method create
+        $tags = Article::whereNotNull('tags')->distinct()->pluck('tags');
+        return view('articles.edit', compact('article', 'tags'));
     }
 
     // Update artikel
@@ -99,12 +106,13 @@ class ArticleController extends Controller
             'author'    => 'required|max:255',
             'content'   => 'required',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'tags'      => 'nullable|string|max:255', // Validasi untuk tags
         ]);
 
         if ($request->hasFile('thumbnail')) {
-            // Hapus thumbnail lama
-            if ($article->thumbnail && file_exists(public_path($article->thumbnail))) {
-                unlink(public_path($article->thumbnail));
+            // Hapus thumbnail lama jika ada
+            if ($article->thumbnail && File::exists(public_path($article->thumbnail))) {
+                File::delete(public_path($article->thumbnail));
             }
 
             $file = $request->file('thumbnail');
@@ -123,8 +131,8 @@ class ArticleController extends Controller
     {
         $this->authorize('delete', $article);
 
-        if ($article->thumbnail && file_exists(public_path($article->thumbnail))) {
-            unlink(public_path($article->thumbnail));
+        if ($article->thumbnail && File::exists(public_path($article->thumbnail))) {
+            File::delete(public_path($article->thumbnail));
         }
 
         $article->delete();
