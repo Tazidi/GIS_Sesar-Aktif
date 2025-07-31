@@ -86,20 +86,29 @@ Route::middleware(['auth', 'role:admin,editor'])->group(function () {
 });
 
 Route::get('/articles/{article}', [ArticleController::class, 'show'])->name('articles.show');
+
 /*
-|--------------------------------------------------------------------------
-| Admin Only - Manajemen Galeri, Peta, User, Layer, dan Fitur Peta
-|--------------------------------------------------------------------------
+|--------------------------------------------------------------------------|
+| Admin & Editor - Manajemen Galeri
+|--------------------------------------------------------------------------|
 */
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    // Galeri Admin (CRUD)
+Route::middleware(['auth', 'role:admin,editor'])->group(function () {
+    // Galeri
     Route::get('/galeri', [GalleryController::class, 'index'])->name('gallery.index');
     Route::get('/galeri/create', [GalleryController::class, 'create'])->name('gallery.create');
     Route::post('/galeri', [GalleryController::class, 'store'])->name('gallery.store');
     Route::get('/galeri/{gallery}/edit', [GalleryController::class, 'edit'])->name('gallery.edit');
     Route::put('/galeri/{gallery}', [GalleryController::class, 'update'])->name('gallery.update');
     Route::delete('/galeri/{gallery}', [GalleryController::class, 'destroy'])->name('gallery.destroy');
+    Route::patch('/gallery/{gallery}/status', [GalleryController::class, 'updateStatus'])->name('gallery.updateStatus');
+});
 
+/*
+|--------------------------------------------------------------------------
+| Admin Only - Manajemen Galeri, Peta, User, Layer, dan Fitur Peta
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:admin'])->group(function () {
     // Admin lainnya
     Route::resource('maps', MapController::class);
     Route::resource('users', UserController::class);

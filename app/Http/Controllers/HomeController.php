@@ -12,10 +12,9 @@ class HomeController extends Controller
 {
     public function index()
     {
-        // Artikel yang di-approve hari ini (Latest Post)
-        $todayPosts = Article::where('status', 'approved')
-            ->whereDate('created_at', Carbon::today())
-            ->latest()
+        // Artikel terbaru yang di-approve (Latest Post)
+        $latestPosts = Article::where('status', 'approved')
+            ->latest('created_at')
             ->take(2)
             ->get();
 
@@ -34,7 +33,7 @@ class HomeController extends Controller
 
         $galleries = Gallery::latest()->take(10)->get();
 
-        return view('home', compact('todayPosts', 'mainStories', 'popularArticles', 'galleries'));
+        return view('home', compact('latestPosts', 'mainStories', 'popularArticles', 'galleries'));
     }
 
     public function show($id)

@@ -18,7 +18,16 @@ class GalleryController extends Controller
 
     public function index()
     {
-        $images = Gallery::latest()->paginate(12);
+        $user = Auth::user();
+
+        if ($user && $user->role === 'admin') {
+            $images = Gallery::latest()->paginate(12);
+        } elseif ($user && $user->role === 'editor') {
+            $images = Gallery::where('user_id', $user->id)->latest()->paginate(12);
+        } else {
+            abort(403);
+        }
+
         return view('gallery.index', compact('images'));
     }
 
@@ -36,14 +45,16 @@ class GalleryController extends Controller
             'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
 
-        $path = $request->file('image')->store('gallery', 'public');
+        $filename = time() . '_' . $request->file('image')->getClientOriginalName();
+        $request->file('image')->move(public_path('gallery'), $filename);
 
         Gallery::create([
-            'user_id' => Auth::id(),
-            'title' => $validatedData['title'],
-            'description' => $validatedData['description'],
-            'image_path' => $path,
-            'category' => trim($validatedData['category']), // Tambahkan trim() di sini untuk membersihkan spasi
+            'user_id'    => Auth::id(),
+            'title'      => $validatedData['title'],
+            'description'=> $validatedData['description'],
+            'image_path' => $filename, // hanya nama file, TANPA 'gallery/'
+            'category'   => trim($validatedData['category']),
+            'status'     => Auth::user()->role === 'admin' ? 'approved' : 'pending',
         ]);
 
         return redirect()->route('gallery.index')->with('success', 'Gambar berhasil diunggah!');
@@ -51,11 +62,19 @@ class GalleryController extends Controller
 
     public function edit(Gallery $gallery)
     {
+        if (Auth::user()->role === 'editor' && Auth::id() !== $gallery->user_id) {
+            abort(403);
+        }
+
         return view('gallery.edit', ['image' => $gallery]);
     }
 
     public function update(Request $request, Gallery $gallery)
     {
+        if (Auth::user()->role === 'editor' && Auth::id() !== $gallery->user_id) {
+            abort(403);
+        }
+
         $validatedData = $request->validate([
             'title' => 'required|string|max:255',
             'category' => 'required|string',
@@ -63,18 +82,26 @@ class GalleryController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
 
-        $path = $gallery->image_path;
+        $filename = $gallery->image_path;
 
         if ($request->hasFile('image')) {
-            Storage::disk('public')->delete($gallery->image_path);
-            $path = $request->file('image')->store('gallery', 'public');
+            // Hapus file lama
+            $oldPath = public_path('gallery/' . $gallery->image_path);
+            if (file_exists($oldPath)) {
+                unlink($oldPath);
+            }
+
+            // Simpan file baru
+            $filename = time() . '_' . $request->file('image')->getClientOriginalName();
+            $request->file('image')->move(public_path('gallery'), $filename);
         }
 
         $gallery->update([
             'title' => $validatedData['title'],
             'description' => $validatedData['description'],
-            'image_path' => $path,
-            'category' => trim($validatedData['category']), // Tambahkan trim() di sini juga
+            'image_path' => $filename,
+            'category' => trim($validatedData['category']),
+            'last_edited_by' => Auth::id(),
         ]);
 
         return redirect()->route('gallery.index')->with('success', 'Gambar berhasil diperbarui!');
@@ -82,8 +109,13 @@ class GalleryController extends Controller
 
     public function destroy(Gallery $gallery)
     {
+        if (Auth::user()->role === 'editor' && Auth::id() !== $gallery->user_id) {
+            abort(403);
+        }
+
         Storage::disk('public')->delete($gallery->image_path);
         $gallery->delete();
+
         return redirect()->route('gallery.index')->with('success', 'Gambar berhasil dihapus.');
     }
 
@@ -92,8 +124,9 @@ class GalleryController extends Controller
         // $category sudah di-decode secara otomatis oleh Laravel
         // Query ini sekarang membandingkan dengan membersihkan spasi dan mengabaikan huruf besar/kecil
         $images = Gallery::where(DB::raw('LOWER(TRIM(category))'), 'like', strtolower(trim($category)))
-                          ->latest()
-                          ->paginate(12);
+                        ->where('status', 'approved') // hanya yang disetujui
+                        ->latest()
+                        ->paginate(12);
 
         return response()->json($images);
     }
@@ -101,10 +134,30 @@ class GalleryController extends Controller
     public function getForHome($category)
     {
         $images = Gallery::where(DB::raw('LOWER(TRIM(category))'), 'like', strtolower(trim($category)))
-                          ->latest()
-                          ->take(6)
-                          ->get();
+                        ->where('status', 'approved')
+                        ->latest()
+                        ->take(6)
+                        ->get();
 
         return response()->json($images);
+    }
+
+    public function updateStatus(Request $request, Gallery $gallery)
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403);
+        }
+
+        $request->validate([
+            'status' => 'required|in:approved,rejected,revision',
+        ]);
+
+        if ($request->status === 'approved') {
+            $gallery->approved_by = Auth::id();
+        }
+        $gallery->status = $request->status;
+        $gallery->save();
+
+        return back()->with('success', 'Status galeri berhasil diperbarui.');
     }
 }

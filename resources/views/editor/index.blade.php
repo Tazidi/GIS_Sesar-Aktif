@@ -5,9 +5,16 @@
     <h1 class="text-3xl font-bold text-gray-800 mb-8">Dashboard Editor</h1>
 
     <div class="grid grid-cols-1 gap-6">
+        {{-- Kelola Artikel --}}
         <a href="{{ route('articles.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
-            <h2 class="text-lg font-semibold text-blue-600 mb-1"><i class="fas fa-pen-nib mr-2"></i>Kelola Artikel Saya</h2>
+            <h2 class="text-lg font-semibold text-blue-600 mb-1"><i class="fas fa-pen-nib mr-2"></i>Kelola Artikel</h2>
             <p class="text-gray-500 text-sm">Lihat dan kelola artikel yang Anda buat.</p>
+        </a>
+
+        {{-- Kelola Galeri --}}
+        <a href="{{ route('gallery.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
+            <h2 class="text-lg font-semibold text-purple-600 mb-1"><i class="fas fa-images mr-2"></i>Kelola Galeri</h2>
+            <p class="text-gray-500 text-sm">Lihat dan kelola galeri yang Anda unggah.</p>
         </a>
     </div>
 </div>

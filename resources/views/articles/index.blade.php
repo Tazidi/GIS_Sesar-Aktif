@@ -46,7 +46,23 @@
 
                         <div class="text-xs text-gray-500 mt-4 flex items-center justify-between">
                             <div class="flex flex-col">
-                                <span>Oleh {{ $article->author ?? 'N/A' }} • {{ $article->created_at->format('d M Y') }}</span>
+                                <span>
+                                    Oleh {{ $article->author ?? 'N/A' }} •
+                                    Diterbitkan: {{ $article->created_at->format('d M Y H:i') }}
+                                </span>
+
+                                @if ($article->approver)
+                                    <span class="text-green-700 text-xs mt-1">
+                                        Disetujui oleh: {{ $article->approver->name }}
+                                    </span>
+                                @endif
+
+                                @if ($article->editor && $article->updated_at != $article->created_at)
+                                    <span class="text-blue-700 text-xs">
+                                        Terakhir diedit oleh: {{ $article->editor->name }} pada {{ $article->updated_at->format('d M Y H:i') }}
+                                    </span>
+                                @endif
+
                                 <span class="mt-1">
                                     👁️ {{ $article->visit_count ?? 0 }} views
                                     @if ($article->visit_count >= 100) {{-- kamu bisa sesuaikan angka thresholdnya --}}

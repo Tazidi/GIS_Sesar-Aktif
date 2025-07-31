@@ -14,7 +14,7 @@
                 </span>
                 <div class="ticker-wrap flex-grow">
                     <div class="ticker-move">
-                        <p class="text-sm text-gray-700">{{ $todayPosts->first()->title ?? 'Belum ada berita terbaru hari ini.' }}</p>
+                        <p class="text-sm text-gray-700">{{ $latestPosts->first()->title ?? 'Belum ada berita terbaru.' }}</p>
                     </div>
                 </div>
             </div>
@@ -29,7 +29,7 @@
                 </div>
                 
                 <div class="flex flex-col space-y-6 flex-grow">
-                    @forelse($todayPosts as $post)
+                    @forelse($latestPosts as $post)
                         <a href="{{ route('articles.show', $post) }}" class="flex-1 block group relative overflow-hidden shadow-md rounded-md">
                             <img src="{{ asset('thumbnails/' . basename($post->thumbnail)) }}" alt="{{ $post->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Definisikan URL dasar menggunakan Blade helper
     const galleryPageUrl = "{{ route('gallery.publik') }}";
-    const assetBaseUrl = "{{ asset('storage/') }}";
+    const assetBaseUrl = "{{ asset('gallery/') }}";
     const apiBaseUrl = "{{ url('/gallery/category') }}";
 
     async function fetchHomepageGallery(category) {

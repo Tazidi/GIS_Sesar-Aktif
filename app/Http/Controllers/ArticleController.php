@@ -69,7 +69,7 @@ class ArticleController extends Controller
             'author'    => 'required|max:255',
             'content'   => 'required',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
-            'tags'      => 'nullable|string|max:255', // Validasi untuk tags
+            'tags'      => 'nullable|string|max:255',
         ]);
 
         if ($request->hasFile('thumbnail')) {
@@ -80,7 +80,14 @@ class ArticleController extends Controller
         }
 
         $data['user_id'] = Auth::id();
-        $data['status'] = Auth::user()->role === 'admin' ? 'approved' : 'pending';
+        $data['last_edited_by'] = Auth::id();
+
+        if (Auth::user()->role === 'admin') {
+            $data['status'] = 'approved';
+            $data['approved_by'] = Auth::id();
+        } else {
+            $data['status'] = 'pending';
+        }
 
         Article::create($data);
 
@@ -123,6 +130,9 @@ class ArticleController extends Controller
 
         $article->update($data);
 
+        $article->last_edited_by = Auth::id();
+        $article->save();
+
         return redirect()->route('articles.index')->with('success', 'Artikel berhasil diperbarui.');
     }
 
@@ -151,6 +161,9 @@ class ArticleController extends Controller
             'status' => 'required|in:pending,approved,rejected,revision',
         ]);
 
+        if ($request->status === 'approved') {
+            $article->approved_by = Auth::id();
+        }
         $article->status = $request->status;
         $article->save();
 
