@@ -40,6 +40,7 @@ class MapFeatureController extends Controller
             'properties' => 'nullable|string', // Validasi sebagai string JSON
             'geometry' => 'required|json',
             'feature_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'caption' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -47,6 +48,7 @@ class MapFeatureController extends Controller
                 // Konversi string JSON dari form ke array sebelum disimpan
                 'properties' => json_decode($request->properties, true),
                 'geometry' => json_decode($request->geometry, true),
+                'caption' => $request->caption,
             ];
 
             // Handle upload gambar jika ada

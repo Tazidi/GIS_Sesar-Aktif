@@ -49,6 +49,14 @@
                             </div>
                         @endif
                     </div>
+
+                    <div>
+                        <label for="caption" class="block text-sm font-medium text-gray-700">Caption Gambar</label>
+                        <input type="text" name="caption" id="caption"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            value="{{ old('caption', $mapFeature->caption) }}">
+                        <p class="mt-2 text-xs text-gray-500">Caption opsional yang akan ditampilkan di bawah gambar di modal.</p>
+                    </div>
                 </div>
 
                 {{-- Kolom Kanan: Peta Leaflet --}}

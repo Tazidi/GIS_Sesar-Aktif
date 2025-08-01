@@ -36,7 +36,8 @@
                         {
                             "geometry": {!! $feature->geometry ? json_encode($feature->geometry) : 'null' !!},
                             "properties": {!! $feature->properties ? json_encode($feature->properties) : 'null' !!},
-                            "image_path": "{{ $feature->image_path ? asset($feature->image_path) : '' }}"
+                            "image_path": "{{ $feature->image_path ? asset($feature->image_path) : '' }}",
+                            "caption": "{{ addslashes($feature->caption ?? '') }}"
                         }@if(!$loop->last),@endif
                         @endforeach
                     ]
@@ -279,17 +280,12 @@
                 // Tampilkan foto dari public/map_feature_images
                 if (featureData.feature_image_path) {
                     const photoUrl = featureData.feature_image_path;
+                    const caption = featureData.caption || '';
                     content += `<div style="margin-top: 15px;">
                         <div style="font-weight: bold; margin-bottom: 8px; color: #333;">Foto:</div>
                         <div style="text-align: center;">
-                            <img src="${photoUrl}" 
-                                alt="Foto ${title}" 
-                                style="max-width: 100%; max-height: 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;"
-                                onclick="window.open('${photoUrl}', '_blank')"
-                                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                            <div style="display: none; padding: 20px; background: #f5f5f5; border-radius: 8px; color: #666; text-align: center;">
-                                Foto tidak dapat dimuat
-                            </div>
+                            <img src="${photoUrl}" alt="Foto ${title}" style="max-width: 100%; max-height: 300px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;"
+                            onclick="window.open('${photoUrl}', '_blank')" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">                            <div style="display: none; padding: 20px; background: #f5f5f5; border-radius: 8px; color: #666; text-align: center;"> Foto tidak dapat dimuat </div>
                         </div>
                     </div>`;
                 } else {
@@ -300,6 +296,13 @@
                         </div>
                     </div>`;
                 }
+
+                // Tampilkan caption (kalau ada), terpisah dari foto
+                // if (featureData.caption) {
+                //     content += `<div style="margin-top: 10px;">
+                //         <p style="font-style: italic; color: #555;">${featureData.caption}</p>
+                //     </div>`;
+                // }
             }
 
             detailContent.innerHTML = content;
@@ -322,7 +325,8 @@
                 dataForModal = {
                     ...props,
                     dataSource: 'geojson',
-                    feature_image_path: feature.feature_image_path || ''
+                    feature_image_path: feature.feature_image_path || '',
+                    caption: feature.caption || '',
                 };
             } else {
                 // Data manual dari maps table
@@ -331,8 +335,13 @@
                     dataSource: 'manual',
                     name: mapData.name,
                     description: mapData.description,
-                    photo: mapData.image_path
+                    photo: mapData.image_path,
+                    caption: mapData.caption || ''
                 };
+
+                if (dataForModal.caption === dataForModal.description) {
+                 dataForModal.caption = '';
+}
             }
 
             let quickInfoHTML = '';
@@ -371,6 +380,11 @@
                     Selengkapnya
                 </button>
             `;
+
+            if (!isGeoJSON && dataForModal.caption === dataForModal.description) {
+                dataForModal.caption = '';
+            }
+
         }
 
         // Close modal when clicking outside
@@ -528,11 +542,11 @@
                                         return style;
                                     },
                                     onEachFeature: function(feature, layer) {
-                                        // Gabungkan properties dengan image_path
-                                        feature.feature_image_path = featureData
-                                            .image_path;
-                                        const popupContent = createPopupContent(feature,
-                                            mapData);
+                                        // Gabungkan properties dengan image_path dan caption
+                                        feature.feature_image_path = featureData.image_path;
+                                        feature.caption = featureData.caption; // tambahkan baris ini
+
+                                        const popupContent = createPopupContent(feature, mapData);
                                         layer.bindPopup(popupContent, {
                                             maxWidth: 300,
                                             className: 'custom-popup'

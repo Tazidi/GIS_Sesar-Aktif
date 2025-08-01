@@ -43,6 +43,13 @@ class MapController extends Controller
             'radius' => 'nullable|numeric|min:0',
             'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimetypes:application/json,text/plain,text/json,text/geojson,text/csv,application/octet-stream|max:4096',
+            'fault_name' => 'nullable|string|max:255',
+            'fault_description' => 'nullable|string',
+            'magnitude' => 'nullable|numeric',
+            'fault_length' => 'nullable|numeric',
+            'fault_width' => 'nullable|numeric',
+            'fault_type' => 'nullable|string|in:R,N,SS',
+            'depth' => 'nullable|numeric',
         ]);
 
         if ($request->hasFile('image_path')) {
@@ -60,6 +67,8 @@ class MapController extends Controller
         }
 
         $map = Map::create($data);
+        $featureImages = $request->file('feature_images', []);
+        $featureCaptions = $request->input('feature_captions', []);
 
         // Ambil fitur dari geometry kolom (bukan file)
         if ($request->filled('geometry')) {
@@ -67,6 +76,7 @@ class MapController extends Controller
 
             if (isset($geojson['type']) && $geojson['type'] === 'FeatureCollection') {
                 $featureImages = $request->file('feature_images', []);
+                $featureCaptions = $request->input('feature_captions', []);
 
                 foreach ($geojson['features'] as $index => $feature) {
                     if (!isset($feature['geometry'])) continue;
@@ -79,11 +89,14 @@ class MapController extends Controller
                         $imagePath = 'map_feature_images/' . $imageName;
                     }
 
+                    $caption = isset($featureCaptions[$index]) ? $featureCaptions[$index] : null;
+
                     MapFeature::create([
                         'map_id' => $map->id,
                         'geometry' => $feature['geometry'],
                         'properties' => $feature['properties'] ?? [],
                         'image_path' => $imagePath,
+                        'caption' => $caption, // Gunakan variabel $caption
                     ]);
                 }
             }

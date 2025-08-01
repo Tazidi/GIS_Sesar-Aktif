@@ -26,6 +26,7 @@ class MapFeature extends Model
         'geometry',
         'properties',
         'image_path',
+        'caption',
     ];
 
     /**

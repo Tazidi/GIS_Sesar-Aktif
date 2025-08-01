@@ -45,6 +45,31 @@
                     </div>
 
                     <div>
+                        <label for="magnitude" class="block text-sm font-medium text-gray-700">Magnitudo Maksimum (Nmax)</label>
+                        <input type="number" step="0.1" name="magnitude" id="magnitude" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="{{ old('magnitude', $map->magnitude) }}">
+                    </div>
+
+                    <div>
+                        <label for="fault_length" class="block text-sm font-medium text-gray-700">Panjang Sesar (km)</label>
+                        <input type="number" step="0.1" name="fault_length" id="fault_length" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="{{ old('fault_length', $map->fault_length) }}">
+                    </div>
+
+                    <div>
+                        <label for="fault_type" class="block text-sm font-medium text-gray-700">Tipe Sesar</label>
+                        <select name="fault_type" id="fault_type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Pilih Tipe --</option>
+                            <option value="R" {{ old('fault_type', $map->fault_type) == 'R' ? 'selected' : '' }}>Reverse (naik)</option>
+                            <option value="N" {{ old('fault_type', $map->fault_type) == 'N' ? 'selected' : '' }}>Normal (turun)</option>
+                            <option value="SS" {{ old('fault_type', $map->fault_type) == 'SS' ? 'selected' : '' }}>Strike-Slip (Geser)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="fault_width" class="block text-sm font-medium text-gray-700">Lebar Sesar (meter)</label>
+                        <input type="number" step="0.1" name="fault_width" id="fault_width" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="{{ old('fault_width', $map->fault_width) }}">
+                    </div>
+
+                    <div>
                         <label for="layer-select" class="block text-sm font-medium text-gray-700">Layer</label>
                         <select name="layer_id" id="layer-select" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" >
                             <option value="">-- Pilih Layer --</option>
@@ -316,6 +341,12 @@
 
                             div.appendChild(label);
                             div.appendChild(input);
+                            const captionInput = document.createElement('input');
+                            captionInput.type = 'text';
+                            captionInput.name = `feature_captions[${index}]`; // Array untuk menyimpan caption per fitur
+                            captionInput.placeholder = 'Caption foto (opsional)';
+                            captionInput.className = 'mt-1 block w-full text-sm text-gray-600 border-gray-300 rounded-md shadow-sm';
+                            div.appendChild(captionInput);
                             featureImagesList.appendChild(div);
                         });
 
