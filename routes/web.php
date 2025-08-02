@@ -151,3 +151,5 @@ Route::get('/auth/google/callback', [GoogleLoginController::class, 'callback'])-
 |--------------------------------------------------------------------------
 */
 require __DIR__.'/auth.php';
+
+Route::get('/gallery/peta-interaktif', [GalleryController::class, 'petaInteraktif'])->name('gallery.peta-interaktif');

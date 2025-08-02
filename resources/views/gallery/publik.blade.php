@@ -54,7 +54,7 @@
         </div>
         <div class="mb-6 flex flex-wrap justify-center border-b border-gray-300">
             @php
-                $categories = ['Sesar Aktif', 'Peta Geologi', 'Mitigasi Bencana', 'Studi Lapangan', 'Lainnya'];
+                $categories = ['Sesar Jawa Bagian Barat', 'Mitigasi Bencana', 'Studi Lapangan', 'Lainnya'];
             @endphp
             @foreach ($categories as $category)
                 <button data-category="{{ $category }}" 
@@ -196,6 +196,68 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    async function fetchGalleryPetaInteraktif() {
+        gridContainer.innerHTML = `<div class="col-span-full py-8 text-center text-gray-500">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Memuat peta interaktif...</span>
+        </div>`;
+        paginationContainer.innerHTML = '';
+
+        try {
+            const response = await fetch("{{ route('gallery.peta-interaktif') }}", {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const html = await response.text();
+            gridContainer.innerHTML = html;
+
+            // Pastikan script Leaflet dimuat jika belum ada
+            if (typeof L === 'undefined') {
+                const leafletScript = document.createElement('script');
+                leafletScript.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+                leafletScript.integrity = "sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=";
+                leafletScript.crossOrigin = "";
+                
+                leafletScript.onload = () => {
+                    console.log('Leaflet berhasil dimuat');
+                    // Script inisialisasi peta sudah ada di dalam HTML yang dikembalikan
+                };
+                
+                leafletScript.onerror = () => {
+                    console.error('Gagal memuat Leaflet');
+                    gridContainer.innerHTML = `<div class="col-span-full py-8 text-center text-red-500">
+                        Gagal memuat library peta. Silakan refresh halaman.
+                    </div>`;
+                };
+                
+                document.head.appendChild(leafletScript);
+            } else {
+                console.log('Leaflet sudah tersedia');
+                // Script inisialisasi peta sudah ada di dalam HTML yang dikembalikan
+            }
+
+        } catch (error) {
+            console.error('Error fetching peta interaktif:', error);
+            gridContainer.innerHTML = `<div class="col-span-full py-8 text-center text-red-500">
+                <svg class="mx-auto h-12 w-12 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-red-900 mb-2">Gagal memuat peta interaktif</h3>
+                <p class="text-red-600">Terjadi kesalahan saat memuat data peta. Silakan coba lagi nanti.</p>
+            </div>`;
+        }
+    }
+
     function setActiveTab(category) {
         tabs.forEach(t => {
             t.classList.remove('active-tab', 'border-red-600', 'text-red-600');
@@ -203,6 +265,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 t.classList.add('active-tab', 'border-red-600', 'text-red-600');
             }
         });
+
+        if (category === "Sesar Jawa Bagian Barat") {
+            fetchGalleryPetaInteraktif();
+            return;
+        }
+
         const encodedCategory = encodeURIComponent(category);
         fetchGallery(`${apiBaseUrl}/${encodedCategory}`);
     }
