@@ -17,14 +17,15 @@
         @if ($article->thumbnail)
             <div class="mb-6">
                 <img src="{{ asset('thumbnails/' . basename($article->thumbnail)) }}"
-                     alt="Thumbnail"
+                     alt="Thumbnail untuk {{ $article->title }}"
                      class="w-full max-h-[400px] object-cover rounded-md">
             </div>
         @endif
 
-        {{-- Konten Artikel --}}
-        <div class="prose max-w-none text-gray-800">
-            {!! nl2br(e($article->content)) !!}
+        {{-- Konten Artikel (Cara Menampilkan yang Benar) --}}
+        {{-- Menambahkan class 'trix-content' agar styling list, blockquote, dll. konsisten --}}
+        <div class="prose max-w-none text-gray-800 trix-content">
+            {!! $article->content !!}
         </div>
 
     </div>

@@ -47,31 +47,15 @@
                 @enderror
             </div>
 
-            {{-- Konten Artikel --}}
+            {{-- Konten Artikel (Implementasi Trix Editor) --}}
             <div class="mb-6">
                 <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Konten</label>
-                <textarea id="content" name="content" rows="12"
-                          class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 @error('content') border-red-500 @enderror"
-                          placeholder="Tulis seluruh isi artikel di sini..." required>{{ old('content') }}</textarea>
+                <input id="content" type="hidden" name="content" value="{{ old('content') }}">
+                <trix-editor input="content" class="trix-content"></trix-editor>
                 @error('content')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
-
-            {{-- Daftar Tag yang Sudah Ada (Klik Cepat) --}}
-            @if(isset($tags) && $tags->count() > 0)
-                <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Tag yang Tersedia</label>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach($tags as $tag)
-                            <span onclick="document.getElementById('tags').value='{{ $tag }}'"
-                                class="cursor-pointer bg-gray-200 text-gray-700 text-sm px-3 py-1 rounded hover:bg-gray-300 transition">
-                                {{ $tag }}
-                            </span>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
 
             {{-- Input Tag --}}
             <div class="mb-5">
@@ -79,13 +63,13 @@
                 <input list="tags-list" name="tags" id="tags" value="{{ old('tags') }}"
                     placeholder="Contoh: Berita, Artikel Ilmiah"
                     class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 @error('tags') border-red-500 @enderror">
-
                 <datalist id="tags-list">
-                    @foreach($tags as $tag)
-                        <option value="{{ $tag }}">
-                    @endforeach
+                    @if(isset($tags))
+                        @foreach($tags as $tag)
+                            <option value="{{ $tag }}">
+                        @endforeach
+                    @endif
                 </datalist>
-
                 @error('tags')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -114,15 +98,13 @@
 </div>
 @endsection
 
-{{-- Script untuk menampilkan nama file yang dipilih --}}
 @push('scripts')
 <script>
-    document.getElementById('thumbnail').addEventListener('change', function(event) {
-        const fileInfo = document.getElementById('file-info');
-        if (event.target.files.length > 0) {
-            fileInfo.textContent = event.target.files[0].name;
-        } else {
-            fileInfo.textContent = 'Klik untuk mengunggah atau seret file';
+    document.addEventListener('trix-initialize', function(event) {
+        const toolbar = event.target.toolbarElement;
+        const fileTools = toolbar.querySelector('.trix-button-group--file-tools');
+        if (fileTools) {
+            fileTools.remove();
         }
     });
 </script>
