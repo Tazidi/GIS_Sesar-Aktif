@@ -13,6 +13,8 @@ use App\Http\Controllers\GalleryController;
 use App\Models\Map;
 use App\Http\Controllers\MapFeatureController;
 use App\Http\Controllers\Auth\GoogleLoginController;
+use App\Http\Controllers\SurveyLocationController;
+use App\Http\Controllers\GalleryMapsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,9 +39,7 @@ Route::get('/artikel-publik', [PublicArticleController::class, 'index'])->name('
 
 // Galeri Publik (tanpa login)
 Route::get('/galeri-publik', [GalleryController::class, 'publik'])->name('gallery.publik');
-
 Route::get('/gallery/category/{category}', [GalleryController::class, 'getByCategory'])->name('gallery.getByCategory');
-
 Route::get('/gallery/category/{category}/home', [GalleryController::class, 'getForHome'])->name('gallery.getForHome');
 
 /*
@@ -53,6 +53,7 @@ Route::get('/dashboard', function () {
     return match ($role) {
         'admin' => redirect()->route('admin.index'),
         'editor' => redirect()->route('editor.index'),
+        'surveyor' => redirect()->route('surveyor.index'), // ✅ arahkan ke dashboard khusus
         default => redirect()->route('home'),
     };
 })->middleware(['auth'])->name('dashboard');
@@ -77,6 +78,15 @@ Route::middleware(['auth', 'role:editor'])->get('/editor', function () {
 
 /*
 |--------------------------------------------------------------------------
+| Surveyor Dashboard (BARU)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:surveyor'])->get('/surveyor', function () {
+    return view('surveyor.index'); // ✅ pastikan file ini ada di resources/views/surveyor/index.blade.php
+})->name('surveyor.index');
+
+/*
+|--------------------------------------------------------------------------
 | Admin & Editor - Manajemen Artikel
 |--------------------------------------------------------------------------
 */
@@ -88,12 +98,11 @@ Route::middleware(['auth', 'role:admin,editor'])->group(function () {
 Route::get('/articles/{article}', [ArticleController::class, 'show'])->name('articles.show');
 
 /*
-|--------------------------------------------------------------------------|
+|--------------------------------------------------------------------------
 | Admin & Editor - Manajemen Galeri
-|--------------------------------------------------------------------------|
+|--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin,editor'])->group(function () {
-    // Galeri
     Route::get('/galeri', [GalleryController::class, 'index'])->name('gallery.index');
     Route::get('/galeri/create', [GalleryController::class, 'create'])->name('gallery.create');
     Route::post('/galeri', [GalleryController::class, 'store'])->name('gallery.store');
@@ -109,17 +118,21 @@ Route::middleware(['auth', 'role:admin,editor'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    // Admin lainnya
     Route::resource('maps', MapController::class);
     Route::resource('users', UserController::class);
     Route::resource('layers', LayerController::class);
-
-    // Menampilkan daftar fitur untuk sebuah peta
     Route::get('/maps/{map}/features', [MapFeatureController::class, 'index'])->name('map-features.index');
-    // Menampilkan form edit untuk sebuah fitur
     Route::get('/map-features/{mapFeature}/edit', [MapFeatureController::class, 'edit'])->name('map-features.edit');
-    // Mengirim data pembaruan untuk sebuah fitur
     Route::put('/map-features/{mapFeature}', [MapFeatureController::class, 'update'])->name('map-features.update');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Admin & Surveyor - Manajemen Survey
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:admin,surveyor'])->group(function () {
+    Route::resource('survey-locations', SurveyLocationController::class)->except(['show']);
 });
 
 /*
@@ -138,12 +151,8 @@ Route::middleware(['auth'])->group(function () {
 | Auth (Google Login)
 |--------------------------------------------------------------------------
 */
-// Rute untuk redirect ke halaman login Google
 Route::get('/auth/google/redirect', [GoogleLoginController::class, 'redirect'])->name('auth.google.redirect');
-
-// Rute untuk callback dari Google
 Route::get('/auth/google/callback', [GoogleLoginController::class, 'callback'])->name('auth.google.callback');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -151,7 +160,5 @@ Route::get('/auth/google/callback', [GoogleLoginController::class, 'callback'])-
 |--------------------------------------------------------------------------
 */
 require __DIR__.'/auth.php';
-
-use App\Http\Controllers\GalleryMapsController;
 
 Route::get('/galeri-peta', [GalleryMapsController::class, 'index'])->name('gallery_maps.peta');

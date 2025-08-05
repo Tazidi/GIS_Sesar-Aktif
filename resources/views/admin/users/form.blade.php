@@ -27,7 +27,8 @@
                 class="w-full border-gray-300 rounded-md px-3 py-2 shadow-sm focus:ring focus:ring-red-200">
             <option value="admin" @selected(old('role', $user->role) == 'admin')>Admin</option>
             <option value="editor" @selected(old('role', $user->role) == 'editor')>Editor</option>
-            <option value="user" @selected(old('role', 'user') == 'user')>User</option>
+            <option value="surveyor" @selected(old('role', $user->role) == 'surveyor')>Surveyor</option>
+            <option value="user" @selected(old('role', $user->role) == 'user')>User</option>
         </select>
     </div>
 

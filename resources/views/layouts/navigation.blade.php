@@ -30,6 +30,8 @@
                                 <a href="{{ route('admin.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
                             @elseif(auth()->user()->role === 'editor')
                                 <a href="{{ route('editor.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Editor Dashboard</a>
+                            @elseif(auth()->user()->role === 'surveyor')
+                                <a href="{{ route('surveyor.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Surveyor Dashboard</a>
                             @endif
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf

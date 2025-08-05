@@ -4,7 +4,6 @@
 <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
     <h1 class="text-3xl font-bold text-gray-800 mb-8">Dashboard Admin</h1>
 
-    {{-- Semua kartu sekarang ada di dalam satu grid yang sama --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
         {{-- Kartu Kelola Galeri --}}
@@ -35,6 +34,12 @@
         <a href="{{ route('layers.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
             <h2 class="text-lg font-semibold text-yellow-600 mb-1"><i class="fas fa-layer-group mr-2"></i>Kelola Layer</h2>
             <p class="text-gray-500 text-sm">Tambahkan dan atur layer untuk visualisasi peta.</p>
+        </a>
+
+        {{-- Kartu Kelola Survey Lokasi --}}
+        <a href="{{ route('survey-locations.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
+            <h2 class="text-lg font-semibold text-red-600 mb-1"><i class="fas fa-map-marker-alt mr-2"></i>Kelola Survey Lokasi</h2>
+            <p class="text-gray-500 text-sm">Lihat dan kelola data lokasi hasil survey dari surveyor.</p>
         </a>
 
     </div>
