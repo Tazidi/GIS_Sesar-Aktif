@@ -10,6 +10,7 @@ class Map extends Model
         'name',
         'description',
         'layer_id',       // relasi foreign key ke tabel layers
+        'kategori_id',
         'lat',
         'lng',
         'distance',
@@ -47,6 +48,11 @@ class Map extends Model
     public function features()
     {
         return $this->hasMany(MapFeature::class);
+    }
+
+    public function kategori()
+    {
+        return $this->belongsTo(Kategori::class, 'kategori_id', 'id');
     }
 
 }

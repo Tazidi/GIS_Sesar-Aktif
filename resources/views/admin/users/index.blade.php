@@ -2,6 +2,13 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    {{-- Tombol Kembali ke Dashboard --}}
+        <div class="mb-4">
+            <a href="{{ route('dashboard') }}"
+            class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-300 transition">
+                ← Kembali ke Dashboard
+            </a>
+        </div>
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-800">Daftar Pengguna</h1>
         <a href="{{ route('users.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">

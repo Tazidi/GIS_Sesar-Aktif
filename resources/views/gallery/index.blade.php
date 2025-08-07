@@ -3,6 +3,13 @@
 @section('content')
 <div class="py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {{-- Tombol Kembali ke Dashboard --}}
+        <div class="mb-4">
+            <a href="{{ route('dashboard') }}"
+            class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-300 transition">
+                ← Kembali ke Dashboard
+            </a>
+        </div>
         <div class="mb-6 flex justify-between items-center">
             <h2 class="text-3xl font-bold">Manajemen Galeri</h2>
             <a href="{{ route('gallery.create') }}" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">

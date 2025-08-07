@@ -31,6 +31,14 @@
 
 @section('content')
     <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {{-- Tombol Kembali ke Dashboard --}}
+        <div class="mb-4">
+            <a href="{{ route('dashboard') }}"
+            class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-300 transition">
+                ← Kembali ke Dashboard
+            </a>
+        </div>
+
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Daftar Peta</h1>
             <a href="{{ route('maps.create') }}"
@@ -38,6 +46,13 @@
                 Tambah Peta Baru
             </a>
         </div>
+
+        <form method="GET" action="{{ route('maps.index') }}" class="mb-4 flex items-center gap-2">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama peta atau jenis fitur..."
+                class="border-gray-300 rounded-md shadow-sm w-full sm:w-64">
+            <button type="submit"
+                class="bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition">Cari</button>
+        </form>
 
         <div class="bg-white shadow-md rounded-lg overflow-hidden">
             <div class="overflow-x-auto">

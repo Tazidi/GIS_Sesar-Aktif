@@ -15,6 +15,8 @@ use App\Http\Controllers\MapFeatureController;
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\SurveyLocationController;
 use App\Http\Controllers\GalleryMapsController;
+use App\Http\Controllers\KategoriController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -26,10 +28,7 @@ use App\Http\Controllers\GalleryMapsController;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Halaman Visualisasi Peta Publik
-Route::get('/visualisasi-peta', function () {
-    $maps = Map::all();
-    return view('visualisasi.index', compact('maps'));
-})->name('visualisasi.index');
+Route::get('/visualisasi', [MapController::class, 'visualisasi'])->name('visualisasi.index');
 
 // Endpoint GeoJSON
 Route::get('/maps/{map}/geojson', [MapController::class, 'geojson'])->name('maps.geojson');
@@ -121,6 +120,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('maps', MapController::class);
     Route::resource('users', UserController::class);
     Route::resource('layers', LayerController::class);
+    Route::resource('kategori', KategoriController::class);
     Route::get('/maps/{map}/features', [MapFeatureController::class, 'index'])->name('map-features.index');
     Route::get('/map-features/{mapFeature}/edit', [MapFeatureController::class, 'edit'])->name('map-features.edit');
     Route::put('/map-features/{mapFeature}', [MapFeatureController::class, 'update'])->name('map-features.update');
@@ -161,4 +161,4 @@ Route::get('/auth/google/callback', [GoogleLoginController::class, 'callback'])-
 */
 require __DIR__.'/auth.php';
 
-Route::get('/galeri-peta', [GalleryMapsController::class, 'index'])->name('gallery_maps.peta');
+Route::get('/galeri-peta', [GalleryMapsController::class, 'galeriPeta'])->name('gallery_maps.peta');

@@ -3,7 +3,13 @@
 @section('content')
 <div class="py-12">
     <div class="px-4 sm:px-6 lg:px-8">
-
+        {{-- Tombol Kembali ke Dashboard --}}
+        <div class="mb-4">
+            <a href="{{ route('dashboard') }}"
+            class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-300 transition">
+                ← Kembali ke Dashboard
+            </a>
+        </div>
         {{-- Judul Halaman dan Tombol Create --}}
         <div class="mb-8 border-b border-gray-300 flex justify-between items-center">
             <h2 class="text-3xl font-bold inline-block pb-2 border-b-4 border-red-600">Semua Artikel</h2>

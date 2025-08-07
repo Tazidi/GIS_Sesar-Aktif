@@ -45,31 +45,6 @@
                     </div>
 
                     <div>
-                        <label for="magnitude" class="block text-sm font-medium text-gray-700">Magnitudo Maksimum (Nmax)</label>
-                        <input type="number" step="0.1" name="magnitude" id="magnitude" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="{{ old('magnitude', $map->magnitude) }}">
-                    </div>
-
-                    <div>
-                        <label for="fault_length" class="block text-sm font-medium text-gray-700">Panjang Sesar (km)</label>
-                        <input type="number" step="0.1" name="fault_length" id="fault_length" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="{{ old('fault_length', $map->fault_length) }}">
-                    </div>
-
-                    <div>
-                        <label for="fault_type" class="block text-sm font-medium text-gray-700">Tipe Sesar</label>
-                        <select name="fault_type" id="fault_type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <option value="">-- Pilih Tipe --</option>
-                            <option value="R" {{ old('fault_type', $map->fault_type) == 'R' ? 'selected' : '' }}>Reverse (naik)</option>
-                            <option value="N" {{ old('fault_type', $map->fault_type) == 'N' ? 'selected' : '' }}>Normal (turun)</option>
-                            <option value="SS" {{ old('fault_type', $map->fault_type) == 'SS' ? 'selected' : '' }}>Strike-Slip (Geser)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="fault_width" class="block text-sm font-medium text-gray-700">Lebar Sesar (meter)</label>
-                        <input type="number" step="0.1" name="fault_width" id="fault_width" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="{{ old('fault_width', $map->fault_width) }}">
-                    </div>
-
-                    <div>
                         <label for="layer-select" class="block text-sm font-medium text-gray-700">Layer</label>
                         <select name="layer_id" id="layer-select" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" >
                             <option value="">-- Pilih Layer --</option>
@@ -80,6 +55,18 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <div>
+                    <label for="kategori-select" class="block text-sm font-medium text-gray-700">Kategori</label>
+                    <select name="kategori_id" id="kategori-select" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">-- Pilih Kategori --</option>
+                        @foreach ($kategoris as $kategori)
+                            <option value="{{ $kategori->id }}" {{ old('kategori_id', $map->kategori_id) == $kategori->id ? 'selected' : '' }}>
+                                {{ $kategori->nama_kategori }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
                         <div>

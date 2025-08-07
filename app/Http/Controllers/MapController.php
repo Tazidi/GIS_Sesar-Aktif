@@ -5,15 +5,29 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Map;
 use App\Models\Layer;
+use App\Models\Kategori;
 use App\Models\MapFeature;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class MapController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $maps = Map::with('layer')->get();
+        $query = Map::with('layer')->leftJoin('layers', 'maps.layer_id', '=', 'layers.id')
+            ->select('maps.*');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('maps.name', 'like', "%$search%")
+                ->orWhere('maps.layer_type', 'like', "%$search%")
+                ->orWhere('layers.nama_layer', 'like', "%$search%");
+            });
+        }
+
+        $maps = $query->get();
         return view('maps.index', compact('maps'));
     }
 
@@ -21,7 +35,8 @@ class MapController extends Controller
     {
         $map = new Map();
         $layers = Layer::all(); // ambil dari model Layer, bukan dari kolom Map
-        return view('maps.create', compact('map', 'layers'));
+        $kategoris = \App\Models\Kategori::all();
+        return view('maps.create', compact('map', 'layers', 'kategoris'));
     }
 
     public function store(Request $request)
@@ -43,13 +58,7 @@ class MapController extends Controller
             'radius' => 'nullable|numeric|min:0',
             'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimetypes:application/json,text/plain,text/json,text/geojson,text/csv,application/octet-stream|max:4096',
-            'fault_name' => 'nullable|string|max:255',
-            'fault_description' => 'nullable|string',
-            'magnitude' => 'nullable|numeric',
-            'fault_length' => 'nullable|numeric',
-            'fault_width' => 'nullable|numeric',
-            'fault_type' => 'nullable|string|in:R,N,SS',
-            'depth' => 'nullable|numeric',
+            'kategori_id' => 'nullable|exists:kategori,id',
         ]);
 
         if ($request->hasFile('image_path')) {
@@ -108,7 +117,8 @@ class MapController extends Controller
     public function edit(Map $map)
     {
         $layers = Layer::all();
-        return view('maps.edit', compact('map', 'layers'));
+        $kategoris = Kategori::all();
+        return view('maps.edit', compact('map', 'layers', 'kategoris'));
     }
 
     public function update(Request $request, Map $map)
@@ -130,6 +140,7 @@ class MapController extends Controller
             'radius' => 'nullable|numeric|min:0',
             'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimes:json,csv,zip,geojson|max:4096',
+            'kategori_id' => 'nullable|exists:kategori,id',
         ]);
 
         if ($request->hasFile('image_path')) {
@@ -204,4 +215,16 @@ class MapController extends Controller
 
         return response()->json(['error' => 'Tidak ada data GeoJSON yang tersedia'], 404);
     }
+
+    public function visualisasi()
+    {
+        $maps = Map::with(['layer', 'features', 'kategori'])
+            ->whereHas('kategori', function ($query) {
+                $query->where('nama_kategori', 'Visualisasi');
+            })
+            ->get();
+
+        return view('visualisasi.index', compact('maps'));
+    }
+
 }
