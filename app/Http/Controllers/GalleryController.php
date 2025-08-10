@@ -4,13 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Gallery;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; // Import DB Facade
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class GalleryController extends Controller
 {
-    // ... (method publik, index, create, store, edit, update, destroy tetap sama seperti kode saya sebelumnya) ...
     public function publik()
     {
         return view('gallery.publik');
@@ -52,7 +51,7 @@ class GalleryController extends Controller
             'user_id'    => Auth::id(),
             'title'      => $validatedData['title'],
             'description'=> $validatedData['description'],
-            'image_path' => $filename, // hanya nama file, TANPA 'gallery/'
+            'image_path' => $filename,
             'category'   => trim($validatedData['category']),
             'status'     => Auth::user()->role === 'admin' ? 'approved' : 'pending',
         ]);
@@ -85,13 +84,11 @@ class GalleryController extends Controller
         $filename = $gallery->image_path;
 
         if ($request->hasFile('image')) {
-            // Hapus file lama
             $oldPath = public_path('gallery/' . $gallery->image_path);
             if (file_exists($oldPath)) {
                 unlink($oldPath);
             }
 
-            // Simpan file baru
             $filename = time() . '_' . $request->file('image')->getClientOriginalName();
             $request->file('image')->move(public_path('gallery'), $filename);
         }
@@ -119,16 +116,40 @@ class GalleryController extends Controller
         return redirect()->route('gallery.index')->with('success', 'Gambar berhasil dihapus.');
     }
 
-    public function getByCategory($category)
+    /**
+     * PERUBAHAN UTAMA: Menambahkan logika pencarian dan memperbaiki respons JSON.
+     */
+    public function getByCategory(Request $request, $category)
     {
-        // $category sudah di-decode secara otomatis oleh Laravel
-        // Query ini sekarang membandingkan dengan membersihkan spasi dan mengabaikan huruf besar/kecil
-        $images = Gallery::where(DB::raw('LOWER(TRIM(category))'), 'like', strtolower(trim($category)))
-                        ->where('status', 'approved') // hanya yang disetujui
-                        ->latest()
-                        ->paginate(12);
+        // Ambil term pencarian dari request, default string kosong
+        $searchTerm = $request->input('search', '');
 
-        return response()->json($images);
+        $query = Gallery::where(DB::raw('LOWER(TRIM(category))'), 'like', strtolower(trim($category)))
+                        ->where('status', 'approved');
+
+        // Jika ada term pencarian, tambahkan kondisi WHERE
+        if (!empty($searchTerm)) {
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('title', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('description', 'LIKE', "%{$searchTerm}%");
+            });
+        }
+
+        // Lanjutkan dengan paginasi
+        $images = $query->latest()->paginate(12);
+
+        // Penting: Tambahkan query string pencarian ke link paginasi
+        // agar filter tetap aktif saat berpindah halaman.
+        if (!empty($searchTerm)) {
+            $images->appends(['search' => $searchTerm]);
+        }
+        
+        // **PERBAIKAN**: Mengembalikan data paginasi sebagai array yang rapi.
+        // Ini membuat file `simple-json.blade.php` tidak lagi diperlukan.
+        return response()->json([
+            'data' => $images->items(),
+            'links' => $images->toArray()['links'], // Kirim array link paginasi
+        ]);
     }
 
     public function getForHome($category)
@@ -141,7 +162,7 @@ class GalleryController extends Controller
 
         return response()->json($images);
     }
-
+    
     public function updateStatus(Request $request, Gallery $gallery)
     {
         if (Auth::user()->role !== 'admin') {

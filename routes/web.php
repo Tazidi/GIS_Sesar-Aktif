@@ -34,12 +34,13 @@ Route::get('/visualisasi', [MapController::class, 'visualisasi'])->name('visuali
 Route::get('/maps/{map}/geojson', [MapController::class, 'geojson'])->name('maps.geojson');
 
 // Artikel Publik
-Route::get('/artikel-publik', [PublicArticleController::class, 'index'])->name('artikel.publik');
+Route::get('/artikel-publik', [ArticleController::class, 'publik'])->name('artikel.publik');
 
 // Galeri Publik (tanpa login)
 Route::get('/galeri-publik', [GalleryController::class, 'publik'])->name('gallery.publik');
 Route::get('/gallery/category/{category}', [GalleryController::class, 'getByCategory'])->name('gallery.getByCategory');
 Route::get('/gallery/category/{category}/home', [GalleryController::class, 'getForHome'])->name('gallery.getForHome');
+
 
 /*
 |--------------------------------------------------------------------------
