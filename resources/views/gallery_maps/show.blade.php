@@ -183,10 +183,10 @@
     <div class="map-gallery-container">
         <header class="map-header">
             <h1 class="map-title">
-                Visualisasi Peta
+                {{ $map->name }}
             </h1>
-            <a href="{{ route('home') }}" class="back-link">
-                Kembali ke Beranda
+            <a href="{{ route('gallery_maps.index') }}" class="back-link">
+                Kembali ke Galeri Peta
             </a>
         </header>
 
@@ -195,7 +195,6 @@
                 <div id="map"></div>
             </div>
         </div>
-        
         
         {{-- Deskripsi Peta --}}
         <div class="max-w-2xl mx-auto bg-white p-6 shadow-lg rounded-lg mt-6">
@@ -206,7 +205,7 @@
                 {{ $maps->first()->description ?? 'Belum ada deskripsi yang tersedia untuk peta ini.' }}
             </p>
         </div>
-        
+
         <div id="detail-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
