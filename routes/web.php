@@ -163,3 +163,6 @@ Route::get('/auth/google/callback', [GoogleLoginController::class, 'callback'])-
 require __DIR__.'/auth.php';
 
 Route::get('/galeri-peta', [GalleryMapsController::class, 'galeriPeta'])->name('gallery_maps.peta');
+Route::get('/gallery/{id}', [GalleryMapsController::class, 'show'])->name('gallery.show');
+Route::get('/gallery-maps', [GalleryMapsController::class, 'galeriPeta'])
+     ->name('gallery_maps.index');

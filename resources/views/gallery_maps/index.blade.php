@@ -154,7 +154,12 @@
                     
                     {{-- Bagian Informasi (Kanan pada desktop, Bawah pada mobile) --}}
                     <div class="map-info">
-                        <div class="map-title">{{ $map->name }}</div>
+                        <div class="map-title">
+                            <a href="{{ route('gallery.show', $map->id) }}" 
+                            class="text-blue-600 hover:underline">
+                                {{ $map->name }}
+                            </a>
+                        </div>
                         
                         <div class="map-description">
                             @if ($map->description)
@@ -362,22 +367,22 @@
                             return L.circleMarker(latlng, { ...style, radius: 8 });
                         },
                         onEachFeature: (feature, layer) => {
-                            const title = feature.properties?.name || mapData.name || 'Info';
-                            const description = feature.properties?.description || mapData.description || '';
+                            // const title = feature.properties?.name || mapData.name || 'Info';
+                            // const description = feature.properties?.description || mapData.description || '';
                             
-                            let popupContent = `<div class="text-center">
-                                <h4 class="font-bold text-gray-900 mb-1">${title}</h4>`;
+                            // let popupContent = `<div class="text-center">
+                            //     <h4 class="font-bold text-gray-900 mb-1">${title}</h4>`;
                             
-                            if (description) {
-                                popupContent += `<p class="text-sm text-gray-600">${description}</p>`;
-                            }
+                            // if (description) {
+                            //     popupContent += `<p class="text-sm text-gray-600">${description}</p>`;
+                            // }
                             
-                            popupContent += `</div>`;
+                            // popupContent += `</div>`;
                             
-                            layer.bindPopup(popupContent, {
-                                maxWidth: 200,
-                                className: 'custom-popup'
-                            });
+                            // layer.bindPopup(popupContent, {
+                            //     maxWidth: 200,
+                            //     className: 'custom-popup'
+                            // });
                         }
                     }).addTo(previewMap);
                     
@@ -416,11 +421,13 @@
                         } else {
                             fallbackLayer = L.circleMarker(latlng, { ...style, radius: 8 });
                         }
-                        
-                        fallbackLayer.bindPopup(`<div class="text-center">
-                            <h4 class="font-bold text-gray-900">${mapData.name}</h4>
-                            ${mapData.description ? `<p class="text-sm text-gray-600 mt-1">${mapData.description}</p>` : ''}
-                        </div>`).addTo(previewMap);
+
+                        fallbackLayer.addTo(previewMap); // Tanpa bindPopup
+
+                        // fallbackLayer.bindPopup(`<div class="text-center">
+                        //     <h4 class="font-bold text-gray-900">${mapData.name}</h4>
+                        //     ${mapData.description ? `<p class="text-sm text-gray-600 mt-1">${mapData.description}</p>` : ''}
+                        // </div>`).addTo(previewMap);
                         
                         previewMap.setView(latlng, 10);
                     } else {
