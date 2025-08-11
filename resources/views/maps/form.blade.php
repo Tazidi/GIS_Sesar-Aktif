@@ -310,33 +310,51 @@
 
                         geojson.features.forEach((feature, index) => {
                             const div = document.createElement('div');
-                            div.className = 'flex flex-col';
+                            div.className = 'flex flex-col mb-4 p-3 border border-gray-300 rounded-lg bg-gray-50';
 
-                            const label = document.createElement('label');
                             const props = feature.properties || {};
                             const featureLabel = props.PopupInfo || props.Name || `Fitur #${index + 1}`;
-                            label.textContent = `Gambar untuk: ${featureLabel}`;
-                            label.className = 'text-sm text-gray-700 mb-1';
 
+                            // Label foto
+                            const label = document.createElement('label');
+                            label.textContent = `Gambar untuk: ${featureLabel}`;
+                            label.className = 'text-sm font-medium text-gray-700 mb-1';
+                            div.appendChild(label);
+
+                            // Input file foto
                             const input = document.createElement('input');
                             input.type = 'file';
                             input.name = 'feature_images[]';
                             input.accept = 'image/*';
-                            input.className = 'form-input';
-
-                            div.appendChild(label);
+                            input.className = 'form-input mb-2';
                             div.appendChild(input);
+
+                            // Caption foto
                             const captionInput = document.createElement('input');
                             captionInput.type = 'text';
-                            captionInput.name = `feature_captions[${index}]`; // Array untuk menyimpan caption per fitur
+                            captionInput.name = `feature_captions[${index}]`;
                             captionInput.placeholder = 'Caption foto (opsional)';
-                            captionInput.className = 'mt-1 block w-full text-sm text-gray-600 border-gray-300 rounded-md shadow-sm';
+                            captionInput.className = 'mb-2 block w-full text-sm text-gray-600 border-gray-300 rounded-md shadow-sm';
                             div.appendChild(captionInput);
+
+                            // Informasi Teknis
+                            const techLabel = document.createElement('label');
+                            techLabel.textContent = `Informasi Teknis untuk: ${featureLabel}`;
+                            techLabel.className = 'text-sm font-medium text-gray-700 mb-1';
+                            div.appendChild(techLabel);
+
+                            const techInput = document.createElement('textarea');
+                            techInput.name = `feature_technical_info[${index}]`;
+                            techInput.placeholder = 'Contoh: Panjang: 5 km, Lebar: 2 km, Elevasi: 150 m';
+                            techInput.rows = 2;
+                            techInput.className = 'block w-full text-sm text-gray-600 border-gray-300 rounded-md shadow-sm';
+                            div.appendChild(techInput);
+
                             featureImagesList.appendChild(div);
                         });
 
-                        // Simpan geometri ke input
-                        geometryInput.value = JSON.stringify(geojson.features.length === 1 ? geojson.features[0].geometry : geojson);
+                        // Simpan geometri ke input (selalu full FeatureCollection)
+                        geometryInput.value = JSON.stringify(geojson);
                         
                         // Update UI form sesuai tipe yang terdeteksi
                         setActiveTool(toolType);

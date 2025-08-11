@@ -9,13 +9,16 @@ class GalleryMapsController extends Controller
 {
     public function galeriPeta()
     {
+        // ... (metode galeriPeta tidak berubah)
         $maps = Map::with(['layer', 'features'])
             ->whereIn('kategori', ['Galeri Peta', 'Visualisasi & Galeri Peta'])
             ->get();
-
         return view('gallery_maps.index', compact('maps'));
     }
 
+    /**
+     * Menampilkan detail peta tunggal.
+     */
     public function show($id)
     {
         $map = Map::with(['layer', 'features'])
@@ -28,6 +31,7 @@ class GalleryMapsController extends Controller
                 ? asset($feature->image_path) 
                 : null;
             $feature->caption = $feature->caption ?? null;
+            $feature->technical_info = $feature->technical_info ?? null;
             return $feature;
         });
 

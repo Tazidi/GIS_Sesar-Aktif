@@ -41,6 +41,7 @@ class MapFeatureController extends Controller
             'geometry' => 'required|json',
             'feature_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'caption' => 'nullable|string|max:255',
+            'technical_info' => 'nullable|string|max:500',
         ]);
 
         try {
@@ -49,6 +50,7 @@ class MapFeatureController extends Controller
                 'properties' => json_decode($request->properties, true),
                 'geometry' => json_decode($request->geometry, true),
                 'caption' => $request->caption,
+                'technical_info' => $request->technical_info,
             ];
 
             // Handle upload gambar jika ada

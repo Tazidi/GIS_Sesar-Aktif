@@ -56,7 +56,8 @@ class MapController extends Controller
             'radius' => 'nullable|numeric|min:0',
             'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimetypes:application/json,text/plain,text/json,text/geojson,text/csv,application/octet-stream|max:4096',
-            'kategori' => 'required|in:Visualisasi,Galeri Peta,Visualisasi & Galeri Peta',        ]);
+            'kategori' => 'required|in:Visualisasi,Galeri Peta,Visualisasi & Galeri Peta',        
+        ]);
 
         if ($request->hasFile('image_path')) {
             $image = $request->file('image_path');
@@ -75,14 +76,18 @@ class MapController extends Controller
         $map = Map::create($data);
         $featureImages = $request->file('feature_images', []);
         $featureCaptions = $request->input('feature_captions', []);
+        $featureTechnicalInfos = $request->input('feature_technical_info', []);
 
         // Ambil fitur dari geometry kolom (bukan file)
         if ($request->filled('geometry')) {
             $geojson = json_decode($request->geometry, true);
 
             if (isset($geojson['type']) && $geojson['type'] === 'FeatureCollection') {
+                dd($request->input('feature_technical_info'), $geojson['features']);
+
                 $featureImages = $request->file('feature_images', []);
                 $featureCaptions = $request->input('feature_captions', []);
+                $featureTechnicalInfos = $request->input('feature_technical_info', []);
 
                 foreach ($geojson['features'] as $index => $feature) {
                     if (!isset($feature['geometry'])) continue;
@@ -96,6 +101,7 @@ class MapController extends Controller
                     }
 
                     $caption = isset($featureCaptions[$index]) ? $featureCaptions[$index] : null;
+                    $technical_info = isset($featureTechnicalInfos[$index]) ? $featureTechnicalInfos[$index] : null;
 
                     MapFeature::create([
                         'map_id' => $map->id,
@@ -103,6 +109,8 @@ class MapController extends Controller
                         'properties' => $feature['properties'] ?? [],
                         'image_path' => $imagePath,
                         'caption' => $caption, // Gunakan variabel $caption
+                        'technical_info' => $technical_info,
+
                     ]);
                 }
             }
@@ -136,7 +144,9 @@ class MapController extends Controller
             'radius' => 'nullable|numeric|min:0',
             'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimes:json,csv,zip,geojson|max:4096',
-            'kategori' => 'required|in:Visualisasi,Galeri Peta,Visualisasi & Galeri Peta',        ]);
+            'kategori' => 'required|in:Visualisasi,Galeri Peta,Visualisasi & Galeri Peta',        
+            'technical_info' => 'nullable|string',
+        ]);
 
         if ($request->hasFile('image_path')) {
             if ($map->image_path && file_exists(public_path($map->image_path))) {

@@ -198,11 +198,9 @@
         
         {{-- Deskripsi Peta --}}
         <div class="max-w-2xl mx-auto bg-white p-6 shadow-lg rounded-lg mt-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-2">
-                Deskripsi Peta
-            </h2>
+            <h2 class="text-lg font-bold text-gray-800 mb-2">Deskripsi Peta</h2>
             <p class="text-sm text-gray-600">
-                {{ $maps->first()->description ?? 'Belum ada deskripsi yang tersedia untuk peta ini.' }}
+                {{ $map->description ?? 'Belum ada deskripsi yang tersedia untuk peta ini.' }}
             </p>
         </div>
 
@@ -250,7 +248,8 @@
                         "geometry": {!! $feature->geometry ? json_encode($feature->geometry) : 'null' !!},
                         "properties": {!! $feature->properties ? json_encode($feature->properties) : 'null' !!},
                         "image_path": "{{ $feature->image_path ? asset($feature->image_path) : '' }}",
-                        "caption": "{{ addslashes($feature->caption ?? '') }}"
+                        "caption": "{{ addslashes($feature->caption ?? '') }}",
+                        "technical_info": {!! json_encode($feature->technical_info ?? '') !!}
                     }@if(!$loop->last),@endif
                     @endforeach
                 ]
@@ -333,7 +332,7 @@
 
                 // Loop melalui properti lain
                 Object.entries(featureData).forEach(([key, value]) => {
-                    const excludedKeys = ['name', 'title', 'nama', 'Name', 'dataSource', 'feature_image_path', 'caption'];
+                    const excludedKeys = ['name', 'title', 'nama', 'Name', 'dataSource', 'feature_image_path', 'caption', 'technical_info'];
                     if (!excludedKeys.includes(key) && value) {
                         const label = formatLabel(key);
                         content += `<div class="detail-item"><div class="detail-label">${label}:</div><div class="detail-value">${value}</div></div>`;
@@ -370,6 +369,14 @@
                         <p style="font-style: italic; color: #555;">${featureData.caption}</p>
                     </div>`;
                 }
+
+                // KODE BARU: Tampilkan Technical Info
+                if (featureData.technical_info) {
+                    content += `<div style="margin-top: 15px;">
+                        <div class="detail-label">Informasi Teknis:</div>
+                        <pre style="white-space: pre-wrap; word-wrap: break-word; background-color: #f3f4f6; padding: 10px; border-radius: 6px; font-family: 'Courier New', Courier, monospace; font-size: 13px; color: #374151;">${featureData.technical_info}</pre>
+                    </div>`;
+                }
             }
 
             detailContent.innerHTML = content;
@@ -390,6 +397,7 @@
                     dataSource: 'geojson',
                     feature_image_path: feature.feature_image_path || '',
                     caption: feature.caption || '',
+                    technical_info: feature.technical_info || '',
                 };
             } else {
                 // Data manual dari maps table
@@ -469,8 +477,10 @@
                                 "properties": {
                                     ...(feature.properties || {}),
                                     feature_image_path: feature.image_path || null,
-                                    caption: feature.caption || null
+                                    caption: feature.caption || null,
+                                    technical_info: feature.technical_info || null,
                                 },
+                                
                             };
 
                             const layer = L.geoJSON(geojsonFeature, {
@@ -481,6 +491,7 @@
                                     // Tambahkan image_path dan caption ke feature
                                     feature.feature_image_path = geojsonFeature.properties.feature_image_path;
                                     feature.caption = geojsonFeature.properties.caption;
+                                    feature.technical_info = geojsonFeature.properties.technical_info;
 
                                     const popupContent = createPopupContent(feature, mapData);
                                     layer.bindPopup(popupContent);
