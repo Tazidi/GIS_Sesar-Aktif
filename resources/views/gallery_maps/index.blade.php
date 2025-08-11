@@ -137,150 +137,92 @@
 
 @section('content')
     {{-- Header untuk Galeri Peta Interaktif --}}
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-gray-900 mb-2"><center>Galeri Peta</center></h2>
-        <p class="text-gray-600"><center>Koleksi peta dan visualisasi data geografis Sesar Jawa Bagian Barat</center></p>
+    <div class="bg-gray-50 border border-gray-200 rounded-xl p-8 sm:p-12 mb-12 text-center">
+    {{-- Ikon Globe --}}
+    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+        <svg class="h-7 w-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A11.953 11.953 0 0112 16.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12a8.959 8.959 0 01-2.284-5.253" />
+        </svg>
     </div>
+    <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight">
+        Galeri <span class="text-blue-600">Peta</span>
+    </h1>
+    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">
+        Koleksi peta dan visualisasi data geografis Sesar Jawa Bagian Barat.
+    </p>
+</div>
 
     {{-- Container untuk Peta --}}
-    <div class="space-y-6">
-        @forelse ($maps as $map)
-            <div class="map-card">
-                <div class="map-content">
-                    {{-- Bagian Peta (Kiri pada desktop, Atas pada mobile) --}}
-                    <div class="map-visual">
-                        <div id="map-{{ $map->id }}" class="preview-map"></div>
-                    </div>
-                    
-                    {{-- Bagian Informasi (Kanan pada desktop, Bawah pada mobile) --}}
-                    <div class="map-info">
-                        <div class="map-title">
-                            <a href="{{ route('gallery.show', $map->id) }}" 
-                            class="text-blue-600 hover:underline">
+    {{-- Container untuk Peta --}}
+<div class="space-y-12 -mt-16"> 
+    @forelse ($maps as $map)
+        {{-- Kartu Peta --}}
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+            <div class="flex flex-col @if($loop->odd) md:flex-row @else md:flex-row-reverse @endif">
+                
+                {{-- Bagian Peta --}}
+                <div class="md:w-2/5 bg-gray-50 p-4 sm:p-6 flex items-center justify-center">
+                    <div id="map-{{ $map->id }}" class="w-full h-64 md:h-full rounded-lg border border-gray-200"></div>
+                </div>
+                
+                {{-- Bagian Informasi dengan Tata Letak Baru --}}
+                <div class="md:w-3/5 p-6 sm:p-8 flex flex-col">
+                    {{-- Wrapper untuk konten atas (judul, deskripsi, detail) --}}
+                    <div class="flex-grow">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                            <a href="{{ route('gallery.show', $map->id) }}" class="hover:text-blue-600 hover:underline">
                                 {{ $map->name }}
                             </a>
-                        </div>
+                        </h2>
                         
-                        <div class="map-description">
-                            @if ($map->description)
-                                {{ $map->description }}
-                            @else
-                                Peta {{ ucfirst($map->layer_type) }} yang menampilkan informasi geografis dengan koordinat 
-                                {{ $map->lat && $map->lng ? number_format($map->lat, 6) . ', ' . number_format($map->lng, 6) : 'yang telah ditentukan' }}.
-                                @if ($map->layer_type == 'circle' && $map->radius)
-                                    Area cakupan dengan radius {{ number_format($map->radius) }} meter.
-                                @endif
-                            @endif
-                        </div>
+                        <p class="text-gray-600 text-sm leading-relaxed mb-6">
+                            {{ $map->description ?? 'Peta ini menyajikan informasi geografis penting.' }}
+                        </p>
                         
-                        <div class="map-details">
-                            <div class="detail-item">
-                                <span class="detail-label">Jenis Fitur</span>
-                                <span class="detail-value">{{ ucfirst($map->layer_type) }}</span>
+                        {{-- Detail Tambahan --}}
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 pt-4 border-t border-gray-100">
+                            <div>
+                                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Jenis Fitur</h4>
+                                <p class="text-sm font-medium text-gray-900 mt-1">{{ ucfirst($map->layer_type) }}</p>
                             </div>
-                            
-                            <div class="detail-item">
-                                <span class="detail-label">Koordinat</span>
-                                <span class="detail-value">
-                                    @if ($map->lat && $map->lng)
-                                        {{ number_format($map->lat, 6) }}, {{ number_format($map->lng, 6) }}
-                                    @else
-                                        <span class="text-gray-400 italic">Tidak tersedia</span>
-                                    @endif
-                                </span>
+                            <div>
+                                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Koordinat</h4>
+                                <p class="text-sm font-medium text-gray-900 mt-1">
+                                    {{ ($map->lat && $map->lng) ? number_format($map->lat, 5).', '.number_format($map->lng, 5) : 'N/A' }}
+                                </p>
                             </div>
-                            
-                            @if ($map->layer_type == 'circle' && $map->radius)
-                                <div class="detail-item">
-                                    <span class="detail-label">Radius</span>
-                                    <span class="detail-value">{{ number_format($map->radius) }} meter</span>
-                                </div>
-                            @endif
-                            
-                            <div class="detail-item">
-                                <span class="detail-label">Aset Visual</span>
-                                <div class="detail-value">
+                            <div>
+                                <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Aset Visual</h4>
+                                <div class="flex items-center space-x-2 mt-1">
                                     @if ($map->icon_url || $map->image_path)
-                                        <div class="asset-preview">
-                                            @if ($map->icon_url)
-                                                <img src="{{ asset($map->icon_url) }}" 
-                                                    alt="Ikon {{ $map->name }}" 
-                                                    title="Ikon: {{ basename($map->icon_url) }}" 
-                                                    class="map-thumbnail">
-                                            @endif
-                                            @if ($map->image_path)
-                                                <img src="{{ asset($map->image_path) }}" 
-                                                    alt="Gambar {{ $map->name }}" 
-                                                    title="Gambar: {{ basename($map->image_path) }}" 
-                                                    class="map-thumbnail">
-                                            @endif
-                                        </div>
+                                        @if ($map->icon_url) <img src="{{ asset($map->icon_url) }}" alt="Ikon" class="h-6 w-6 object-contain"> @endif
+                                        @if ($map->image_path) <img src="{{ asset($map->image_path) }}" alt="Gambar" class="h-6 w-6 object-cover rounded"> @endif
                                     @else
-                                        <span class="text-gray-400 italic">Tidak ada aset visual</span>
+                                        <span class="italic text-gray-400 text-sm">Tidak ada</span>
                                     @endif
                                 </div>
                             </div>
-                            
-                            @if ($map->file_path)
-                                <div class="detail-item">
-                                    <span class="detail-label">Data GeoJSON</span>
-                                    <div class="detail-value">
-                                        <a href="{{ asset($map->file_path) }}" 
-                                        target="_blank" 
-                                        class="inline-flex items-center text-blue-600 hover:text-blue-800 hover:underline transition-colors">
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                            </svg>
-                                            Lihat File Data
-                                        </a>
-                                    </div>
-                                </div>
-                            @endif
-                            
-                            @if ($map->fault_name || $map->magnitude || $map->fault_type)
-                                <div class="detail-item">
-                                    <span class="detail-label">Info Sesar</span>
-                                    <div class="detail-value">
-                                        @if ($map->fault_name)
-                                            <div class="text-sm"><strong>Nama:</strong> {{ $map->fault_name }}</div>
-                                        @endif
-                                        @if ($map->magnitude)
-                                            <div class="text-sm"><strong>Magnitudo:</strong> {{ $map->magnitude }}</div>
-                                        @endif
-                                        @if ($map->fault_type)
-                                            <div class="text-sm"><strong>Tipe:</strong> 
-                                                @switch($map->fault_type)
-                                                    @case('R')
-                                                        Reverse Fault
-                                                        @break
-                                                    @case('N')
-                                                        Normal Fault
-                                                        @break
-                                                    @case('SS')
-                                                        Strike-Slip Fault
-                                                        @break
-                                                    @default
-                                                        {{ $map->fault_type }}
-                                                @endswitch
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            @endif
                         </div>
+                    </div>
+
+                    {{-- Tombol Aksi di Bagian Bawah --}}
+                    <div class="mt-8 pt-4 border-t border-gray-100">
+                         <a href="{{ route('gallery.show', $map->id) }}" class="inline-flex items-center justify-center w-full px-4 py-2 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                            Lihat Detail Peta
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                        </a>
                     </div>
                 </div>
             </div>
-        @empty
-            <div class="text-center py-12 bg-white rounded-lg shadow">
-                <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"></path>
-                </svg>
-                <h3 class="text-xl font-medium text-gray-900 mb-2">Belum ada peta tersedia</h3>
-                <p class="text-gray-500">Tidak ada data peta interaktif yang dapat ditampilkan.</p>
-            </div>
-        @endforelse
-    </div>
+        </div>
+    @empty
+        <div class="text-center py-16 bg-white rounded-lg shadow-md">
+            <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+            <h3 class="text-xl font-medium text-gray-900">Belum ada peta tersedia</h3>
+            <p class="text-gray-500 mt-2">Saat ini tidak ada data peta interaktif yang dapat ditampilkan.</p>
+        </div>
+    @endforelse
+</div>
 @endsection
 
 @section('scripts')

@@ -4,195 +4,44 @@
     {{-- Leaflet CSS --}}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
     <style>
-        /* Container & Layout */
-        .map-gallery-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        /* Header */
-        .map-header {
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .map-title {
-            font-size: 28px;
-            font-weight: 600;
-            color: #1f2937;
-            margin: 0 0 8px 0;
-            line-height: 1.2;
-        }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            color: #6b7280;
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.2s ease;
-        }
-
-        .back-link:hover {
-            color: #374151;
-        }
-
-        .back-link::before {
-            content: '←';
-            margin-right: 8px;
-        }
-
-        /* Map Container */
-        .map-wrapper {
-            margin-bottom: 24px;
-        }
-
-        .map-container {
-            position: relative;
-            height: 600px;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        #map {
-            height: 100%;
-            width: 100%;
-        }
-        
-        /* Modal Styles */
-        .modal-overlay {
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5); 
-            backdrop-filter: blur(4px); 
-            z-index: 1050;
-        }
-
-        .modal-content {
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%);
-            background: white; 
-            border-radius: 16px; 
-            width: 90%; 
-            max-width: 500px;
-            max-height: 80vh; 
-            overflow: hidden; 
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        }
-
-        .modal-header {
-            padding: 20px 24px 16px; 
-            border-bottom: 1px solid #f3f4f6;
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-        }
-
-        .modal-title { 
-            font-size: 20px; 
-            font-weight: 600; 
-            color: #1f2937; 
-            margin: 0; 
-        }
-
-        .modal-close {
-            background: none; 
-            border: none; 
-            font-size: 24px; 
-            color: #9ca3af; 
-            cursor: pointer;
-            padding: 4px; 
-            border-radius: 6px; 
-            transition: all 0.2s ease;
-        }
-
-        .modal-close:hover { 
-            background: #f3f4f6; 
-            color: #6b7280; 
-        }
-
-        .modal-body { 
-            padding: 20px 24px 24px; 
-            max-height: calc(80vh - 70px); 
-            overflow-y: auto; 
-        }
-
-        /* Popup Styles */
+        /* CSS kustom untuk popup dan tombolnya */
         .leaflet-popup-content-wrapper {
-            border-radius: 8px; 
+            border-radius: 8px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-
-        .leaflet-popup-content { 
-            margin: 16px; 
-            font-size: 14px; 
-            line-height: 1.4; 
+        .leaflet-popup-content {
+            margin: 16px;
+            font-size: 14px;
+            line-height: 1.4;
         }
-
         .btn-detail {
-            background: #2563eb; 
-            color: white; 
-            border: none; 
-            padding: 8px 16px;
-            border-radius: 6px; 
-            font-size: 13px; 
-            font-weight: 500; 
-            cursor: pointer;
-            margin-top: 12px; 
-            display: block; 
-            width: 100%; 
-            text-align: center;
+            background: #2563eb; color: white; border: none; padding: 8px 16px;
+            border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;
+            margin-top: 12px; display: block; width: 100%; text-align: center;
             transition: background-color 0.2s ease;
         }
-
-        .btn-detail:hover { 
-            background: #1d4ed8; 
-        }
-        
-        /* Detail styles */
-        .detail-item { 
-            margin-bottom: 12px; 
-            border-bottom: 1px solid #f3f4f6; 
-            padding-bottom: 8px; 
-        }
-
-        .detail-label { 
-            font-weight: bold; 
-            color: #374151; 
-            margin-bottom: 4px; 
-        }
-
-        .detail-value { 
-            color: #6b7280; 
-        }
+        .btn-detail:hover { background: #1d4ed8; }
     </style>
 @endsection
 
 @section('content')
-    <div class="map-gallery-container">
-        <header class="map-header">
-            <h1 class="map-title">
-                {{ $map->name }}
-            </h1>
-            <a href="{{ route('gallery_maps.index') }}" class="back-link">
-                Kembali ke Galeri Peta
-            </a>
-        </header>
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
 
-        <div class="map-wrapper">
-            <div class="map-container">
-                <div id="map"></div>
+    <div class="mb-6">
+        <a href="{{ route('gallery_maps.index') }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50 transition">
+            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd"></path></svg>
+            Kembali ke Galeri
+        </a>
+    </div>
+
+    <div class="bg-white shadow-xl rounded-lg overflow-hidden">
+        <div class="flex flex-col lg:flex-row h-[75vh]">
+            
+            {{-- Kolom Kiri: Peta Interaktif --}}
+            <div class="w-full lg:w-3/4 h-full">
+                <div id="map" class="w-full h-full"></div>
             </div>
         </div>
         
@@ -204,18 +53,29 @@
             </p>
         </div>
 
-        <div id="detail-modal" class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title">Detail Informasi</h2>
-                    <button class="modal-close" onclick="closeModal()">×</button>
-                </div>
-                <div class="modal-body">
-                    <div id="detail-content"></div>
+            {{-- Kolom Kanan: Informasi --}}
+            <div class="w-full lg:w-1/4 h-full flex flex-col bg-gray-50">
+                <div class="p-6 overflow-y-auto">
+                    <h1 class="text-2xl font-bold text-gray-900">{{ $map->name }}</h1>
+                    <p class="mt-2 text-sm text-gray-600 leading-relaxed">{{ $map->description ?? 'Tidak ada deskripsi untuk peta ini.' }}</p>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+{{-- Modal untuk Detail Fitur --}}
+<div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-[2000] flex items-center justify-center p-4" onclick="closeModal()">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-center p-4 border-b border-gray-200">
+            <h2 id="modal-title" class="text-lg font-semibold text-gray-900">Detail Informasi</h2>
+            <button onclick="closeModal()" class="text-2xl text-gray-400 hover:text-gray-600">&times;</button>
+        </div>
+        <div id="modal-body" class="p-6 overflow-y-auto">
+            {{-- Konten detail diisi oleh JavaScript --}}
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
