@@ -36,25 +36,17 @@
         </a>
     </div>
 
+    {{-- ✅ PERBAIKAN: Kontainer utama diubah menjadi layout dua kolom --}}
     <div class="bg-white shadow-xl rounded-lg overflow-hidden">
         <div class="flex flex-col lg:flex-row h-[75vh]">
             
             {{-- Kolom Kiri: Peta Interaktif --}}
-            <div class="w-full lg:w-3/4 h-full">
+            <div class="w-full lg:w-2/3 h-full">
                 <div id="map" class="w-full h-full"></div>
             </div>
-        </div>
-        
-        {{-- Deskripsi Peta --}}
-        <div class="max-w-2xl mx-auto bg-white p-6 shadow-lg rounded-lg mt-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-2">Deskripsi Peta</h2>
-            <p class="text-sm text-gray-600">
-                {{ $map->description ?? 'Belum ada deskripsi yang tersedia untuk peta ini.' }}
-            </p>
-        </div>
 
             {{-- Kolom Kanan: Informasi --}}
-            <div class="w-full lg:w-1/4 h-full flex flex-col bg-gray-50">
+            <div class="w-full lg:w-1/3 h-full flex flex-col bg-gray-50">
                 <div class="p-6 overflow-y-auto">
                     <h1 class="text-2xl font-bold text-gray-900">{{ $map->name }}</h1>
                     <p class="mt-2 text-sm text-gray-600 leading-relaxed">{{ $map->description ?? 'Tidak ada deskripsi untuk peta ini.' }}</p>
