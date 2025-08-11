@@ -48,28 +48,82 @@
     @enderror
 </div>
 
-{{-- Upload Gambar --}}
+{{-- Gambar Utama --}}
 <div class="mb-6">
-    <label for="image" class="block text-sm font-medium text-gray-700 mb-1">
-        File Gambar <span class="text-red-500">*</span>
-    </label>
-    <input type="file" name="image" id="image"
-           class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 @error('image') border-red-500 @enderror">
-    
-    {{-- Tampilkan pratinjau jika sedang mengedit dan gambar sudah ada --}}
-    @if(isset($image) && $image->image_path)
-        <div class="mt-4">
-            <p class="text-sm text-gray-500 mb-2">Gambar saat ini:</p>
-            {{-- PERBAIKAN: Gunakan asset('gallery/' . $path) untuk memanggil gambar --}}
-            <img src="{{ asset('gallery/' . $image->image_path) }}" alt="Pratinjau gambar" class="h-32 w-auto rounded-md shadow-md object-cover">
-            <p class="text-xs text-gray-500 mt-2">Unggah file baru untuk mengganti gambar ini.</p>
-        </div>
-    @endif
-
-    @error('image')
-        <p class="text-red-500 text-xs mt-2">{{ $message }}</p>
-    @enderror
+    <label class="block text-sm font-medium text-gray-700 mb-2">Gambar Utama</label>
+    <div class="w-40 h-40 border-2 border-dashed rounded-md flex items-center justify-center relative overflow-hidden">
+        <input type="file" name="main_image" id="main_image" class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*">
+        <img 
+            id="preview_main_image" 
+            class="w-full h-full object-cover {{ isset($image) && $image->main_image ? '' : 'hidden' }}"
+            src="{{ isset($image) && $image->main_image ? asset('gallery/' . $image->main_image) : '' }}"
+        >
+        <span 
+            id="placeholder_main_image" 
+            class="text-gray-400 {{ isset($image) && $image->main_image ? 'hidden' : '' }}"
+        >+</span>
+    </div>
 </div>
+
+{{-- Gambar Tambahan --}}
+<div class="mb-6">
+    <label class="block text-sm font-medium text-gray-700 mb-2">Gambar Tambahan</label>
+    <div class="grid grid-cols-5 gap-3">
+        @php
+            if (isset($image) && $image->extra_images) {
+                $extraImages = is_array($image->extra_images) 
+                    ? $image->extra_images 
+                    : json_decode($image->extra_images, true);
+            } else {
+                $extraImages = [];
+            }
+        @endphp
+        @for ($i = 0; $i < 9; $i++)
+            <div class="w-24 h-24 border-2 border-dashed rounded-md flex items-center justify-center relative overflow-hidden">
+                <input type="file" name="extra_images[]" id="extra_image_{{ $i }}" class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*">
+                <img 
+                    id="preview_extra_image_{{ $i }}" 
+                    class="w-full h-full object-cover {{ isset($extraImages[$i]) ? '' : 'hidden' }}"
+                    src="{{ isset($extraImages[$i]) ? asset('gallery/' . $extraImages[$i]) : '' }}"
+                >
+                <span 
+                    id="placeholder_extra_image_{{ $i }}" 
+                    class="text-gray-400 {{ isset($extraImages[$i]) ? 'hidden' : '' }}"
+                >+</span>
+            </div>
+        @endfor
+    </div>
+</div>
+
+<script>
+    // Fungsi preview upload
+    function previewImage(input, previewId, placeholderId) {
+        let file = input.files[0];
+        let preview = document.getElementById(previewId);
+        let placeholder = document.getElementById(placeholderId);
+        if (file) {
+            let reader = new FileReader();
+            reader.onload = function(ev) {
+                preview.src = ev.target.result;
+                preview.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Main image event
+    document.getElementById('main_image').addEventListener('change', function() {
+        previewImage(this, 'preview_main_image', 'placeholder_main_image');
+    });
+
+    // Extra images event
+    for (let i = 0; i < 9; i++) {
+        document.getElementById(`extra_image_${i}`).addEventListener('change', function() {
+            previewImage(this, `preview_extra_image_${i}`, `placeholder_extra_image_${i}`);
+        });
+    }
+</script>
 
 {{-- Tombol Aksi --}}
 <div class="flex items-center justify-end space-x-4 pt-5 mt-6 border-t border-gray-200">

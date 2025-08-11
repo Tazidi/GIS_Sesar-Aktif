@@ -197,4 +197,27 @@ class ArticleController extends Controller
 
         return back()->with('success', 'Status artikel diperbarui.');
     }
+
+    public function uploadImage(Request $request)
+    {
+        if ($request->hasFile('upload')) {
+            $file = $request->file('upload');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/articles'), $filename);
+
+            $url = asset('uploads/articles/' . $filename);
+
+            return response()->json([
+                'uploaded' => true,
+                'url' => $url
+            ]);
+        }
+
+        return response()->json([
+            'uploaded' => false,
+            'error' => [
+                'message' => 'Tidak ada file yang diupload.'
+            ]
+        ]);
+    }
 }

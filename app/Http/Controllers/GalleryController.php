@@ -38,22 +38,36 @@ class GalleryController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'title' => 'required|string|max:255',
-            'category' => 'required|string',
-            'description' => 'nullable|string',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240',
+            'title'         => 'required|string|max:255',
+            'category'      => 'required|string',
+            'description'   => 'nullable|string',
+            'main_image'    => 'required|image|mimes:jpeg,png,jpg,gif|max:10240',
+            'extra_images.*'=> 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
 
-        $filename = time() . '_' . $request->file('image')->getClientOriginalName();
-        $request->file('image')->move(public_path('gallery'), $filename);
+        // Simpan foto utama
+        $mainImageName = time() . '_main.' . $request->file('main_image')->extension();
+        $request->file('main_image')->move(public_path('gallery'), $mainImageName);
+
+        // Simpan foto tambahan (max 9)
+        $extraImages = [];
+        if ($request->hasFile('extra_images')) {
+            foreach ($request->file('extra_images') as $file) {
+                $name = time() . '_' . uniqid() . '.' . $file->extension();
+                $file->move(public_path('gallery'), $name);
+                $extraImages[] = $name;
+                if (count($extraImages) >= 9) break;
+            }
+        }
 
         Gallery::create([
-            'user_id'    => Auth::id(),
-            'title'      => $validatedData['title'],
-            'description'=> $validatedData['description'],
-            'image_path' => $filename,
-            'category'   => trim($validatedData['category']),
-            'status'     => Auth::user()->role === 'admin' ? 'approved' : 'pending',
+            'user_id'       => Auth::id(),
+            'title'         => $validatedData['title'],
+            'description'   => $validatedData['description'] ?? null,
+            'main_image'    => $mainImageName,
+            'extra_images'  => $extraImages,
+            'category'      => trim($validatedData['category']),
+            'status'        => Auth::user()->role === 'admin' ? 'approved' : 'pending',
         ]);
 
         return redirect()->route('gallery.index')->with('success', 'Gambar berhasil diunggah!');
@@ -75,31 +89,40 @@ class GalleryController extends Controller
         }
 
         $validatedData = $request->validate([
-            'title' => 'required|string|max:255',
-            'category' => 'required|string',
-            'description' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+            'title'         => 'required|string|max:255',
+            'category'      => 'required|string',
+            'description'   => 'nullable|string',
+            'main_image'    => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
+            'extra_images.*'=> 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
 
-        $filename = $gallery->image_path;
-
-        if ($request->hasFile('image')) {
-            $oldPath = public_path('gallery/' . $gallery->image_path);
-            if (file_exists($oldPath)) {
-                unlink($oldPath);
+        // Ganti foto utama jika ada
+        if ($request->hasFile('main_image')) {
+            if ($gallery->main_image && file_exists(public_path('gallery/' . $gallery->main_image))) {
+                unlink(public_path('gallery/' . $gallery->main_image));
             }
-
-            $filename = time() . '_' . $request->file('image')->getClientOriginalName();
-            $request->file('image')->move(public_path('gallery'), $filename);
+            $mainImageName = time() . '_main.' . $request->file('main_image')->extension();
+            $request->file('main_image')->move(public_path('gallery'), $mainImageName);
+            $gallery->main_image = $mainImageName;
         }
 
-        $gallery->update([
-            'title' => $validatedData['title'],
-            'description' => $validatedData['description'],
-            'image_path' => $filename,
-            'category' => trim($validatedData['category']),
-            'last_edited_by' => Auth::id(),
-        ]);
+        // Tambah foto tambahan (merge dengan existing)
+        if ($request->hasFile('extra_images')) {
+            $currentExtras = $gallery->extra_images ?? [];
+            foreach ($request->file('extra_images') as $file) {
+                if (count($currentExtras) >= 9) break;
+                $name = time() . '_' . uniqid() . '.' . $file->extension();
+                $file->move(public_path('gallery'), $name);
+                $currentExtras[] = $name;
+            }
+            $gallery->extra_images = $currentExtras;
+        }
+
+        $gallery->title = $validatedData['title'];
+        $gallery->description = $validatedData['description'] ?? null;
+        $gallery->category = trim($validatedData['category']);
+        $gallery->last_edited_by = Auth::id();
+        $gallery->save();
 
         return redirect()->route('gallery.index')->with('success', 'Gambar berhasil diperbarui!');
     }

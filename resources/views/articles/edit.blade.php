@@ -37,17 +37,17 @@
                 @enderror
             </div>
 
-            {{-- Konten Artikel --}}
+            {{-- Konten Artikel (CKEditor) --}}
             <div class="mb-6">
                 <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Konten</label>
-                <textarea id="content" name="content" rows="12"
+                <textarea id="editor" name="content" rows="12"
                           class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 @error('content') border-red-500 @enderror">{{ old('content', $article->content) }}</textarea>
                 @error('content')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
             
-            {{-- Dropdown untuk Tag (TAMBAHAN) --}}
+            {{-- Dropdown untuk Tag --}}
             <div class="mb-5">
                 <label for="tags" class="block text-sm font-medium text-gray-700 mb-1">Tag (Opsional)</label>
                 <select name="tags" id="tags" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 @error('tags') border-red-500 @enderror">
@@ -98,3 +98,18 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+<script>
+    ClassicEditor
+        .create(document.querySelector('#editor'), {
+            ckfinder: {
+                uploadUrl: "{{ route('ckeditor.upload').'?_token='.csrf_token() }}"
+            }
+        })
+        .catch(error => {
+            console.error(error);
+        });
+</script>
+@endpush

@@ -6,7 +6,7 @@
         {{-- Tombol Kembali ke Dashboard --}}
         <div class="mb-4">
             <a href="{{ route('dashboard') }}"
-            class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-300 transition">
+               class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-300 transition">
                 ← Kembali ke Dashboard
             </a>
         </div>
@@ -35,7 +35,22 @@
                     {{-- Batasi akses jika editor bukan pemilik --}}
                     @if ($isAdmin || ($isEditor && $image->user_id === $user->id))
                         <div class="bg-white rounded-lg shadow-md overflow-hidden relative">
-                            <img class="w-full h-48 object-cover" src="{{ asset('gallery/' . $image->image_path) }}" alt="{{ $image->title }}">
+                            {{-- PERUBAHAN: Menampilkan 'main_image' dan menambahkan gambar placeholder jika kosong --}}
+                            <img class="w-full h-48 object-cover" 
+                                src="{{ $image->main_image ? asset('gallery/' . $image->main_image) : 'https://via.placeholder.com/400x300.png?text=No+Image' }}" 
+                                alt="{{ $image->title }}">
+
+                            @if ($image->extra_images)
+                                @php
+                                    $extraImages = is_array($image->extra_images) ? $image->extra_images : json_decode($image->extra_images, true);
+                                @endphp
+                                @if (!empty($extraImages))
+                                    <div class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                        +{{ count($extraImages) }} foto
+                                    </div>
+                                @endif
+                            @endif
+                                 
                             <div class="p-4">
                                 <h3 class="font-bold text-lg">{{ $image->title }}</h3>
                                 <p class="text-sm text-gray-500">{{ $image->category }}</p>

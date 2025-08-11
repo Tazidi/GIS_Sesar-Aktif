@@ -47,11 +47,10 @@
                 @enderror
             </div>
 
-            {{-- Konten Artikel (Implementasi Trix Editor) --}}
+            {{-- Konten Artikel (CKEditor 5) --}}
             <div class="mb-6">
                 <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Konten</label>
-                <input id="content" type="hidden" name="content" value="{{ old('content') }}">
-                <trix-editor input="content" class="trix-content"></trix-editor>
+                <textarea id="editor" name="content">{{ old('content') }}</textarea>
                 @error('content')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -60,16 +59,25 @@
             {{-- Input Tag --}}
             <div class="mb-5">
                 <label for="tags" class="block text-sm font-medium text-gray-700 mb-1">Tag (Opsional)</label>
-                <input list="tags-list" name="tags" id="tags" value="{{ old('tags') }}"
-                    placeholder="Contoh: Berita, Artikel Ilmiah"
-                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 @error('tags') border-red-500 @enderror">
-                <datalist id="tags-list">
-                    @if(isset($tags))
+
+                {{-- Daftar Tag yang Sudah Ada --}}
+                @if(isset($tags) && count($tags) > 0)
+                    <div class="flex flex-wrap gap-2 mb-3">
                         @foreach($tags as $tag)
-                            <option value="{{ $tag }}">
+                            <label class="tag-option inline-flex items-center px-3 py-1 border border-gray-300 rounded-full text-sm cursor-pointer hover:bg-gray-200">
+                                <input type="radio" name="tags" value="{{ $tag }}" class="hidden">
+                                <span>{{ $tag }}</span>
+                            </label>
                         @endforeach
-                    @endif
-                </datalist>
+                    </div>
+                @else
+                    <p class="text-gray-500 text-sm mb-3">Belum ada tag yang tersedia.</p>
+                @endif
+
+                {{-- Input Tag Baru --}}
+                <input type="text" id="tags_input" name="tags" value="{{ old('tags') }}"
+                    placeholder="Atau tulis tag baru di sini..."
+                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 @error('tags') border-red-500 @enderror">
                 @error('tags')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -99,13 +107,34 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
 <script>
-    document.addEventListener('trix-initialize', function(event) {
-        const toolbar = event.target.toolbarElement;
-        const fileTools = toolbar.querySelector('.trix-button-group--file-tools');
-        if (fileTools) {
-            fileTools.remove();
-        }
+    ClassicEditor
+        .create(document.querySelector('#editor'), {
+            ckfinder: {
+                uploadUrl: "{{ route('ckeditor.upload').'?_token='.csrf_token() }}"
+            }
+        })
+        .catch(error => {
+            console.error(error);
+        });
+</script>
+
+{{-- Script Tag Pilihan --}}
+<script>
+    const tagOptions = document.querySelectorAll('.tag-option');
+    tagOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            tagOptions.forEach(opt => {
+                opt.classList.remove('bg-gray-500/50');
+                opt.classList.add('border-gray-300');
+            });
+            this.classList.add('bg-gray-500/50');
+            this.classList.remove('border-gray-300');
+
+            const inputVal = this.querySelector('input').value;
+            document.getElementById('tags_input').value = inputVal;
+        });
     });
 </script>
 @endpush

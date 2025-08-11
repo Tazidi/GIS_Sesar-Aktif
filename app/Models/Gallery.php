@@ -12,11 +12,18 @@ class Gallery extends Model
     protected $fillable = [
         'user_id',
         'image_path',
+        'main_image', // foto utama baru
+        'extra_images', // foto tambahan
         'title',
         'description',
         'category',
         'approved_by', 
-        'last_edited_by'
+        'last_edited_by',
+        'status'
+    ];
+
+    protected $casts = [
+        'extra_images' => 'array', // otomatis decode JSON
     ];
 
     public function user()

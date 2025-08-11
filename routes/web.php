@@ -15,7 +15,6 @@ use App\Http\Controllers\MapFeatureController;
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\SurveyLocationController;
 use App\Http\Controllers\GalleryMapsController;
-use App\Http\Controllers\KategoriController;
 
 
 /*
@@ -93,6 +92,7 @@ Route::middleware(['auth', 'role:surveyor'])->get('/surveyor', function () {
 Route::middleware(['auth', 'role:admin,editor'])->group(function () {
     Route::resource('articles', ArticleController::class)->except(['show']);
     Route::patch('articles/{article}/status', [ArticleController::class, 'updateStatus'])->name('articles.updateStatus');
+    Route::post('/ckeditor/upload', [ArticleController::class, 'uploadImage'])->name('ckeditor.upload');
 });
 
 Route::get('/articles/{article}', [ArticleController::class, 'show'])->name('articles.show');
@@ -121,7 +121,6 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('maps', MapController::class);
     Route::resource('users', UserController::class);
     Route::resource('layers', LayerController::class);
-    Route::resource('kategori', KategoriController::class);
     Route::get('/maps/{map}/features', [MapFeatureController::class, 'index'])->name('map-features.index');
     Route::get('/map-features/{mapFeature}/edit', [MapFeatureController::class, 'edit'])->name('map-features.edit');
     Route::put('/map-features/{mapFeature}', [MapFeatureController::class, 'update'])->name('map-features.update');

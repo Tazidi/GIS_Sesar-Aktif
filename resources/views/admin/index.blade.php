@@ -36,12 +36,6 @@
             <p class="text-gray-500 text-sm">Tambahkan dan atur layer untuk visualisasi peta.</p>
         </a>
 
-        {{-- Kartu Kelola Kategori --}}
-    <a href="{{ route('kategori.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
-        <h2 class="text-lg font-semibold text-pink-600 mb-1"><i class="fas fa-tags mr-2"></i>Kelola Kategori</h2>
-        <p class="text-gray-500 text-sm">Tambah, ubah, atau hapus kategori peta yang tersedia.</p>
-    </a>
-
         {{-- Kartu Kelola Survey Lokasi --}}
         <a href="{{ route('survey-locations.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
             <h2 class="text-lg font-semibold text-red-600 mb-1"><i class="fas fa-map-marker-alt mr-2"></i>Kelola Survey Lokasi</h2>
