@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Map;
 use App\Models\Layer;
-use App\Models\Kategori;
 use App\Models\MapFeature;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -35,8 +34,7 @@ class MapController extends Controller
     {
         $map = new Map();
         $layers = Layer::all(); // ambil dari model Layer, bukan dari kolom Map
-        $kategoris = \App\Models\Kategori::all();
-        return view('maps.create', compact('map', 'layers', 'kategoris'));
+        return view('maps.create', compact('map', 'layers'));
     }
 
     public function store(Request $request)
@@ -58,8 +56,7 @@ class MapController extends Controller
             'radius' => 'nullable|numeric|min:0',
             'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimetypes:application/json,text/plain,text/json,text/geojson,text/csv,application/octet-stream|max:4096',
-            'kategori_id' => 'nullable|exists:kategori,id',
-        ]);
+            'kategori' => 'required|in:Visualisasi,Galeri Peta,Visualisasi & Galeri Peta',        ]);
 
         if ($request->hasFile('image_path')) {
             $image = $request->file('image_path');
@@ -117,8 +114,7 @@ class MapController extends Controller
     public function edit(Map $map)
     {
         $layers = Layer::all();
-        $kategoris = Kategori::all();
-        return view('maps.edit', compact('map', 'layers', 'kategoris'));
+        return view('maps.edit', compact('map', 'layers'));
     }
 
     public function update(Request $request, Map $map)
@@ -140,8 +136,7 @@ class MapController extends Controller
             'radius' => 'nullable|numeric|min:0',
             'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimes:json,csv,zip,geojson|max:4096',
-            'kategori_id' => 'nullable|exists:kategori,id',
-        ]);
+            'kategori' => 'required|in:Visualisasi,Galeri Peta,Visualisasi & Galeri Peta',        ]);
 
         if ($request->hasFile('image_path')) {
             if ($map->image_path && file_exists(public_path($map->image_path))) {
@@ -170,6 +165,11 @@ class MapController extends Controller
 
     public function show(Map $map)
     {
+        // === BARIS KODE YANG DITAMBAHKAN ===
+        // Memuat relasi 'features' sebelum mengirimkan objek peta ke view.
+        $map->load('features');
+
+        // Mengirimkan objek peta yang sekarang berisi fitur-fitur terkait.
         return view('maps.show', compact('map'));
     }
 
@@ -218,10 +218,8 @@ class MapController extends Controller
 
     public function visualisasi()
     {
-        $maps = Map::with(['layer', 'features', 'kategori'])
-            ->whereHas('kategori', function ($query) {
-                $query->where('nama_kategori', 'Visualisasi');
-            })
+        $maps = Map::with(['layer', 'features'])
+            ->whereIn('kategori', ['Visualisasi', 'Visualisasi & Galeri Peta'])
             ->get();
 
         return view('visualisasi.index', compact('maps'));

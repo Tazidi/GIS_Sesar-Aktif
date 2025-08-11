@@ -9,10 +9,8 @@ class GalleryMapsController extends Controller
 {
     public function galeriPeta()
     {
-        $maps = Map::with('kategori')
-            ->whereHas('kategori', function ($query) {
-                $query->where('nama_kategori', 'Galeri Peta');
-            })
+        $maps = Map::with(['layer', 'features'])
+            ->whereIn('kategori', ['Galeri Peta', 'Visualisasi & Galeri Peta'])
             ->get();
 
         return view('gallery_maps.index', compact('maps'));
@@ -20,28 +18,23 @@ class GalleryMapsController extends Controller
 
     public function show($id)
     {
-        // Ambil 1 peta sesuai ID
-        $map = Map::with('kategori')
-            ->whereHas('kategori', function ($query) {
-                $query->where('nama_kategori', 'Galeri Peta');
-            })
+        $map = Map::with(['layer', 'features'])
+            ->whereIn('kategori', ['Galeri Peta', 'Visualisasi & Galeri Peta'])
             ->findOrFail($id);
 
-        // Biar script JS tetap bisa pakai $maps->toJson(), bungkus jadi collection
-        $maps = collect([$map]);
+        // Tambahkan URL publik untuk setiap feature
+        $map->features->transform(function ($feature) {
+            $feature->feature_image_path = $feature->image_path 
+                ? asset($feature->image_path) 
+                : null;
+            $feature->caption = $feature->caption ?? null;
+            return $feature;
+        });
 
-        // Decode geometry/features kalau masih string
-        foreach ($maps as $m) {
-            if (is_string($m->geometry)) {
-                $m->geometry = json_decode($m->geometry);
-            }
-            if (isset($m->features) && is_string($m->features)) {
-                $m->features = json_decode($m->features);
-            }
-        }
+        // Bungkus jadi collection biar struktur sama seperti di index
+        $maps = collect([$map]);
 
         return view('gallery_maps.show', compact('map', 'maps'));
     }
-
 
 }

@@ -9,8 +9,8 @@ class Map extends Model
     protected $fillable = [
         'name',
         'description',
+        'kategori',
         'layer_id',       // relasi foreign key ke tabel layers
-        'kategori_id',
         'lat',
         'lng',
         'distance',
@@ -50,9 +50,9 @@ class Map extends Model
         return $this->hasMany(MapFeature::class);
     }
 
-    public function kategori()
+    public function getKategoriAttribute($value)
     {
-        return $this->belongsTo(Kategori::class, 'kategori_id', 'id');
+        return $value;
     }
 
 }
