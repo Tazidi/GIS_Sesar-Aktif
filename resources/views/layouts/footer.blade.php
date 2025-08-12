@@ -24,10 +24,10 @@
             <div>
                 <h3 class="text-white text-lg font-bold mb-4">Ikuti Kami</h3>
                 <div class="flex items-center space-x-4">
-                    <a href="#" class="text-2xl hover:text-blue-500"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="text-2xl hover:text-pink-500"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="text-2xl hover:text-white"><i class="fab fa-x-twitter"></i></a>
-                    <a href="#" class="text-2xl hover:text-red-500"><i class="fab fa-youtube"></i></a>
+                    <a href="https://www.facebook.com/brin.indonesia/" class="text-2xl hover:text-blue-500"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/brin_indonesia/" class="text-2xl hover:text-pink-500"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.instagram.com/brin_indonesia/" class="text-2xl hover:text-white"><i class="fab fa-x-twitter"></i></a>
+                    <a href="https://www.youtube.com/channel/UCr1ihEI566IJib9P-JjENSA" class="text-2xl hover:text-red-500"><i class="fab fa-youtube"></i></a>
                 </div>
             </div>
         </div>

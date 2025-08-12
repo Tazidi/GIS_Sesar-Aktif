@@ -1,9 +1,9 @@
 @extends('layouts.app')
 
 @push('styles')
-{{-- Menambahkan CSS kustom untuk memodifikasi Fancybox (TIDAK DIUBAH) --}}
+{{-- Menambahkan CSS kustom untuk memodifikasi Fancybox dan Carousel --}}
 <style>
-    /* 1. Menghilangkan SEMUA tombol bawaan Fancybox */
+    /* 1. Menghilangkan SEMUA tombol bawaan Fancybox (TIDAK DIUBAH) */
     .fancybox__button--arrow,
     .fancybox__button--zoom,
     .fancybox__button--slideshow,
@@ -12,20 +12,13 @@
     .fancybox__button--close {
         display: none !important;
     }
+    .fancybox__toolbar { display: none !important; }
 
-    /* Menghilangkan toolbar bawah (thumbnail) */
-    .fancybox__toolbar {
-        display: none !important;
-    }
-
-    /* 2. Kustomisasi layout popup utama agar transparan dan full-screen */
-    .fancybox__slide.is-selected {
-        background: rgba(0, 0, 0, 0.85); /* Latar belakang gelap transparan */
-    }
-
+    /* 2. Kustomisasi layout popup utama (TIDAK DIUBAH) */
+    .fancybox__slide.is-selected { background: rgba(0, 0, 0, 0.85); }
     .fancybox__slide.is-selected .fancybox__content {
         background: transparent;
-        padding: 2rem; /* Beri jarak dari tepi layar */
+        padding: 2rem;
         width: 100%;
         height: 100%;
         display: flex;
@@ -33,13 +26,39 @@
         justify-content: center;
     }
     
-    /* 3. Mengubah kursor saat gambar bisa di-pan (digeser saat zoom) */
+    /* 3. Mengubah kursor saat gambar bisa di-pan (TIDAK DIUBAH) */
     .fancybox__content > .f-panzoom.is-panning,
     .fancybox__content > .f-panzoom.is-draggable .f-panzoom__content {
         cursor: grabbing !important;
     }
     .fancybox__content > .f-panzoom.is-draggable .f-panzoom__content {
         cursor: grab !important;
+    }
+
+    /* 4. PERUBAHAN: CSS untuk Thumbnail Carousel */
+    .carousel-thumb {
+        border: 3px solid transparent;
+        transition: border-color 0.3s ease;
+        opacity: 0.6;
+    }
+    .carousel-thumb:hover,
+    .carousel-thumb.active {
+        border-color: #ef4444; /* Warna merah */
+        opacity: 1;
+    }
+    /* Kustomisasi scrollbar untuk carousel */
+    .carousel-container::-webkit-scrollbar {
+        width: 4px;
+    }
+    .carousel-container::-webkit-scrollbar-track {
+        background: #444;
+    }
+    .carousel-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+    .carousel-container::-webkit-scrollbar-thumb:hover {
+        background: #ef4444;
     }
 </style>
 @endpush
@@ -53,9 +72,8 @@
             <p class="text-lg text-gray-500 mt-2">Jelajahi dokumentasi visual kami.</p>
         </div>
 
-        {{-- PERUBAHAN: Menambahkan Search Bar dan Tab Kategori dalam satu baris --}}
+        {{-- Search Bar dan Tab Kategori (TIDAK DIUBAH) --}}
         <div class="flex flex-col md:flex-row items-center justify-between mb-6 border-b border-gray-300 gap-4 pb-2">
-            <!-- Tab Kategori -->
             <div class="flex flex-wrap justify-center md:justify-start">
                 @php
                     $categories = ['Sesar Aktif', 'Peta Geologi', 'Mitigasi Bencana', 'Studi Lapangan', 'Lainnya'];
@@ -68,7 +86,6 @@
                 @endforeach
             </div>
 
-            <!-- Search Input -->
             <div class="relative w-full md:w-auto">
                 <input type="text" id="search-input" placeholder="Cari judul atau deskripsi..."
                        class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
@@ -77,7 +94,6 @@
                 </div>
             </div>
         </div>
-
 
         {{-- Grid untuk menampilkan gambar --}}
         <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -94,21 +110,38 @@
 @endsection
 
 @push('scripts')
+{{-- PERUBAHAN: Menambahkan fungsi global untuk interaksi carousel --}}
+<script>
+    function switchPopupImage(event, newSrc, mainImageId, downloadLinkId) {
+        // Ganti gambar utama
+        document.getElementById(mainImageId).src = newSrc;
+        // Ganti link download
+        document.getElementById(downloadLinkId).href = newSrc;
+
+        // Atur status 'active' pada thumbnail
+        const currentThumb = event.currentTarget;
+        const container = currentThumb.closest('.carousel-container');
+        if (container) {
+            container.querySelectorAll('.carousel-thumb').forEach(thumb => thumb.classList.remove('active'));
+            currentThumb.classList.add('active');
+        }
+    }
+</script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const tabs = document.querySelectorAll('.gallery-tab');
     const gridContainer = document.getElementById('gallery-grid');
     const paginationContainer = document.getElementById('pagination-links');
     const fancyboxContainer = document.getElementById('fancybox-popup-content');
-    const searchInput = document.getElementById('search-input'); // Ambil elemen search input
+    const searchInput = document.getElementById('search-input');
     
     const apiBaseUrl = "{{ url('/gallery/category') }}";
     const assetBaseUrl = "{{ asset('gallery/') }}";
 
-    let currentCategory = ''; // Simpan kategori aktif
-    let debounceTimer; // Untuk timer debouncing
+    let currentCategory = '';
+    let debounceTimer;
 
-    // Fungsi untuk membangun URL API dengan parameter
     function buildApiUrl(category, page = 1, searchTerm = '') {
         const encodedCategory = encodeURIComponent(category);
         let url = `${apiBaseUrl}/${encodedCategory}?page=${page}`;
@@ -119,7 +152,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function fetchGallery(url) {
-        // Tampilkan loading spinner
         gridContainer.innerHTML = `<div class="h-48 col-span-full flex items-center justify-center text-gray-500"><svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Memuat galeri...</span></div>`;
         paginationContainer.innerHTML = '';
 
@@ -136,14 +168,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (images && images.length > 0) {
                 images.forEach(image => {
-                    const imageUrl = `${assetBaseUrl}/${image.image_path}`;
+                    const mainImageUrl = `${assetBaseUrl}/${image.main_image}`;
+
+                    // **PERUBAHAN KRITIS**: Menambahkan penanda jumlah gambar pada grid
+                    const extraImages = Array.isArray(image.extra_images) ? image.extra_images : (image.extra_images ? JSON.parse(image.extra_images) : []);
+                    const totalImages = 1 + extraImages.length;
                     
-                    // **PERBAIKAN KRITIS**: Pastikan class "relative" ada di tag <a>
                     const galleryItemHTML = `
                     <a href="#popup-${image.id}" data-fancybox="gallery" class="group relative block w-full overflow-hidden rounded-lg shadow-lg">
                         <div class="aspect-video bg-gray-200">
-                            <img src="${imageUrl}" alt="${image.title}" class="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110">
+                            <img src="${mainImageUrl}" alt="${image.title}" class="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110">
                         </div>
+                        ${totalImages > 1 ? `
+                        <div class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                            <i class="fas fa-images mr-1"></i> ${totalImages} foto
+                        </div>
+                        ` : ''}
                         <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out">
                             <h3 class="font-bold text-base truncate">${image.title}</h3>
                             <p class="text-sm opacity-90 mt-1 truncate">${image.description || 'Klik untuk melihat detail'}</p>
@@ -152,16 +192,35 @@ document.addEventListener('DOMContentLoaded', function () {
                     `;
                     gridContainer.insertAdjacentHTML('beforeend', galleryItemHTML);
                     
-                    // Template untuk popup Fancybox (tidak berubah)
+                    // **PERUBAHAN UTAMA**: Membangun HTML untuk popup dengan carousel
+                    const allImageFiles = [image.main_image, ...extraImages];
+                    const mainPopupImageId = `main-popup-image-${image.id}`;
+                    const downloadLinkId = `download-link-${image.id}`;
+
+                    const thumbnailsHTML = allImageFiles.map((imgFile, index) => {
+                        const fullUrl = `${assetBaseUrl}/${imgFile}`;
+                        return `<img src="${fullUrl}" class="carousel-thumb w-full h-16 object-cover mb-2 rounded cursor-pointer ${index === 0 ? 'active' : ''}" onclick="switchPopupImage(event, '${fullUrl}', '${mainPopupImageId}', '${downloadLinkId}')">`;
+                    }).join('');
+
                     const popupContentHTML = `
                     <div id="popup-${image.id}" style="display:none; max-width: 100%; width: 100%; height: 100%;">
                         <div class="flex flex-col md:flex-row w-full h-full gap-6">
-                            <div class="w-full md:w-2/3 h-full flex items-center justify-center relative overflow-hidden">
-                                <img src="${imageUrl}" class="w-auto h-auto max-w-full max-h-full object-contain" draggable="false">
-                                <a href="${imageUrl}" download="${image.title.replace(/ /g, '_')}.jpg" class="absolute top-3 right-3 w-10 h-10 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75 transition-all flex items-center justify-center" title="Unduh Gambar">
-                                    <i class="fas fa-download"></i>
-                                </a>
+                            
+                            <div class="w-full md:w-2/3 h-full flex items-center justify-center gap-2">
+                                ${totalImages > 1 ? `
+                                <div class="flex-shrink-0 w-24 h-full overflow-y-auto pr-2 carousel-container">
+                                    ${thumbnailsHTML}
+                                </div>
+                                ` : ''}
+
+                                <div class="flex-grow h-full flex items-center justify-center relative overflow-hidden">
+                                    <img src="${mainImageUrl}" id="${mainPopupImageId}" class="w-auto h-auto max-w-full max-h-full object-contain" draggable="false">
+                                    <a href="${mainImageUrl}" id="${downloadLinkId}" download="${image.title.replace(/ /g, '_')}.jpg" class="absolute top-3 right-3 w-10 h-10 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75 transition-all flex items-center justify-center" title="Unduh Gambar">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
                             </div>
+
                             <div class="w-full md:w-1/3 h-full flex flex-col bg-white rounded-lg shadow-xl overflow-hidden">
                                 <div class="p-6 flex-grow overflow-y-auto">
                                     <h3 class="text-2xl font-bold text-gray-800 mb-2">${image.title}</h3>
@@ -176,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     fancyboxContainer.insertAdjacentHTML('beforeend', popupContentHTML);
                 });
 
-                // Inisialisasi ulang Fancybox
+                // Inisialisasi ulang Fancybox (TIDAK DIUBAH)
                 if (typeof Fancybox !== 'undefined') {
                     Fancybox.destroy();
                     Fancybox.bind('[data-fancybox="gallery"]', {
@@ -190,8 +249,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }
                 
-                // Render pagination links dari data JSON baru
-                if (links && links.length > 2) { // Hanya tampilkan jika ada halaman prev/next
+                // Render pagination (TIDAK DIUBAH)
+                if (links && links.length > 2) {
                     paginationContainer.innerHTML = links.map(link => 
                         `<a href="#" class="pagination-link inline-block px-4 py-2 mr-1 mb-1 text-sm font-medium rounded-md ${link.active ? 'bg-red-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'} ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}" data-url="${link.url}">${link.label.replace('&laquo;', '«').replace('&raquo;', '»')}</a>`
                     ).join('');
@@ -206,8 +265,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Sisa dari script (event listener untuk tab, pagination, search) tidak diubah
     function setActiveTab(category) {
-        currentCategory = category; // Update state kategori
+        currentCategory = category;
         tabs.forEach(t => {
             t.classList.remove('active-tab', 'border-red-600', 'text-red-600');
             t.classList.add('border-transparent', 'text-gray-500');
@@ -233,18 +293,16 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             const url = link.dataset.url;
             if (url && url !== 'null') {
-                fetchGallery(url); // URL dari backend sudah berisi parameter yang benar
+                fetchGallery(url);
             }
         }
     });
 
-    // Event listener untuk input pencarian dengan debouncing
     searchInput.addEventListener('input', function() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
-            // Saat mencari, panggil setActiveTab untuk me-reset ke halaman 1 dengan term pencarian baru
             setActiveTab(currentCategory);
-        }, 500); // Tunggu 500ms setelah user berhenti mengetik
+        }, 500);
     });
 
     function initializeGallery() {

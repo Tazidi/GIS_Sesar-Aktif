@@ -76,29 +76,31 @@
                 @endif
             </div>
 
-            <div class="lg:col-span-3">
-                <div class="mb-4 border-b border-gray-300">
-                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Today Update</h2>
+        <div class="lg:col-span-3">
+            <div class="mb-4 border-b border-gray-300">
+                <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Today Update</h2>
+            </div>
+            <div class="bg-white p-4 shadow-md rounded-md">
+                <div class="flex border-b mb-4">
+                    {{-- Tombol 'Popular' telah dihapus. --}}
+                    {{-- 'Trending' diubah menjadi 'Most viewed' dan dijadikan tab aktif. --}}
+                    <button class="flex-1 py-2 text-sm font-bold bg-red-600 text-white rounded-t-md"><i class="fas fa-fire mr-2"></i>Most viewed</button>
+                    <button class="flex-1 py-2 text-sm text-gray-500 hover:text-gray-800"><i class="far fa-clock mr-2"></i>Recent</button>
                 </div>
-                <div class="bg-white p-4 shadow-md rounded-md">
-                    <div class="flex border-b mb-4">
-                        <button class="flex-1 py-2 text-sm font-bold bg-red-600 text-white rounded-t-md"><i class="fas fa-fire mr-2"></i>Popular</button>
-                        <button class="flex-1 py-2 text-sm text-gray-500 hover:text-gray-800"><i class="fas fa-chart-line mr-2"></i>Trending</button>
-                        <button class="flex-1 py-2 text-sm text-gray-500 hover:text-gray-800"><i class="far fa-clock mr-2"></i>Recent</button>
-                    </div>
-                    <ul>
-                        @forelse($popularArticles as $article)
-                            <li class="border-b py-3 last:border-b-0">
-                                <a href="{{ route('articles.show', $article) }}" class="font-semibold text-gray-800 hover:text-red-600">{{ $article->title }}</a>
-                                <p class="text-xs text-gray-500 mt-1">{{ $article->created_at->format('d F Y') }}</p>
-                            </li>
-                        @empty
-                            <p class="text-sm text-gray-500">Tidak ada artikel populer.</p>
-                        @endforelse
-                    </ul>
-                </div>
+                <ul>
+                    @forelse($popularArticles as $article)
+                        <li class="border-b py-3 last:border-b-0">
+                            <a href="{{ route('articles.show', $article) }}" class="font-semibold text-gray-800 hover:text-red-600">{{ $article->title }}</a>
+                            <p class="text-xs text-gray-500 mt-1">{{ $article->created_at->format('d F Y') }}</p>
+                        </li>
+                    @empty
+                        {{-- Pesan disesuaikan untuk tab "Most viewed" --}}
+                        <p class="text-sm text-gray-500">Tidak ada artikel yang paling banyak dilihat.</p>
+                    @endforelse
+                </ul>
             </div>
         </div>
+    </div>
 
         {{-- BAGIAN GALERI --}}
         <div class="mt-12">

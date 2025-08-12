@@ -39,9 +39,10 @@
                 {{-- Kiri: Ikon Sosial Media (sembunyi di hp/tablet) --}}
                 <div class="hidden lg:flex flex-1 justify-start">
                     <div class="flex items-center space-x-3">
-                        <a href="#" class="h-8 w-8 rounded-full flex items-center justify-center bg-blue-600 text-white hover:opacity-80"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="h-8 w-8 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-500 text-white hover:opacity-80"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="h-8 w-8 rounded-full flex items-center justify-center bg-gray-900 text-white hover:opacity-80"><i class="fab fa-x-twitter"></i></a>
+                        <a href="https://www.facebook.com/brin.indonesia/" class="h-8 w-8 rounded-full flex items-center justify-center bg-blue-600 text-white hover:opacity-80"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.instagram.com/brin_indonesia/" class="h-8 w-8 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-500 text-white hover:opacity-80"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.instagram.com/brin_indonesia/" class="h-8 w-8 rounded-full flex items-center justify-center bg-gray-900 text-white hover:opacity-80"><i class="fab fa-x-twitter"></i></a>
+                        <a href="https://www.youtube.com/channel/UCr1ihEI566IJib9P-JjENSA" class="h-8 w-8 rounded-full flex items-center justify-center bg-red-600 text-white hover:opacity-80"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
 
