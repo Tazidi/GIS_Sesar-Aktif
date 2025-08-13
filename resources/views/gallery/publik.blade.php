@@ -35,7 +35,7 @@
         cursor: grab !important;
     }
 
-    /* 4. PERUBAHAN: CSS untuk Thumbnail Carousel */
+    /* 4. CSS untuk Thumbnail Carousel (TIDAK DIUBAH) */
     .carousel-thumb {
         border: 3px solid transparent;
         transition: border-color 0.3s ease;
@@ -60,6 +60,67 @@
     .carousel-container::-webkit-scrollbar-thumb:hover {
         background: #ef4444;
     }
+
+/* 5. PERUBAHAN: CSS untuk tombol navigasi popup */
+.popup-nav-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 4rem;      /* Diubah dari 3.5rem (64px) */
+    height: 4rem;     /* Diubah dari 3.5rem (64px) */
+    font-size: 1.75rem; /* Diubah dari 1.25rem (Ukuran ikon panah) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    z-index: 20; /* Pastikan di atas gambar */
+}
+    .popup-nav-button:hover {
+        background: rgba(0, 0, 0, 0.7);
+    }
+    /* PERUBAHAN: Posisi tombol disesuaikan untuk parent container */
+    .popup-nav-button.prev {
+        left: 1rem; 
+    }
+    .popup-nav-button.next {
+        right: 1rem;
+    }
+    /* Sembunyikan di layar kecil agar tidak menutupi gambar */
+    @media (max-width: 768px) {
+        .popup-nav-button {
+            display: none;
+        }
+    }
+
+/* 6. CSS BARU: Untuk animasi slide pada gambar utama */
+.main-image-wrapper {
+    /* Transisi untuk properti transform dan opacity selama 0.3 detik */
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    transform: translateX(0);
+    opacity: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Kelas untuk animasi keluar ke kiri (saat klik 'next') */
+.main-image-wrapper.slide-out-to-left {
+    transform: translateX(-50px); /* Geser 50px ke kiri */
+    opacity: 0; /* Pudar */
+}
+
+/* Kelas untuk animasi keluar ke kanan (saat klik 'prev') */
+.main-image-wrapper.slide-out-to-right {
+    transform: translateX(50px); /* Geser 50px ke kanan */
+    opacity: 0; /* Pudar */
+}
 </style>
 @endpush
 
@@ -126,6 +187,48 @@
             currentThumb.classList.add('active');
         }
     }
+
+    // FUNGSI BARU untuk navigasi gambar internal dengan tombol panah
+// GANTI SELURUH FUNGSI INI
+function navigateInternal(carouselId, direction) {
+    const carouselContainer = document.getElementById(carouselId);
+    if (!carouselContainer) return;
+
+    // Ambil wrapper gambar utama yang akan dianimasikan
+    // Kita ambil ID gambar dari ID carousel untuk menemukannya
+    const imageId = carouselId.replace('carousel-container-', '');
+    const mainImageWrapper = document.getElementById(`main-image-wrapper-${imageId}`);
+    if (!mainImageWrapper) return;
+
+    const thumbs = Array.from(carouselContainer.querySelectorAll('.carousel-thumb'));
+    const activeThumb = carouselContainer.querySelector('.carousel-thumb.active');
+    if (!activeThumb || thumbs.length <= 1) return;
+
+    const currentIndex = thumbs.indexOf(activeThumb);
+    let nextIndex;
+
+    // Tentukan kelas animasi berdasarkan arah navigasi
+    if (direction === 'next') {
+        nextIndex = (currentIndex + 1) % thumbs.length;
+        mainImageWrapper.classList.add('slide-out-to-left'); // Animasi keluar ke kiri
+    } else { // 'prev'
+        nextIndex = (currentIndex - 1 + thumbs.length) % thumbs.length;
+        mainImageWrapper.classList.add('slide-out-to-right'); // Animasi keluar ke kanan
+    }
+    
+    // Tunggu animasi keluar berjalan sejenak, lalu ganti gambar dan mulai animasi masuk
+    setTimeout(() => {
+        // Picu klik pada thumbnail berikutnya untuk mengganti gambar (memakai logika lama)
+        if (thumbs[nextIndex]) {
+            thumbs[nextIndex].click();
+        }
+
+        // Hapus kelas animasi. Karena ada 'transition' di CSS,
+        // wrapper akan otomatis kembali ke posisi semula (transform: translateX(0), opacity: 1)
+        // menciptakan efek animasi "masuk".
+        mainImageWrapper.classList.remove('slide-out-to-left', 'slide-out-to-right');
+    }, 150); // Delay 150ms (setengah dari durasi transisi 0.3s)
+}
 </script>
 
 <script>
@@ -170,7 +273,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 images.forEach(image => {
                     const mainImageUrl = `${assetBaseUrl}/${image.main_image}`;
 
-                    // **PERUBAHAN KRITIS**: Menambahkan penanda jumlah gambar pada grid
                     const extraImages = Array.isArray(image.extra_images) ? image.extra_images : (image.extra_images ? JSON.parse(image.extra_images) : []);
                     const totalImages = 1 + extraImages.length;
                     
@@ -192,34 +294,55 @@ document.addEventListener('DOMContentLoaded', function () {
                     `;
                     gridContainer.insertAdjacentHTML('beforeend', galleryItemHTML);
                     
-                    // **PERUBAHAN UTAMA**: Membangun HTML untuk popup dengan carousel
                     const allImageFiles = [image.main_image, ...extraImages];
                     const mainPopupImageId = `main-popup-image-${image.id}`;
                     const downloadLinkId = `download-link-${image.id}`;
+                    const carouselId = `carousel-container-${image.id}`;
 
                     const thumbnailsHTML = allImageFiles.map((imgFile, index) => {
                         const fullUrl = `${assetBaseUrl}/${imgFile}`;
                         return `<img src="${fullUrl}" class="carousel-thumb w-full h-16 object-cover mb-2 rounded cursor-pointer ${index === 0 ? 'active' : ''}" onclick="switchPopupImage(event, '${fullUrl}', '${mainPopupImageId}', '${downloadLinkId}')">`;
                     }).join('');
 
+                    // **PERUBAHAN STRUKTUR HTML UNTUK POSISI TOMBOL**
+                    // **PERUBAHAN STRUKTUR HTML UNTUK POSISI TOMBOL**
                     const popupContentHTML = `
                     <div id="popup-${image.id}" style="display:none; max-width: 100%; width: 100%; height: 100%;">
                         <div class="flex flex-col md:flex-row w-full h-full gap-6">
                             
                             <div class="w-full md:w-2/3 h-full flex items-center justify-center gap-2">
+                                
                                 ${totalImages > 1 ? `
-                                <div class="flex-shrink-0 w-24 h-full overflow-y-auto pr-2 carousel-container">
+                                <div id="${carouselId}" class="flex-shrink-0 w-24 h-full overflow-y-auto pr-2 carousel-container">
                                     ${thumbnailsHTML}
                                 </div>
                                 ` : ''}
 
-                                <div class="flex-grow h-full flex items-center justify-center relative overflow-hidden">
-                                    <img src="${mainImageUrl}" id="${mainPopupImageId}" class="w-auto h-auto max-w-full max-h-full object-contain" draggable="false">
-                                    <a href="${mainImageUrl}" id="${downloadLinkId}" download="${image.title.replace(/ /g, '_')}.jpg" class="absolute top-3 right-3 w-10 h-10 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75 transition-all flex items-center justify-center" title="Unduh Gambar">
-                                        <i class="fas fa-download"></i>
-                                    </a>
-                                </div>
-                            </div>
+                                <div class="relative flex-grow h-full w-full flex items-center justify-center">
+
+                                    ${totalImages > 1 ? `
+                                    <button onclick="navigateInternal('${carouselId}', 'prev')" class="popup-nav-button prev" title="Sebelumnya">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    ` : ''}
+
+                                    <div class="flex-grow h-full w-full flex items-center justify-center overflow-hidden">
+                                        <div id="main-image-wrapper-${image.id}" class="main-image-wrapper">
+                                            <img src="${mainImageUrl}" id="${mainPopupImageId}" class="w-auto h-auto max-w-full max-h-full object-contain" draggable="false">
+                                        </div>
+                                        
+                                        <a href="${mainImageUrl}" id="${downloadLinkId}" download="${image.title.replace(/ /g, '_')}.jpg" class="absolute top-3 right-3 w-10 h-10 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75 transition-all flex items-center justify-center" title="Unduh Gambar">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    </div>
+                                    
+                                    ${totalImages > 1 ? `
+                                    <button onclick="navigateInternal('${carouselId}', 'next')" class="popup-nav-button next" title="Berikutnya">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    ` : ''}
+
+                                </div> </div>
 
                             <div class="w-full md:w-1/3 h-full flex flex-col bg-white rounded-lg shadow-xl overflow-hidden">
                                 <div class="p-6 flex-grow overflow-y-auto">
@@ -235,17 +358,68 @@ document.addEventListener('DOMContentLoaded', function () {
                     fancyboxContainer.insertAdjacentHTML('beforeend', popupContentHTML);
                 });
 
-                // Inisialisasi ulang Fancybox (TIDAK DIUBAH)
+                // Inisialisasi ulang Fancybox
                 if (typeof Fancybox !== 'undefined') {
                     Fancybox.destroy();
                     Fancybox.bind('[data-fancybox="gallery"]', {
-                        groupAll: false, dragToClose: false, click: false,
+                        groupAll: true, 
+                        dragToClose: false, click: false,
                         Panzoom: { mouseWheel: true, panOnlyZoomed: true },
                         Toolbar: false, Thumbs: false,
-                        keyboard: { Escape: "close" },
+                        keyboard: { 
+                            Escape: "close",
+                            ArrowLeft: "prev",
+                            ArrowRight: "next",
+                        },
                         template: {
                             closeButton: '<button data-fancybox-close class="fancybox__button" title="Tutup" style="position: absolute; top: 1rem; right: 1rem; z-index: 9999; background: rgba(0,0,0,0.5); color: white; border-radius: 50%; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>',
                         },
+                        on: {
+                            ready: (fancybox) => {
+                                const container = fancybox.container;
+                                if (!container) return;
+
+                                let touchstartX = 0;
+                                let touchendX = 0;
+                                let touchstartY = 0;
+                                let touchendY = 0;
+
+                                container.addEventListener('touchstart', e => {
+                                    if (e.target.closest('a, button, .carousel-thumb, .carousel-container, .prose')) {
+                                        return;
+                                    }
+                                    touchstartX = e.changedTouches[0].screenX;
+                                    touchstartY = e.changedTouches[0].screenY;
+                                }, { passive: true });
+
+                                container.addEventListener('touchend', e => {
+                                     if (e.target.closest('a, button, .carousel-thumb, .carousel-container, .prose')) {
+                                        return;
+                                    }
+                                    touchendX = e.changedTouches[0].screenX;
+                                    touchendY = e.changedTouches[0].screenY;
+                                    handleGesture();
+                                }, { passive: true });
+
+                                function handleGesture() {
+                                    const deltaX = touchendX - touchstartX;
+                                    const deltaY = touchendY - touchstartY;
+
+                                    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+                                        return;
+                                    }
+                                    
+                                    if (Math.abs(deltaX) > 50) {
+                                        if (touchendX < touchstartX) {
+                                            fancybox.next();
+                                        }
+                                        if (touchendX > touchstartX) {
+                                            fancybox.prev();
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     });
                 }
                 

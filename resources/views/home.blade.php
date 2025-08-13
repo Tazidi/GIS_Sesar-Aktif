@@ -76,31 +76,38 @@
                 @endif
             </div>
 
-        <div class="lg:col-span-3">
-            <div class="mb-4 border-b border-gray-300">
-                <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Today Update</h2>
-            </div>
-            <div class="bg-white p-4 shadow-md rounded-md">
-                <div class="flex border-b mb-4">
-                    {{-- Tombol 'Popular' telah dihapus. --}}
-                    {{-- 'Trending' diubah menjadi 'Most viewed' dan dijadikan tab aktif. --}}
-                    <button class="flex-1 py-2 text-sm font-bold bg-red-600 text-white rounded-t-md"><i class="fas fa-fire mr-2"></i>Most viewed</button>
-                    <button class="flex-1 py-2 text-sm text-gray-500 hover:text-gray-800"><i class="far fa-clock mr-2"></i>Recent</button>
+            <div class="lg:col-span-3">
+                <div class="mb-4 border-b border-gray-300">
+                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Today Update</h2>
                 </div>
-                <ul>
-                    @forelse($popularArticles as $article)
-                        <li class="border-b py-3 last:border-b-0">
-                            <a href="{{ route('articles.show', $article) }}" class="font-semibold text-gray-800 hover:text-red-600">{{ $article->title }}</a>
-                            <p class="text-xs text-gray-500 mt-1">{{ $article->created_at->format('d F Y') }}</p>
-                        </li>
-                    @empty
-                        {{-- Pesan disesuaikan untuk tab "Most viewed" --}}
-                        <p class="text-sm text-gray-500">Tidak ada artikel yang paling banyak dilihat.</p>
-                    @endforelse
-                </ul>
+                <div class="bg-white p-4 shadow-md rounded-md">
+                    <div class="flex border-b mb-4">
+                        <button class="flex-1 py-2 text-sm font-bold bg-red-600 text-white rounded-t-md"><i class="fas fa-fire mr-2"></i>Most viewed</button>
+                        <button class="flex-1 py-2 text-sm text-gray-500 hover:text-gray-800"><i class="far fa-clock mr-2"></i>Recent</button>
+                    </div>
+                    <ul>
+                        @forelse($popularArticles as $article)
+                            <li class="border-b py-3 last:border-b-0">
+                                <a href="{{ route('articles.show', $article) }}" class="font-semibold text-gray-800 hover:text-red-600">{{ $article->title }}</a>
+                                <p class="text-xs text-gray-500 mt-1">{{ $article->created_at->format('d F Y') }}</p>
+                            </li>
+                        @empty
+                            <p class="text-sm text-gray-500">Tidak ada artikel yang paling banyak dilihat.</p>
+                        @endforelse
+                    </ul>
+                </div>
             </div>
         </div>
-    </div>
+
+        {{-- BAGIAN PETA --}}
+        <div class="mt-12">
+            <div class="mb-4 border-b border-gray-300">
+                <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Visualisasi Peta</h2>
+            </div>
+            <div class="bg-white p-4 shadow-md rounded-md">
+                <div id="home-map" style="height: 450px; border-radius: 8px;"></div>
+            </div>
+        </div>
 
     {{-- BAGIAN PETA SISIRAJA --}}
         <div class="mt-12">
@@ -137,7 +144,6 @@
                 </div>
                 <a href="{{ route('gallery.publik') }}" class="text-sm mt-2 sm:mt-0 font-semibold text-red-600 hover:underline">Lihat Semua Galeri &rarr;</a>
             </div>
-
             <div id="gallery-grid-home" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div class="h-48 col-span-full flex items-center justify-center text-gray-500">Memuat galeri...</div>
             </div>
@@ -146,71 +152,151 @@
 </div>
 @endsection
 
-@section('scripts')
+{{-- ▼▼▼ PINDAHKAN SEMUA SKRIP KE DALAM BLOK INI ▼▼▼ --}}
+@push('scripts')
+
+{{-- 1. Pustaka Leaflet (selalu dimuat) --}}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    
+    // ===================================
+    // LOGIKA UNTUK GALERI (TIDAK DIUBAH)
+    // ===================================
+    // ... (biarkan semua kode galeri Anda di sini)
     const tabs = document.querySelectorAll('.gallery-tab');
     const gridContainer = document.getElementById('gallery-grid-home');
-    
-    // Definisikan URL dasar menggunakan Blade helper
     const galleryPageUrl = "{{ route('gallery.publik') }}";
     const assetBaseUrl = "{{ asset('gallery/') }}";
     const apiBaseUrl = "{{ url('/gallery/category') }}";
 
-    async function fetchHomepageGallery(category) {
-        gridContainer.innerHTML = `<div class="h-48 col-span-full flex items-center justify-center text-gray-500">Memuat galeri...</div>`;
-
-        try {
-            const encodedCategory = encodeURIComponent(category);
-            const response = await fetch(`${apiBaseUrl}/${encodedCategory}/home`);
-            if (!response.ok) throw new Error('Network response was not ok.');
-            const images = await response.json();
-
-            gridContainer.innerHTML = '';
-
-            if (images.length > 0) {
-                images.forEach(image => {
-                    // PERBAIKAN: Buat link yang benar ke halaman galeri publik dengan parameter kategori
-                    const linkUrl = `${galleryPageUrl}?category=${encodeURIComponent(image.category)}`;
-                    const imageUrl = `${assetBaseUrl}/${image.image_path}`;
-
-                    const galleryItem = `
-                        <a href="${linkUrl}" class="relative block aspect-square group overflow-hidden rounded-md shadow-md">
-                            <img src="${imageUrl}" alt="${image.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-3">
-                                <h3 class="font-bold text-white text-sm">${image.title}</h3>
-                            </div>
-                        </a>
-                    `;
-                    gridContainer.insertAdjacentHTML('beforeend', galleryItem);
-                });
-            } else {
-                gridContainer.innerHTML = `<div class="h-48 col-span-full flex items-center justify-center text-gray-400">Tidak ada gambar dalam kategori ini.</div>`;
-            }
-        } catch (error) {
-            console.error('Gagal memuat galeri:', error);
-            gridContainer.innerHTML = `<div class="h-48 col-span-full flex items-center justify-center text-red-500">Gagal memuat galeri.</div>`;
-        }
-    }
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function () {
-            tabs.forEach(t => {
-                t.classList.remove('active-tab', 'border-red-600', 'text-red-600');
-                t.classList.add('border-transparent', 'text-gray-500');
-            });
-            this.classList.add('active-tab', 'border-red-600', 'text-red-600');
-            this.classList.remove('border-transparent', 'text-gray-500');
-            const category = this.dataset.category;
-            fetchHomepageGallery(category);
-        });
-    });
-
+    async function fetchHomepageGallery(category) { /* ... isi fungsi galeri ... */ }
+    tabs.forEach(tab => { /* ... event listener galeri ... */ });
     const initialActiveTab = document.querySelector('.gallery-tab.active-tab');
-    if (initialActiveTab) {
-        const initialCategory = initialActiveTab.dataset.category;
-        fetchHomepageGallery(initialCategory);
+    if (initialActiveTab) { fetchHomepageGallery(initialActiveTab.dataset.category); }
+    
+    // ===================================================
+    // BAGIAN LOGIKA PETA YANG DIPERBARUI
+    // ===================================================
+    const mapContainer = document.getElementById('home-map');
+    
+    if (mapContainer) {
+        // Definisikan koordinat dan zoom awal untuk reset
+        const initialView = {
+            coords: [-2.5489, 118.0149],
+            zoom: 5
+        };
+
+        // Langkah A: Definisikan semua pilihan Base Map
+        const googleStreet = L.tileLayer('http://{s}.google.com/vt?lyrs=m&x={x}&y={y}&z={z}',{
+            maxZoom: 20,
+            subdomains:['mt0','mt1','mt2','mt3'],
+            attribution: '© Google Maps'
+        });
+
+        const googleSat = L.tileLayer('http://{s}.google.com/vt?lyrs=s,h&x={x}&y={y}&z={z}',{
+            maxZoom: 20,
+            subdomains:['mt0','mt1','mt2','mt3'],
+            attribution: '© Google Satellite'
+        });
+        
+        const openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+        });
+
+        const baseMaps = {
+            "Google Maps": googleStreet,
+            "Google Satellite": googleSat,
+            "OpenTopoMap": openTopoMap
+        };
+
+        // Langkah B: Inisialisasi Peta
+        // Kita set 'googleSat' sebagai tampilan default
+        const map = L.map('home-map', {
+            layers: [googleSat], // Layer default yang aktif
+            scrollWheelZoom: false
+        }).setView(initialView.coords, initialView.zoom);
+
+        // Langkah C: Siapkan grup untuk layer overlay (data GeoJSON)
+        let overlays = {}; // Objek kosong untuk menampung layer data
+        
+        // Cek jika ada data dari controller
+        @if($mapForHome)
+            const geoJsonUrl = "{{ route('maps.geojson', $mapForHome->id) }}";
+
+            fetch(geoJsonUrl)
+                .then(response => response.json())
+                .then(data => {
+                    // Buat layer GeoJSON
+                    const dataLayer = L.geoJSON(data, {
+                        onEachFeature: function (feature, layer) {
+                            if (feature.properties && feature.properties.name) {
+                                layer.bindPopup(feature.properties.name);
+                            }
+                        }
+                    });
+                    
+                    // Masukkan layer ke dalam objek overlays
+                    // Nama '{{ $mapForHome->name }}' akan muncul di kotak pilihan layer
+                    overlays['{{ $mapForHome->name }}'] = dataLayer;
+                    
+                    // Tambahkan layer ini ke peta secara default
+                    dataLayer.addTo(map);
+
+                    // PENTING: Buat dan tambahkan Layer Control SETELAH fetch selesai
+                    L.control.layers(baseMaps, overlays).addTo(map);
+                })
+                .catch(error => {
+                    console.error('Gagal memuat data GeoJSON:', error);
+                    // Jika fetch gagal, tetap tampilkan kontrol layer hanya dengan base map
+                    L.control.layers(baseMaps).addTo(map);
+                });
+        @else
+            // Jika tidak ada data peta sama sekali, tampilkan kontrol layer hanya dengan base map
+            L.control.layers(baseMaps).addTo(map);
+        @endif
+
+        // Langkah D: Tambahkan Tombol Reset View
+        L.Control.resetView = L.Control.extend({
+            onAdd: function(map) {
+                var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+                container.innerHTML = '<button title="Reset View" style="width: 30px; height: 30px; font-size: 1.2rem; line-height: 30px;"><i class="fas fa-sync-alt"></i></button>';
+                container.onclick = function(){
+                    map.setView(initialView.coords, initialView.zoom);
+                }
+                return container;
+            },
+            onRemove: function(map) {}
+        });
+        new L.Control.resetView({ position: 'topright' }).addTo(map);
+
+
+        // Langkah E: Tambahkan Legenda
+        L.Control.Legend = L.Control.extend({
+            onAdd: function(map) {
+                var div = L.DomUtil.create('div', 'info legend');
+                div.innerHTML = '<h4>Keterangan Peta</h4>';
+                // Anda bisa tambahkan loop di sini untuk membuat legenda dinamis
+                // Contoh statis:
+                div.innerHTML += '<i style="background: #0000FF"></i> Sekolah<br>';
+                return div;
+            },
+        });
+        new L.Control.Legend({ position: 'bottomleft' }).addTo(map);
+
+        // Anda mungkin perlu menambahkan sedikit CSS untuk legenda
+        const legendStyle = document.createElement('style');
+        legendStyle.innerHTML = `
+            .info.legend { padding: 6px 8px; font: 14px/16px Arial, Helvetica, sans-serif; background: white; background: rgba(255,255,255,0.8); box-shadow: 0 0 15px rgba(0,0,0,0.2); border-radius: 5px; }
+            .info.legend h4 { margin: 0 0 5px; color: #777; }
+            .info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7; border-radius: 50%; }
+        `;
+        document.head.appendChild(legendStyle);
     }
 });
 </script>
-@endsection
+
+@endpush

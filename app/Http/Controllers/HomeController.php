@@ -10,6 +10,9 @@ use Illuminate\Support\Carbon;
 
 class HomeController extends Controller
 {
+    /**
+     * Menampilkan halaman utama (home).
+     */
     public function index()
     {
         // Artikel terbaru yang di-approve (Latest Post)
@@ -31,15 +34,31 @@ class HomeController extends Controller
             ->take(5)
             ->get();
 
+        // Galeri terbaru
         $galleries = Gallery::latest()->take(10)->get();
+
+        // Data peta
         $maps = Map::latest()->get();
-        return view('home', compact('latestPosts', 'mainStories', 'popularArticles', 'galleries', 'maps'));
+
+        // Kirim semua data ke view 'home'
+        return view('home', compact(
+            'latestPosts',
+
+            'mainStories',
+            'popularArticles',
+            'galleries',
+            'maps'
+        ));
     }
 
+    /**
+     * Menampilkan detail satu artikel.
+     */
     public function show($id)
     {
         $article = Article::findOrFail($id);
 
+        // Menghitung jumlah pengunjung unik per artikel
         $ip = request()->ip();
         $key = 'article_viewed_' . $article->id . '_' . $ip;
 
