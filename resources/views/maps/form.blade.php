@@ -338,17 +338,38 @@
                             div.appendChild(captionInput);
 
                             // Informasi Teknis
-                            const techLabel = document.createElement('label');
-                            techLabel.textContent = `Informasi Teknis untuk: ${featureLabel}`;
-                            techLabel.className = 'text-sm font-medium text-gray-700 mb-1';
-                            div.appendChild(techLabel);
+                            // Helper function untuk membuat input
+                            const createTechInput = (labelText, name, placeholder, parent) => {
+                                const label = document.createElement('label');
+                                label.textContent = labelText;
+                                label.className = 'text-xs font-medium text-gray-600';
+                                parent.appendChild(label);
 
-                            const techInput = document.createElement('textarea');
-                            techInput.name = `feature_technical_info[${index}]`;
-                            techInput.placeholder = 'Contoh: Panjang: 5 km, Lebar: 2 km, Elevasi: 150 m';
-                            techInput.rows = 2;
-                            techInput.className = 'block w-full text-sm text-gray-600 border-gray-300 rounded-md shadow-sm';
-                            div.appendChild(techInput);
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.name = name;
+                                input.placeholder = placeholder;
+                                input.className = 'mt-1 mb-2 block w-full text-sm text-gray-600 border-gray-300 rounded-md shadow-sm';
+                                parent.appendChild(input);
+                            };
+
+                            // Wrapper untuk field-field teknis
+                            const techFieldsWrapper = document.createElement('div');
+                            techFieldsWrapper.className = 'mt-2 border-t pt-2';
+                            const techHeader = document.createElement('p');
+                            techHeader.textContent = `Informasi Teknis untuk: ${featureLabel}`;
+                            techHeader.className = 'text-sm font-medium text-gray-700 mb-1';
+                            div.appendChild(techHeader);
+
+                            // Buat input untuk setiap atribut teknis
+                            createTechInput('Panjang Sesar', `feature_properties[${index}][panjang_sesar]`, 'Contoh: 10 km', techFieldsWrapper);
+                            createTechInput('Lebar Sesar', `feature_properties[${index}][lebar_sesar]`, 'Contoh: 5 m', techFieldsWrapper);
+                            createTechInput('Tipe', `feature_properties[${index}][tipe]`, 'Contoh: Sesar Naik', techFieldsWrapper);
+                            createTechInput('MMAX', `feature_properties[${index}][mmax]`, 'Contoh: 6.5', techFieldsWrapper);
+
+                            div.appendChild(techFieldsWrapper);
+
+                            // --- AKHIR BLOK KODE BARU ---
 
                             featureImagesList.appendChild(div);
                         });

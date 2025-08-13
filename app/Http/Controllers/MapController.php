@@ -56,7 +56,9 @@ class MapController extends Controller
             'radius' => 'nullable|numeric|min:0',
             'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimetypes:application/json,text/plain,text/json,text/geojson,text/csv,application/octet-stream|max:4096',
-            'kategori' => 'required|in:Visualisasi,Galeri Peta,Visualisasi & Galeri Peta',        
+            'kategori' => 'required|in:Visualisasi,Galeri Peta,Visualisasi & Galeri Peta',
+            // Tambahkan validasi untuk array properti jika diperlukan
+            'feature_properties' => 'nullable|array',
         ]);
 
         if ($request->hasFile('image_path')) {
@@ -73,46 +75,74 @@ class MapController extends Controller
             $data['file_path'] = 'map_files/' . $fileName;
         }
 
+        $geojson = null;
+        // Cek jika ada data geometri (dari file upload atau gambar manual)
+        if ($request->filled('geometry')) {
+            // Decode string JSON dari form menjadi array PHP
+            $geojson = json_decode($request->geometry, true);
+            $featureProperties = $request->input('feature_properties', []);
+
+            // Pastikan format GeoJSON benar dan ada fitur di dalamnya
+            if (isset($geojson['type']) && $geojson['type'] === 'FeatureCollection' && isset($geojson['features'])) {
+                
+                // Loop melalui setiap feature DENGAN REFERENSI (&) agar bisa diubah
+                foreach ($geojson['features'] as $index => &$feature) {
+                    // Cek apakah ada data properti untuk feature ini
+                    if (isset($featureProperties[$index])) {
+                        // Pastikan 'properties' ada, jika tidak, buat array kosong
+                        if (!isset($feature['properties'])) {
+                            $feature['properties'] = [];
+                        }
+
+                        // Gabungkan properti yang ada dengan properti teknis baru
+                        // array_filter untuk menghapus nilai kosong (null, empty string) dari form
+                        $newProperties = array_filter($featureProperties[$index]); 
+                        if (!empty($newProperties)) {
+                        $feature['properties'] = array_merge($feature['properties'], $newProperties);
+                        }
+                    }
+                }
+                // unset referensi setelah loop selesai (praktik terbaik)
+                unset($feature);
+
+                // Encode kembali array PHP yang sudah diperkaya menjadi string JSON
+                // untuk disimpan di kolom 'geometry' tabel 'maps'
+                $data['geometry'] = json_encode($geojson);
+            }
+        }
+        // --- AKHIR BLOK LOGIKA BARU ---
+
+        // Buat record Map dengan data yang sudah diperbarui (termasuk geometri yang sudah diperkaya)
         $map = Map::create($data);
+
+        // Ambil file gambar dan caption dari request
         $featureImages = $request->file('feature_images', []);
         $featureCaptions = $request->input('feature_captions', []);
-        $featureTechnicalInfos = $request->input('feature_technical_info', []);
 
-        // Ambil fitur dari geometry kolom (bukan file)
-        if ($request->filled('geometry')) {
-            $geojson = json_decode($request->geometry, true);
+        // Proses penyimpanan untuk setiap MapFeature (menggunakan $geojson yang sudah diperbarui)
+        if ($geojson && isset($geojson['features'])) {
+            foreach ($geojson['features'] as $index => $feature) {
+                if (!isset($feature['geometry'])) continue;
 
-            if (isset($geojson['type']) && $geojson['type'] === 'FeatureCollection') {
-                dd($request->input('feature_technical_info'), $geojson['features']);
-
-                $featureImages = $request->file('feature_images', []);
-                $featureCaptions = $request->input('feature_captions', []);
-                $featureTechnicalInfos = $request->input('feature_technical_info', []);
-
-                foreach ($geojson['features'] as $index => $feature) {
-                    if (!isset($feature['geometry'])) continue;
-
-                    $imagePath = null;
-                    if (isset($featureImages[$index]) && $featureImages[$index]->isValid()) {
-                        $image = $featureImages[$index];
-                        $imageName = time() . '_' . $image->getClientOriginalName();
-                        $image->move(public_path('map_feature_images'), $imageName);
-                        $imagePath = 'map_feature_images/' . $imageName;
-                    }
-
-                    $caption = isset($featureCaptions[$index]) ? $featureCaptions[$index] : null;
-                    $technical_info = isset($featureTechnicalInfos[$index]) ? $featureTechnicalInfos[$index] : null;
-
-                    MapFeature::create([
-                        'map_id' => $map->id,
-                        'geometry' => $feature['geometry'],
-                        'properties' => $feature['properties'] ?? [],
-                        'image_path' => $imagePath,
-                        'caption' => $caption, // Gunakan variabel $caption
-                        'technical_info' => $technical_info,
-
-                    ]);
+                $imagePath = null;
+                if (isset($featureImages[$index]) && $featureImages[$index]->isValid()) {
+                    $image = $featureImages[$index];
+                    $imageName = time() . '_' . $image->getClientOriginalName();
+                    $image->move(public_path('map_feature_images'), $imageName);
+                    $imagePath = 'map_feature_images/' . $imageName;
                 }
+
+                $caption = $featureCaptions[$index] ?? null;
+
+                // Buat MapFeature. Perhatikan 'properties' diambil langsung dari $feature yang sudah diperbarui.
+                // Kolom 'technical_info' tidak lagi digunakan/diisi.
+                MapFeature::create([
+                    'map_id' => $map->id,
+                    'geometry' => $feature['geometry'],
+                    'properties' => $feature['properties'] ?? [], // <-- Menggunakan properti yang sudah diperkaya
+                    'image_path' => $imagePath,
+                    'caption' => $caption,
+                ]);
             }
         }
 
