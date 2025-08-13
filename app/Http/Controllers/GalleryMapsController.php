@@ -11,7 +11,7 @@ class GalleryMapsController extends Controller
     {
         // ... (metode galeriPeta tidak berubah)
         $maps = Map::with(['layer', 'features'])
-            ->whereIn('kategori', ['Galeri Peta', 'Visualisasi & Galeri Peta'])
+            ->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta'])
             ->get();
         return view('gallery_maps.index', compact('maps'));
     }
@@ -22,7 +22,7 @@ class GalleryMapsController extends Controller
     public function show($id)
     {
         $map = Map::with(['layer', 'features'])
-            ->whereIn('kategori', ['Galeri Peta', 'Visualisasi & Galeri Peta'])
+            ->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta'])
             ->findOrFail($id);
 
         // Tambahkan URL publik untuk setiap feature

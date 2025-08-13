@@ -56,7 +56,7 @@ class MapController extends Controller
             'radius' => 'nullable|numeric|min:0',
             'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimetypes:application/json,text/plain,text/json,text/geojson,text/csv,application/octet-stream|max:4096',
-            'kategori' => 'required|in:Visualisasi,Galeri Peta,Visualisasi & Galeri Peta',
+            'kategori' => 'required|in:Peta SISIRAJA,Galeri Peta,Peta SISIRAJA & Galeri Peta',
             // Tambahkan validasi untuk array properti jika diperlukan
             'feature_properties' => 'nullable|array',
         ]);
@@ -174,7 +174,7 @@ class MapController extends Controller
             'radius' => 'nullable|numeric|min:0',
             'geometry' => 'nullable|json',
             'file' => 'nullable|file|mimes:json,csv,zip,geojson|max:4096',
-            'kategori' => 'required|in:Visualisasi,Galeri Peta,Visualisasi & Galeri Peta',        
+            'kategori' => 'required|in:Peta SISIRAJA,Galeri Peta,Peta SISIRAJA & Galeri Peta',        
             'technical_info' => 'nullable|string',
         ]);
 
@@ -259,7 +259,7 @@ class MapController extends Controller
     public function visualisasi()
     {
         $maps = Map::with(['layer', 'features'])
-            ->whereIn('kategori', ['Visualisasi', 'Visualisasi & Galeri Peta'])
+            ->whereIn('kategori', ['Peta SISIRAJA', 'Peta SISIRAJA & Galeri Peta'])
             ->get();
 
         return view('visualisasi.index', compact('maps'));

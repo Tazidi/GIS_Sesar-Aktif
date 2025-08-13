@@ -60,9 +60,9 @@
                         <label for="kategori" class="block text-sm font-medium text-gray-700">Kategori</label>
                         <select name="kategori" id="kategori" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                             <option value="">-- Pilih Kategori --</option>
-                            <option value="Visualisasi" {{ old('kategori', $map->kategori) == 'Visualisasi' ? 'selected' : '' }}>Visualisasi</option>
+                            <option value="Peta SISIRAJA" {{ old('kategori', $map->kategori) == 'Peta SISIRAJA' ? 'selected' : '' }}>Peta SISIRAJA</option>
                             <option value="Galeri Peta" {{ old('kategori', $map->kategori) == 'Galeri Peta' ? 'selected' : '' }}>Galeri Peta</option>
-                            <option value="Visualisasi & Galeri Peta" {{ old('kategori', $map->kategori) == 'Visualisasi & Galeri Peta' ? 'selected' : '' }}>Visualisasi & Galeri Peta</option>
+                            <option value="Peta SISIRAJA & Galeri Peta" {{ old('kategori', $map->kategori) == 'Peta SISIRAJA & Galeri Peta' ? 'selected' : '' }}>Peta SISIRAJA & Galeri Peta</option>
                         </select>
                     </div>
 

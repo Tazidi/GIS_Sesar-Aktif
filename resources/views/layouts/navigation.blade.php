@@ -6,7 +6,7 @@
             {{-- GRUP KIRI: Tampil di Desktop (Tidak Diubah) --}}
             <div class="hidden lg:flex items-center space-x-8">
                 <a href="{{ route('home') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('home') ? 'border-red-500' : 'border-transparent' }} text-gray-500 hover:border-gray-300">Home</a>
-                <a href="{{ route('visualisasi.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('visualisasi.index') ? 'border-red-500' : 'border-transparent' }} text-gray-500 hover:border-gray-300">Visualisasi Peta</a>
+                <a href="{{ route('visualisasi.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('visualisasi.index') ? 'border-red-500' : 'border-transparent' }} text-gray-500 hover:border-gray-300">Peta SISIRAJA</a>
                 <a href="{{ route('gallery.publik') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('gallery.publik') ? 'border-red-500' : 'border-transparent' }} text-gray-500 hover:border-gray-300">Galeri</a>
                 <a href="{{ route('gallery_maps.peta') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('gallery_maps.peta') ? 'border-red-500' : 'border-transparent' }} text-gray-500 hover:border-gray-300">Galeri Peta</a>
                 <a href="{{ route('artikel.publik') }}" class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('artikel.publik') ? 'border-red-500' : 'border-transparent' }} text-gray-500 hover:border-gray-300">Artikel</a>
@@ -65,7 +65,7 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden lg:hidden">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')">Home</x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('visualisasi.index')" :active="request()->routeIs('visualisasi.index')">Visualisasi Peta</x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('visualisasi.index')" :active="request()->routeIs('visualisasi.index')">Peta SISIRAJA</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('gallery.publik')" :active="request()->routeIs('gallery.publik')">Galeri</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('artikel.publik')" :active="request()->routeIs('artikel.publik')">Artikel</x-responsive-nav-link>
         </div>

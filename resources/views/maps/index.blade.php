@@ -67,6 +67,7 @@
                             <th scope="col" class="px-4 py-3">Aset Visual</th>
                             <th scope="col" class="px-4 py-3">GeoJSON</th>
                             <th scope="col" class="px-4 py-3 min-w-[200px]">Pratinjau Peta</th>
+                            <th scope="col" class="px-4 py-3">Kategori</th>
                             <th scope="col" class="px-4 py-3 text-center">Aksi</th>
                         </tr>
                     </thead>
@@ -101,6 +102,28 @@
                                 <td class="px-4 py-2">
                                     {{-- Container untuk peta pratinjau Leaflet --}}
                                     <div id="map-{{ $map->id }}" class="preview-map"></div>
+                                </td>
+                                <td class="px-4 py-2">
+                                    <div class="flex flex-col gap-1">
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="kategori_{{ $map->id }}" value="Peta SISIRAJA"
+                                                {{ $map->kategori == 'Peta SISIRAJA' ? 'checked' : '' }}
+                                                class="text-blue-600 border-gray-300 focus:ring-blue-500">
+                                            <span class="ml-2">Peta SISIRAJA</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="kategori_{{ $map->id }}" value="Galeri Peta"
+                                                {{ $map->kategori == 'Galeri Peta' ? 'checked' : '' }}
+                                                class="text-blue-600 border-gray-300 focus:ring-blue-500">
+                                            <span class="ml-2">Galeri Peta</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" name="kategori_{{ $map->id }}" value="Peta SISIRAJA & Galeri Peta"
+                                                {{ $map->kategori == 'Peta SISIRAJA & Galeri Peta' ? 'checked' : '' }}
+                                                class="text-blue-600 border-gray-300 focus:ring-blue-500">
+                                            <span class="ml-2">Peta SISIRAJA & Galeri Peta</span>
+                                        </label>
+                                    </div>
                                 </td>
                                 <td class="px-4 py-2 text-center whitespace-nowrap">
                                     <a href="{{ route('map-features.index', ['map' => $map->id]) }}" class="text-green-600 hover:text-green-900 font-medium">Fitur</a>

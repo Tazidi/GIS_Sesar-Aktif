@@ -102,6 +102,29 @@
         </div>
     </div>
 
+    {{-- BAGIAN PETA SISIRAJA --}}
+        <div class="mt-12">
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-300">
+                <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Peta SISIRAJA</h2>
+                <div class="flex gap-4">
+                    <a href="{{ route('gallery_maps.index') }}" class="text-sm font-semibold text-red-600 hover:underline">
+                        Lihat Semua Peta &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <div class="rounded-md overflow-hidden shadow ring-1 ring-black/5">
+                <iframe
+                    src="{{ route('visualisasi.index', ['embed' => 1]) }}"
+                    title="Peta SISIRAJA"
+                    class="w-full"
+                    style="height: 560px; border: 0;"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+            </div>
+        </div>
+
         {{-- BAGIAN GALERI --}}
         <div class="mt-12">
             <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-300">

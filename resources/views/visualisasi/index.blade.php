@@ -4,12 +4,64 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="{{ asset('css/map.css') }}">
+    
+    <style>
+        /* Batasi tinggi Layer Control (max 5 item) */
+        .leaflet-control-layers-list {
+            max-height: 200px; /* kira-kira 5 checkbox */
+            overflow-y: auto;
+            padding-right: 5px; /* biar scrollbar nggak nutup teks */
+        }
+
+        /* Scrollbar lebih rapi */
+        .leaflet-control-layers-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .leaflet-control-layers-list::-webkit-scrollbar-thumb {
+            background: #bbb;
+            border-radius: 1px;
+        }
+
+        /* Batas maksimal tinggi keterangan peta */
+        .legend-box #legend-content {
+            max-height: 150px; /* kira-kira 5 item */
+            overflow-y: auto;
+        }
+
+        /* Scrollbar yang rapi */
+        .layer-controls::-webkit-scrollbar,
+        .legend-box #legend-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .layer-controls::-webkit-scrollbar-thumb,
+        .legend-box #legend-content::-webkit-scrollbar-thumb {
+            background: #bbb;
+            border-radius: 3px;
+        }
+    </style>
+
+     @if(request()->boolean('embed'))
+        <style>
+            /* Sembunyikan header/nav/footer dari layout saat di-embed */
+            header, nav, footer { display: none !important; }
+            body { margin: 0; padding: 0; }
+            .container { padding-top: 0; }
+        </style>
+    @endif
 @endsection
 
 @section('content')
     <div class="container">
-        <h1>Halaman Visualisasi Peta</h1>
-        <a href="{{ route('home') }}">← Kembali ke Beranda</a>
+        @if(!request()->boolean('embed'))
+            <div class="text-center mb-8 pt-2">
+                <h1 style="font-size: 28px; font-weight: 700; color: #333; margin-bottom: 8px;">
+                    Halaman Peta SISIRAJA
+                </h1>
+                <p style="color: #666; font-size: 16px;">
+                    Koleksi peta dan visualisasi data geografis SISIRAJA
+                </p>
+            </div>
+        @endif
 
         <!-- Data JSON untuk JavaScript -->
         <script type="application/json" id="maps-data">
@@ -674,7 +726,7 @@
 
                         setTimeout(() => {
                             const layerControl = L.control.layers(baseLayers, overlayLayers, {
-                                collapsed: false
+                                collapsed: true
                             }).addTo(map);
                             setTimeout(() => fitAllBounds(), 300);
                         }, 100);

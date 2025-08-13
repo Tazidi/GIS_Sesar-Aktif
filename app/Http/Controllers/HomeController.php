@@ -32,8 +32,8 @@ class HomeController extends Controller
             ->get();
 
         $galleries = Gallery::latest()->take(10)->get();
-
-        return view('home', compact('latestPosts', 'mainStories', 'popularArticles', 'galleries'));
+        $maps = Map::latest()->get();
+        return view('home', compact('latestPosts', 'mainStories', 'popularArticles', 'galleries', 'maps'));
     }
 
     public function show($id)
