@@ -99,12 +99,25 @@
         </div>
 
         {{-- BAGIAN PETA --}}
-        <div class="mt-12">
-            <div class="mb-4 border-b border-gray-300">
-                <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Visualisasi Peta</h2>
+        <div class="mt-14">
+            {{-- Header Peta --}}
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-300">
+                <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600 text-red-600">
+                    Peta SISIRAJA
+                </h2>
+                <a href="{{ route('gallery_maps.index') }}" 
+                class="text-sm mt-2 sm:mt-0 font-semibold text-red-600 hover:underline">
+                    Lihat Selengkapnya &rarr;
+                </a>
             </div>
-            <div class="bg-white p-4 shadow-md rounded-md">
-                <div id="home-map" style="height: 450px; border-radius: 8px; position: relative;"></div>
+
+            {{-- Container Peta --}}
+            <div class="p-2 shadow-md rounded-md" style="height: 450px;">
+                <iframe 
+                    src="{{ route('visualisasi.index', ['embed' => true]) }}" 
+                    style="width: 100%; height: 100%; border: none; border-radius: 8px;"
+                    loading="lazy">
+                </iframe>
             </div>
         </div>
         

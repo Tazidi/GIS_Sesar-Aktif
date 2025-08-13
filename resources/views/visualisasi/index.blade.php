@@ -492,6 +492,43 @@
                 const allBounds = [];
                 let loadedCount = 0;
                 const totalMaps = mapsData.length;
+                const gempaIcon = L.icon({
+                    iconUrl: '{{ asset("bmkg/earthquake.png") }}',
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 40],
+                    popupAnchor: [0, -38]
+                });
+
+                // Buat layer group untuk gempa BMKG
+                const bmkgLayerGroup = L.layerGroup();
+
+                fetch('https://data.bmkg.go.id/DataMKG/TEWS/gempaterkini.json')
+                .then(res => res.json())
+                .then(data => {
+                    const gempaList = data?.Infogempa?.gempa?.slice(0, 15) || [];
+                    gempaList.forEach(gempa => {
+                    const [lat, lng] = gempa.Coordinates.split(',').map(s => parseFloat(s.trim()));
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        L.marker([lat, lng], { icon: gempaIcon })
+                        .bindPopup(`
+                            <div style="font-size:14px;">
+                            <b>Tanggal:</b> ${gempa.Tanggal}<br>
+                            <b>Jam:</b> ${gempa.Jam}<br>
+                            <b>Magnitude:</b> ${gempa.Magnitude}<br>
+                            <b>Kedalaman:</b> ${gempa.Kedalaman}<br>
+                            <b>Wilayah:</b> ${gempa.Wilayah}<br>
+                            <b>Potensi:</b> ${gempa.Potensi}
+                            </div>
+                        `)
+                        .addTo(bmkgLayerGroup);
+                    }
+                    });
+
+                    overlayLayers["BMKG Gempa"] = bmkgLayerGroup;
+                    bmkgLayerGroup.addTo(map);
+                    layerControl.addOverlay(bmkgLayerGroup, "BMKG: 15 Gempa");
+                })
+                .catch(err => console.error("Gagal mengambil data BMKG:", err));
 
                 // Reset View Control
                 L.Control.ResetView = L.Control.extend({
