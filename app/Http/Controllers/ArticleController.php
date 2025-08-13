@@ -16,13 +16,13 @@ class ArticleController extends Controller
     {
         $query = Article::query()->where('status', 'approved');
 
-        // Terapkan filter PENCARIAN (termasuk tag baru)
+        // Terapkan filter PENCARIAN
         $query->when($request->filled('search'), function ($q) use ($request) {
             $searchTerm = $request->input('search');
             return $q->where(function ($subQuery) use ($searchTerm) {
                 $subQuery->where('title', 'LIKE', "%{$searchTerm}%")
                          ->orWhere('content', 'LIKE', "%{$searchTerm}%")
-                         ->orWhere('tags', 'LIKE', "%{$searchTerm}%"); // Cari di hashtag juga
+                         ->orWhere('tags', 'LIKE', "%{$searchTerm}%");
             });
         });
 
@@ -36,20 +36,23 @@ class ArticleController extends Controller
         $order = $request->input('order', 'desc');
         $query->orderBy($sort, $order);
 
-        $articles = $query->paginate(10)->withQueryString();
+        $articles = $query->paginate(9)->withQueryString();
+
         // Ambil daftar kategori unik
         $categories = Article::where('status', 'approved')->whereNotNull('category')->distinct()->pluck('category');
 
+        // Note: AJAX functionality might need adjustment due to complex layout.
+        // For now, this focuses on the layout generation on page load.
         if ($request->wantsJson()) {
+            // This part might need to be refactored if complex AJAX is kept.
+            // Returning a simpler list for now.
             return response()->json([
-                'articles' => $articles,
-                'categories' => $categories,
                 'contentHTML' => view('partials.article_list', ['articles' => $articles])->render(),
                 'paginationHTML' => (string) $articles->links(),
             ]);
         }
-
-        return view('articles.publik', compact('articles', 'categories'));
+        
+    return view('articles.publik', compact('articles', 'categories'));
     }
     
     // ... (method index dan show tidak berubah secara signifikan) ...
