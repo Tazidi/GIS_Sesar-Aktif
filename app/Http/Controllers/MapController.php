@@ -26,9 +26,6 @@ class MapController extends Controller
             });
         }
 
-        if ($request->filled('kategori')) {
-            $query->where('maps.kategori', $request->kategori);
-        }
         $maps = $query->get();
         return view('maps.index', compact('maps'));
     }
@@ -268,16 +265,4 @@ class MapController extends Controller
         return view('visualisasi.index', compact('maps'));
     }
 
-    public function updateKategori(Request $request, Map $map)
-    {
-        $request->validate([
-            'kategori' => 'required|in:Peta SISIRAJA,Galeri Peta,Peta SISIRAJA & Galeri Peta',
-        ]);
-
-        $map->kategori = $request->kategori;
-        $map->save();
-
-        return response()->json(['success' => true]);
-    }
-
-}   
+}

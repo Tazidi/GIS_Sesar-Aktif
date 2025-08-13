@@ -165,4 +165,3 @@ Route::get('/galeri-peta', [GalleryMapsController::class, 'galeriPeta'])->name('
 Route::get('/gallery/{id}', [GalleryMapsController::class, 'show'])->name('gallery.show');
 Route::get('/gallery-maps', [GalleryMapsController::class, 'galeriPeta'])
      ->name('gallery_maps.index');
-Route::patch('/maps/{map}/kategori', [MapController::class, 'updateKategori'])->name('maps.updateKategori');

@@ -51,15 +51,7 @@
         <form method="GET" action="{{ route('maps.index') }}" class="mb-4 flex items-center gap-2">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama peta atau jenis fitur..."
                 class="border-gray-300 rounded-md shadow-sm w-full sm:w-64">
-            <!-- Dropdown Filter Kategori -->
-            <select name="kategori" class="border-gray-300 rounded-md shadow-sm w-full sm:w-48">
-                <option value="">Semua Kategori</option>
-                <option value="Peta SISIRAJA" {{ request('kategori') == 'Peta SISIRAJA' ? 'selected' : '' }}>Peta SISIRAJA</option>
-                <option value="Galeri Peta" {{ request('kategori') == 'Galeri Peta' ? 'selected' : '' }}>Galeri Peta</option>
-                <option value="Peta SISIRAJA & Galeri Peta" {{ request('kategori') == 'Peta SISIRAJA & Galeri Peta' ? 'selected' : '' }}>Peta SISIRAJA & Galeri Peta</option>
-            <!-- Tombol Cari -->
-            </select>
-                <button type="submit"
+            <button type="submit"
                 class="bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition">Cari</button>
         </form>
 
@@ -116,22 +108,19 @@
                                         <label class="inline-flex items-center">
                                             <input type="radio" name="kategori_{{ $map->id }}" value="Peta SISIRAJA"
                                                 {{ $map->kategori == 'Peta SISIRAJA' ? 'checked' : '' }}
-                                                class="kategori-radio text-blue-600 border-gray-300 focus:ring-blue-500"
-                                                data-id="{{ $map->id }}">
+                                                class="text-blue-600 border-gray-300 focus:ring-blue-500">
                                             <span class="ml-2">Peta SISIRAJA</span>
                                         </label>
                                         <label class="inline-flex items-center">
                                             <input type="radio" name="kategori_{{ $map->id }}" value="Galeri Peta"
                                                 {{ $map->kategori == 'Galeri Peta' ? 'checked' : '' }}
-                                                class="kategori-radio text-blue-600 border-gray-300 focus:ring-blue-500"
-                                                data-id="{{ $map->id }}">
+                                                class="text-blue-600 border-gray-300 focus:ring-blue-500">
                                             <span class="ml-2">Galeri Peta</span>
                                         </label>
                                         <label class="inline-flex items-center">
                                             <input type="radio" name="kategori_{{ $map->id }}" value="Peta SISIRAJA & Galeri Peta"
                                                 {{ $map->kategori == 'Peta SISIRAJA & Galeri Peta' ? 'checked' : '' }}
-                                                class="kategori-radio text-blue-600 border-gray-300 focus:ring-blue-500"
-                                                data-id="{{ $map->id }}">
+                                                class="text-blue-600 border-gray-300 focus:ring-blue-500">
                                             <span class="ml-2">Peta SISIRAJA & Galeri Peta</span>
                                         </label>
                                     </div>
@@ -167,31 +156,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.kategori-radio').forEach(radio => {
-                radio.addEventListener('change', function () {
-                    const mapId = this.dataset.id;
-                    const kategori = this.value;
-
-                    fetch(`/maps/${mapId}/kategori`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({ kategori })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            console.log(`Kategori peta ${mapId} diubah ke: ${kategori}`);
-                        } else {
-                            alert('Gagal memperbarui kategori');
-                        }
-                    })
-                    .catch(err => console.error(err));
-                });
-            });
-
             // Data semua peta dari controller
             const mapsData = @json($maps);
 
