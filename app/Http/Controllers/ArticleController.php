@@ -16,18 +16,19 @@ class ArticleController extends Controller
     {
         $query = Article::query()->where('status', 'approved');
 
-        // Terapkan filter PENCARIAN
+        // Terapkan filter PENCARIAN (termasuk tag baru)
         $query->when($request->filled('search'), function ($q) use ($request) {
             $searchTerm = $request->input('search');
             return $q->where(function ($subQuery) use ($searchTerm) {
                 $subQuery->where('title', 'LIKE', "%{$searchTerm}%")
-                         ->orWhere('content', 'LIKE', "%{$searchTerm}%");
+                         ->orWhere('content', 'LIKE', "%{$searchTerm}%")
+                         ->orWhere('tags', 'LIKE', "%{$searchTerm}%"); // Cari di hashtag juga
             });
         });
 
-        // Terapkan filter TAG
-        if ($request->filled('tag')) {
-            $query->where('tags', $request->input('tag'));
+        // Terapkan filter KATEGORI
+        if ($request->filled('category')) {
+            $query->where('category', $request->input('category'));
         }
 
         // Terapkan PENGURUTAN
@@ -36,25 +37,22 @@ class ArticleController extends Controller
         $query->orderBy($sort, $order);
 
         $articles = $query->paginate(10)->withQueryString();
-        $tags = Article::where('status', 'approved')->whereNotNull('tags')->distinct()->pluck('tags');
+        // Ambil daftar kategori unik
+        $categories = Article::where('status', 'approved')->whereNotNull('category')->distinct()->pluck('category');
 
-        // [PERUBAHAN UTAMA] Cek apakah ini permintaan AJAX dari JavaScript
         if ($request->wantsJson()) {
-            // Jika ya, kirim data dalam format JSON
             return response()->json([
                 'articles' => $articles,
-                'tags' => $tags,
-                // Render view partial untuk konten dan pagination
+                'categories' => $categories,
                 'contentHTML' => view('partials.article_list', ['articles' => $articles])->render(),
                 'paginationHTML' => (string) $articles->links(),
             ]);
         }
 
-        // Jika tidak, tampilkan halaman HTML seperti biasa
-        return view('articles.publik', compact('articles', 'tags'));
+        return view('articles.publik', compact('articles', 'categories'));
     }
-
-    // ... (method lainnya tidak diubah) ...
+    
+    // ... (method index dan show tidak berubah secara signifikan) ...
     public function index()
     {
         $user = Auth::user();
@@ -92,8 +90,13 @@ class ArticleController extends Controller
 
     public function create()
     {
-        $tags = Article::whereNotNull('tags')->distinct()->pluck('tags');
-        return view('articles.create', compact('tags'));
+        $categories = Article::whereNotNull('category')
+            ->distinct()
+            ->pluck('category')
+            ->filter()
+            ->values();
+
+        return view('articles.create', compact('categories'));
     }
 
     public function store(Request $request)
@@ -103,7 +106,8 @@ class ArticleController extends Controller
             'author'    => 'required|max:255',
             'content'   => 'required',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
-            'tags'      => 'nullable|string|max:255',
+            'category'  => 'nullable|string|max:255', // Diubah dari tags
+            'tags'      => 'nullable|string|max:255', // Field baru untuk hashtag
         ]);
 
         if ($request->hasFile('thumbnail')) {
@@ -131,8 +135,9 @@ class ArticleController extends Controller
     public function edit(Article $article)
     {
         $this->authorize('update', $article);
-        $tags = Article::whereNotNull('tags')->distinct()->pluck('tags');
-        return view('articles.edit', compact('article', 'tags'));
+        // Ambil daftar kategori unik untuk dropdown
+        $categories = Article::whereNotNull('category')->distinct()->pluck('category');
+        return view('articles.edit', compact('article', 'categories'));
     }
 
     public function update(Request $request, Article $article)
@@ -144,7 +149,8 @@ class ArticleController extends Controller
             'author'    => 'required|max:255',
             'content'   => 'required',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
-            'tags'      => 'nullable|string|max:255',
+            'category'  => 'nullable|string|max:255', // Diubah dari tags
+            'tags'      => 'nullable|string|max:255', // Field baru untuk hashtag
         ]);
 
         if ($request->hasFile('thumbnail')) {
@@ -159,13 +165,13 @@ class ArticleController extends Controller
         }
 
         $article->update($data);
-
         $article->last_edited_by = Auth::id();
         $article->save();
 
         return redirect()->route('articles.index')->with('success', 'Artikel berhasil diperbarui.');
     }
-
+    
+    // ... (method destroy, updateStatus, dan uploadImage tidak berubah) ...
     public function destroy(Article $article)
     {
         $this->authorize('delete', $article);

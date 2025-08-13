@@ -11,8 +11,21 @@ class Article extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title', 'author', 'content', 'tags', 'thumbnail', 'user_id', 'status', 'visit_count', 'approved_by', 'last_edited_by'
+        'title', 'author', 'content', 'category', 'tags', 'thumbnail', 'user_id', 'status', 'visit_count', 'approved_by', 'last_edited_by'
     ];
+    
+    /**
+     * Accessor untuk mendapatkan tags sebagai array.
+     * Penggunaan: $article->tags_array
+     */
+    public function getTagsAsArrayAttribute()
+    {
+        if ($this->tags) {
+            // Menghapus spasi ekstra dan mengubah menjadi array
+            return array_map('trim', explode(',', $this->tags));
+        }
+        return [];
+    }
 
     public function user()
     {

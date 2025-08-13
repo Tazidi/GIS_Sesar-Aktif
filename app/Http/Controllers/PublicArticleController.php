@@ -11,9 +11,9 @@ class PublicArticleController extends Controller
     {
         $query = Article::query()->where('status', 'approved');
 
-        // Filter berdasarkan tag
-        if ($request->filled('tag')) {
-            $query->where('tags', $request->tag);
+        // Filter berdasarkan category
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
         }
 
         // Sorting
@@ -26,12 +26,12 @@ class PublicArticleController extends Controller
             $query->orderBy('created_at', 'desc'); // default
         }
 
-        // Ambil semua tag unik untuk dropdown filter
-        $tags = Article::whereNotNull('tags')->pluck('tags')->unique()->filter()->values();
+        // Ambil semua category unik untuk dropdown filter
+        $categories = Article::whereNotNull('category')->pluck('category')->unique()->filter()->values();
 
         // Pagination
         $articles = $query->paginate(10)->withQueryString();
 
-        return view('articles.publik', compact('articles', 'tags'));
+        return view('articles.publik', compact('articles', 'categories'));
     }
 }
