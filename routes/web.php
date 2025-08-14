@@ -29,6 +29,13 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // Halaman Visualisasi Peta Publik
 Route::get('/visualisasi', [MapController::class, 'visualisasi'])->name('visualisasi.index');
 
+// Endpoint GeoJSON khusus Lokasi Survey (fix kartu peta index)
+Route::get('/maps/lokasi-survey/geojson', [GalleryMapsController::class, 'lokasiSurveyGeojson'])
+    ->name('maps.lokasi-survey.geojson');
+
+Route::get('/maps/semua-marker/geojson', [GalleryMapsController::class, 'semuaMarkerGeojson'])
+    ->name('maps.semua-marker.geojson');
+
 // Endpoint GeoJSON
 Route::get('/maps/{map}/geojson', [MapController::class, 'geojson'])->name('maps.geojson');
 
@@ -119,6 +126,8 @@ Route::middleware(['auth', 'role:admin,editor'])->group(function () {
 */
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('maps', MapController::class);
+    Route::put('/maps/{map}/update-kategori', [MapController::class, 'updateKategori'])
+        ->name('maps.updateKategori');
     Route::resource('users', UserController::class);
     Route::resource('layers', LayerController::class);
     Route::get('/maps/{map}/features', [MapFeatureController::class, 'index'])->name('map-features.index');

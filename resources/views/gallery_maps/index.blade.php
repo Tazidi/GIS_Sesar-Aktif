@@ -97,7 +97,29 @@
             border-radius: 8px;
             color: #666;
         }
-        
+        .map-description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            
+            /* Batas tinggi */
+            max-height: 3.9em; /* sekitar 2 baris */
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Efek blur di akhir teks */
+        .map-description::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 40%; /* lebar gradasi */
+            height: 1.5em; /* tinggi gradasi */
+            background: linear-gradient(to right, transparent, white);
+        }
+
         @media (min-width: 768px) {
             .map-content {
                 display: grid;
@@ -195,7 +217,12 @@
         
         const initPreviewMap = (mapData) => {
             const mapContainerId = `map-${mapData.id}`;
-            const geojsonUrl = `{{ url('maps') }}/${mapData.id}/geojson`;
+            let geojsonUrl;
+            if (mapData.name.toLowerCase() === 'lokasi survey') {
+                geojsonUrl = `{{ route('maps.semua-marker.geojson') }}`;
+            } else {
+                geojsonUrl = `{{ url('maps') }}/${mapData.id}/geojson`;
+            }
             
             const mapContainer = document.getElementById(mapContainerId);
             if (!mapContainer) return;
@@ -210,9 +237,9 @@
                 keyboard: false,
             }).setView([-2.54, 118.01], 5);
             
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap',
-                maxZoom: 18,
+            L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                attribution: '© Google',
+                maxZoom: 20,
             }).addTo(previewMap);
             
             const createStyle = (props = {}) => ({
@@ -238,6 +265,8 @@
                             const style = createStyle(props);
                             const iconUrl = props.icon_url || mapData.icon_url;
                             
+                            const imagePath = props.image_path ? `{{ asset('') }}${props.image_path}` : '';
+                            
                             if (type === 'circle') {
                                 return L.circle(latlng, { 
                                     ...style, 
@@ -245,7 +274,7 @@
                                 });
                             }
                             
-                            if (type === 'marker' && iconUrl) {
+                            if (type === 'marker' && iconUrl && iconUrl.trim() !== '' && !iconUrl.includes('marker-survey.png')) {
                                 const icon = L.icon({ 
                                     iconUrl: iconUrl, 
                                     iconSize: [24, 24], 

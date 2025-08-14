@@ -43,7 +43,6 @@ class HomeController extends Controller
         // Kirim semua data ke view 'home'
         return view('home', compact(
             'latestPosts',
-
             'mainStories',
             'popularArticles',
             'galleries',

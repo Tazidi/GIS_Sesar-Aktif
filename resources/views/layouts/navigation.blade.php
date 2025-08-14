@@ -67,6 +67,7 @@
             <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')">Home</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('visualisasi.index')" :active="request()->routeIs('visualisasi.index')">Peta SISIRAJA</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('gallery.publik')" :active="request()->routeIs('gallery.publik')">Galeri</x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('gallery_maps.index')" :active="request()->routeIs('gallery_maps.index')">Galeri Peta</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('artikel.publik')" :active="request()->routeIs('artikel.publik')">Artikel</x-responsive-nav-link>
         </div>
 

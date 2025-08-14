@@ -227,9 +227,9 @@
         [
             @foreach ($maps as $index => $map)
             {
-                "id": {{ $map->id }},
-                "name": "{{ addslashes($map->name) }}",
-                "description": "{{ addslashes($map->description) }}",
+                "id": @json($map->id),
+                "name": @json($map->name),
+                "description": @json($map->description),
                 "image_path": "{{ $map->image_path ? asset($map->image_path) : '' }}",
                 "layer_type": "{{ $map->layer_type ?? 'marker' }}",
                 "stroke_color": "{{ $map->stroke_color ?? '#000000' }}",
@@ -240,7 +240,7 @@
                 "icon_url": "{{ $map->icon_url ?? '' }}",
                 "lat": {{ $map->lat ?? 0 }},
                 "lng": {{ $map->lng ?? 0 }},
-                "layer_name": "{{ addslashes($map->layer->nama_layer ?? 'Layer Tanpa Nama') }}",
+                "layer_name": @json($map->layer->nama_layer ?? 'Layer Tanpa Nama'),
                 "geometry": {!! $map->geometry ? json_encode(json_decode($map->geometry)) : 'null' !!},
                 "features": [
                     @foreach ($map->features as $feature)
@@ -248,7 +248,7 @@
                         "geometry": {!! $feature->geometry ? json_encode($feature->geometry) : 'null' !!},
                         "properties": {!! $feature->properties ? json_encode($feature->properties) : 'null' !!},
                         "image_path": "{{ $feature->image_path ? asset($feature->image_path) : '' }}",
-                        "caption": "{{ addslashes($feature->caption ?? '') }}",
+                        "caption": @json($feature->caption ?? ''),
                         "technical_info": {!! json_encode($feature->technical_info ?? '') !!}
                     }@if(!$loop->last),@endif
                     @endforeach
@@ -454,6 +454,88 @@
             const allBounds = [];
 
             mapsData.forEach(mapData => {
+                console.log(mapData.name, mapData.features, mapData.geometry);
+
+                // 🔹 Khusus kalau ini "Lokasi Survey"
+                if (mapData.name && mapData.name.toLowerCase() === 'lokasi survey') {
+                    // Ambil semua data marker dari mapsData (kecuali data utama yang sedang di-show)
+                    mapsData.forEach(item => {
+                        if (item.features && item.features.length > 0) {
+                            item.features.forEach(feature => {
+                                const geometry = typeof feature.geometry === 'string'
+                                    ? JSON.parse(feature.geometry)
+                                    : feature.geometry;
+                                if (!geometry) return;
+
+                                const geojsonFeature = {
+                                    type: "Feature",
+                                    geometry: geometry,
+                                    properties: {
+                                        ...(feature.properties || {}),
+                                        feature_image_path: feature.image_path || null,
+                                        caption: feature.caption || null,
+                                        technical_info: feature.technical_info || null,
+                                    }
+                                };
+
+                                const layer = L.geoJSON(geojsonFeature, {
+                                    style: () => ({
+                                        color: item.stroke_color || "#3388ff",
+                                        weight: item.weight || 3,
+                                        opacity: item.opacity || 0.8,
+                                        fillColor: item.fill_color || "#3388ff",
+                                        fillOpacity: (item.opacity || 0.8) * 0.5,
+                                    }),
+                                    onEachFeature: (feature, layer) => {
+                                        feature.feature_image_path = geojsonFeature.properties.feature_image_path;
+                                        feature.caption = geojsonFeature.properties.caption;
+                                        feature.technical_info = geojsonFeature.properties.technical_info;
+
+                                        const popupContent = createPopupContent(feature, item);
+                                        layer.bindPopup(popupContent);
+                                    },
+                                    pointToLayer: (feature, latlng) => {
+                                        const layerType = item.layer_type || 'marker';
+                                        if (layerType === 'circle') {
+                                            return L.circle(latlng, { 
+                                                color: item.stroke_color || "#3388ff",
+                                                weight: item.weight || 3,
+                                                opacity: item.opacity || 0.8,
+                                                fillColor: item.fill_color || "#3388ff",
+                                                fillOpacity: (item.opacity || 0.8) * 0.5,
+                                                radius: item.radius || 300 
+                                            });
+                                        } else if (layerType === 'marker' && item.icon_url) {
+                                            const customIcon = L.icon({
+                                                iconUrl: item.icon_url,
+                                                iconSize: [32, 32],
+                                                iconAnchor: [16, 16],
+                                                popupAnchor: [0, -16]
+                                            });
+                                            return L.marker(latlng, { icon: customIcon });
+                                        }
+                                        return L.circleMarker(latlng, { 
+                                            color: item.stroke_color || "#3388ff",
+                                            weight: item.weight || 3,
+                                            opacity: item.opacity || 0.8,
+                                            fillColor: item.fill_color || "#3388ff",
+                                            fillOpacity: (item.opacity || 0.8) * 0.5,
+                                            radius: 8 
+                                        });
+                                    }
+                                }).addTo(map);
+
+                                if (layer.getBounds && layer.getBounds().isValid()) {
+                                    allBounds.push(layer.getBounds());
+                                }
+                            });
+                        }
+                    });
+
+                    return;
+                }
+
+
                 // Siapkan style untuk setiap peta
                 const style = {
                     color: mapData.stroke_color || "#3388ff",

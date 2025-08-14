@@ -26,6 +26,10 @@ class MapController extends Controller
             });
         }
 
+        if ($request->filled('kategori')) {
+            $query->where('kategori', $request->kategori);
+        }
+
         $maps = $query->get();
         return view('maps.index', compact('maps'));
     }
@@ -263,6 +267,23 @@ class MapController extends Controller
             ->get();
 
         return view('visualisasi.index', compact('maps'));
+    }
+
+    public function updateKategori(Request $request, Map $map)
+    {
+        $request->validate([
+            'kategori' => 'required|in:Peta SISIRAJA,Galeri Peta,Peta SISIRAJA & Galeri Peta'
+        ]);
+
+        $map->update([
+            'kategori' => $request->kategori
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kategori berhasil diperbarui',
+            'kategori' => $map->kategori
+        ]);
     }
 
 }
