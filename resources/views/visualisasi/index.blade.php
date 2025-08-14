@@ -69,8 +69,8 @@
                 @foreach ($maps as $index => $map)
                 {
                     "id": {{ $map->id }},
-                    "name": "{{ addslashes($map->name) }}",
-                    "description": "{{ addslashes($map->description) }}",
+                    "name": {!! json_encode($map->name) !!},
+                    "description": {!! json_encode($map->description) !!},
                     "image_path": "{{ $map->image_path ? asset($map->image_path) : '' }}",
                     "layer_type": "{{ $map->layer_type ?? 'marker' }}",
                     "stroke_color": "{{ $map->stroke_color ?? '#000000' }}",
@@ -81,7 +81,7 @@
                     "icon_url": "{{ $map->icon_url ?? '' }}",
                     "lat": {{ $map->lat ?? 0 }},
                     "lng": {{ $map->lng ?? 0 }},
-                    "layer_name": "{{ addslashes($map->layer->nama_layer ?? 'Layer Tanpa Nama') }}",
+                    "layer_name": {!! json_encode($map->layer->nama_layer ?? 'Layer Tanpa Nama') !!},
                     "geometry": {!! $map->geometry ? json_encode(json_decode($map->geometry)) : 'null' !!},
                     "features": [
                         @foreach ($map->features as $feature)
@@ -89,7 +89,7 @@
                             "geometry": {!! $feature->geometry ? json_encode($feature->geometry) : 'null' !!},
                             "properties": {!! $feature->properties ? json_encode($feature->properties) : 'null' !!},
                             "image_path": "{{ $feature->image_path ? asset($feature->image_path) : '' }}",
-                            "caption": "{{ addslashes($feature->caption ?? '') }}"
+                            "caption": {!! json_encode($feature->caption ?? '') !!}
                         }@if(!$loop->last),@endif
                         @endforeach
                     ]
@@ -483,12 +483,15 @@
 
                 baseLayers["Google Satellite"].addTo(map);
 
+                // setelah baseLayers["Google Satellite"].addTo(map);
+                const overlayLayers = {};
+                const layerControl = L.control.layers(baseLayers, overlayLayers, { collapsed: true }).addTo(map);
+
                 setTimeout(() => map.invalidateSize(), 500);
                 window.addEventListener('resize', () => setTimeout(() => map.invalidateSize(), 100));
 
                 // Objek untuk menyimpan layer berdasarkan nama layer
                 const layerGroups = {};
-                const overlayLayers = {};
                 const allBounds = [];
                 let loadedCount = 0;
                 const totalMaps = mapsData.length;
@@ -759,14 +762,9 @@
                         Object.keys(layerGroups).forEach(layerName => {
                             overlayLayers[layerName] = layerGroups[layerName];
                             layerGroups[layerName].addTo(map);
+                            layerControl.addOverlay(layerGroups[layerName], layerName);
                         });
-
-                        setTimeout(() => {
-                            const layerControl = L.control.layers(baseLayers, overlayLayers, {
-                                collapsed: true
-                            }).addTo(map);
                             setTimeout(() => fitAllBounds(), 300);
-                        }, 100);
                     }
                 }
 
