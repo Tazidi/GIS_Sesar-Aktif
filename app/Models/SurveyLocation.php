@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -9,33 +10,41 @@ class SurveyLocation extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'user_id',
+        'project_id', 
         'nama',
         'deskripsi',
-        'image', // Tambahkan 'image' di sini
+        'images',     
         'geometry'
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'geometry' => 'array',
+        'images' => 'array', 
     ];
 
-    /**
-     * Get the user that owns the survey location.
-     */
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function primaryImage(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->images[0] ?? null,
+        );
+    }
+
+    public function additionalImages(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => array_slice($this->images, 1),
+        );
     }
 }

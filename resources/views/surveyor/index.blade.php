@@ -6,7 +6,7 @@
 
     <div class="grid grid-cols-1 gap-6">
         {{-- Kelola Lokasi Survey --}}
-        <a href="{{ route('survey-locations.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
+        <a href="{{ route('projects.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
             <h2 class="text-lg font-semibold text-green-600 mb-1"><i class="fas fa-map-marked-alt mr-2"></i>Kelola Lokasi Survey</h2>
             <p class="text-gray-500 text-sm">Lihat dan kelola data lokasi survey yang Anda masukkan.</p>
         </a>

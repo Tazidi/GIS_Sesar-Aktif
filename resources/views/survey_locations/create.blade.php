@@ -6,31 +6,11 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""/>
 <style>
-    /* Style untuk peta dan area upload gambar */
+    /* Style untuk peta */
     #map { 
-        height: 350px; 
+        height: 450px; /* Disesuaikan agar lebih tinggi */
         border-radius: 0.5rem; 
         z-index: 10;
-    }
-    .image-upload-container {
-        border: 2px dashed #d1d5db; /* gray-300 */
-        border-radius: 0.5rem;
-        padding: 1.5rem;
-        text-align: center;
-        cursor: pointer;
-        background-color: #f9fafb; /* gray-50 */
-        transition: background-color 0.2s ease;
-        position: relative; /* Menambahkan posisi relatif untuk pratinjau */
-    }
-    .image-upload-container:hover {
-        background-color: #f3f4f6; /* gray-100 */
-    }
-    #image-preview {
-        max-height: 200px;
-        max-width: 100%;
-        margin: 1rem auto 0;
-        border-radius: 0.5rem;
-        display: none; /* Sembunyikan secara default */
     }
 </style>
 @endsection
@@ -43,12 +23,12 @@
             Tambah Lokasi Survey Baru
         </h1>
         <p class="mt-1 text-sm text-gray-600">
-            Isi detail di bawah. Lokasi Anda akan terdeteksi otomatis, atau Anda dapat menggeser penanda pada peta.
+            Menambahkan lokasi untuk proyek: <span class="font-semibold">{{ $project->name }}</span>
         </p>
     </div>
 
     {{-- Form Container --}}
-    <form method="POST" action="{{ route('survey-locations.store') }}" enctype="multipart/form-data" class="bg-white shadow-lg rounded-lg p-6 sm:p-8">
+    <form method="POST" action="{{ route('projects.survey-locations.store', $project) }}" enctype="multipart/form-data" class="bg-white shadow-lg rounded-lg p-6 sm:p-8">
         @csrf
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
@@ -56,27 +36,37 @@
             <div class="flex flex-col space-y-6">
                 <div>
                     <label for="nama" class="block text-sm font-medium text-gray-700">Nama Tempat <span class="text-red-500">*</span></label>
-                    <input type="text" id="nama" name="nama" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    <input type="text" id="nama" name="nama" value="{{ old('nama') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                    @error('nama') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label for="deskripsi" class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                    <textarea id="deskripsi" name="deskripsi" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+                    <textarea id="deskripsi" name="deskripsi" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('deskripsi') }}</textarea>
                 </div>
-                 <div>
-                    <label for="image" class="block text-sm font-medium text-gray-700 mb-1">Gambar Lokasi</label>
-                    <div id="image-upload-box" class="image-upload-container">
-                        {{-- Wrapper untuk konten petunjuk, agar mudah disembunyikan --}}
-                        <div id="upload-instructions">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <p class="mt-2 text-sm text-gray-600">
-                                <span class="font-semibold text-indigo-600">Klik untuk mengunggah</span> atau seret dan letakkan
-                            </p>
-                            <p class="text-xs text-gray-500">PNG, JPG, GIF hingga 10MB</p>
-                        </div>
-                        <input class="sr-only" type="file" id="image" name="image" onchange="previewImage(event);" accept="image/*">
-                        <img id="image-preview" src="#" alt="Pratinjau Gambar"/>
+                
+                {{-- Blok untuk upload 3 gambar --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Gambar Lokasi</label>
+                    
+                    {{-- Gambar Utama --}}
+                    <div class="mb-4">
+                        <label for="image_primary" class="block text-xs font-medium text-gray-600">Gambar Utama (Wajib) <span class="text-red-500">*</span></label>
+                        <input type="file" id="image_primary" name="image_primary" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required>
+                        @error('image_primary') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    {{-- Gambar Tambahan 1 --}}
+                    <div class="mb-4">
+                        <label for="image_2" class="block text-xs font-medium text-gray-600">Gambar Tambahan 1</label>
+                        <input type="file" id="image_2" name="image_2" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
+                        @error('image_2') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    {{-- Gambar Tambahan 2 --}}
+                    <div>
+                        <label for="image_3" class="block text-xs font-medium text-gray-600">Gambar Tambahan 2</label>
+                        <input type="file" id="image_3" name="image_3" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100">
+                        @error('image_3') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
                 </div>
             </div>
@@ -93,11 +83,13 @@
                 <div class="grid grid-cols-2 gap-4 mt-4">
                     <div>
                         <label for="lat" class="block text-xs font-medium text-gray-500">Latitude</label>
-                        <input type="text" id="lat" name="lat" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm sm:text-sm" required readonly>
+                        <input type="text" id="lat" name="lat" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm sm:text-sm" value="{{ old('lat') }}" required readonly>
+                        @error('lat') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
                     <div>
                         <label for="lng" class="block text-xs font-medium text-gray-500">Longitude</label>
-                        <input type="text" id="lng" name="lng" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm sm:text-sm" required readonly>
+                        <input type="text" id="lng" name="lng" class="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm sm:text-sm" value="{{ old('lng') }}" required readonly>
+                        @error('lng') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                     </div>
                 </div>
             </div>
@@ -105,7 +97,7 @@
 
         {{-- Tombol Aksi --}}
         <div class="mt-8 pt-5 border-t border-gray-200 flex justify-end space-x-3">
-            <a href="{{ route('survey-locations.index') }}" class="px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50 transition">Batal</a>
+            <a href="{{ route('projects.show', $project) }}" class="px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-50 transition">Batal</a>
             <button type="submit" class="px-6 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-sm text-white hover:bg-green-700 transition">Simpan Lokasi</button>
         </div>
     </form>
@@ -161,33 +153,6 @@
             console.log('Geolocation tidak tersedia.');
             updateMarkerPosition(defaultLocation[0], defaultLocation[1]);
         }
-
-        const uploadBox = document.getElementById('image-upload-box');
-        const imageInput = document.getElementById('image');
-        uploadBox.addEventListener('click', () => imageInput.click());
     });
-
-    function previewImage(event) {
-        const input = event.target;
-        const imgPreview = document.getElementById('image-preview');
-        const uploadInstructions = document.getElementById('upload-instructions');
-
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                imgPreview.src = e.target.result;
-                imgPreview.style.display = 'block';
-                uploadInstructions.style.display = 'none'; // <-- PERBAIKAN: Sembunyikan petunjuk
-            };
-            
-            reader.readAsDataURL(input.files[0]);
-        } else {
-            // Jika tidak ada file dipilih (misal, user klik cancel)
-            imgPreview.style.display = 'none';
-            imgPreview.src = '#';
-            uploadInstructions.style.display = 'block'; // <-- PERBAIKAN: Tampilkan kembali petunjuk
-        }
-    }
 </script>
 @endpush

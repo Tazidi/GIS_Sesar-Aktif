@@ -15,6 +15,7 @@ use App\Http\Controllers\MapFeatureController;
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\SurveyLocationController;
 use App\Http\Controllers\GalleryMapsController;
+use App\Http\Controllers\ProjectController;
 
 
 /*
@@ -137,11 +138,17 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Admin & Surveyor - Manajemen Survey
+| Admin & Surveyor - Manajemen Proyek dan Survey
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin,surveyor'])->group(function () {
-    Route::resource('survey-locations', SurveyLocationController::class)->except(['show']);
+    // Rute untuk mengelola Proyek (CRUD)
+    Route::resource('projects', ProjectController::class);
+
+    // Rute untuk mengelola Lokasi Survey yang bersarang di dalam Proyek
+    Route::resource('projects.survey-locations', SurveyLocationController::class)
+        ->except(['index', 'show']) // index & show ditangani oleh ProjectController
+        ->shallow();
 });
 
 /*
