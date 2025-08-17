@@ -4,76 +4,82 @@
 <div class="py-8">
     <div class="px-4 sm:px-6 lg:px-8">
 
-        {{-- BAGIAN TOP TAGS & LATEST STORY --}}
-        <div class="border-b-2 border-gray-200 pb-4 mb-8">
-            <h3 class="font-bold text-gray-500 mb-2"># Top Tags</h3>
-            <div class="flex items-center space-x-4">
-                <span class="bg-red-600 text-white text-sm font-bold py-1 px-3 flex items-center whitespace-nowrap">
-                    <i class="fa-solid fa-clock-rotate-left mr-2"></i>
-                    <span>Latest Story</span>
-                </span>
-                <div class="ticker-wrap flex-grow overflow-hidden">
-                    <div class="ticker-move">
-                        <p class="text-sm text-gray-700">{{ $latestPosts->first()->title ?? 'Belum ada berita terbaru.' }}</p>
-                    </div>
-                </div>
-            </div>
+        {{-- BAGIAN HEADER ARTIKEL BARU --}}
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-300">
+            <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600 text-red-600">
+                Artikel
+            </h2>
+            <a href="{{ route('artikel.publik') }}" class="inline-flex items-center gap-2 bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-red-700 transition-colors mt-2 sm:mt-0">
+                <i class="fas fa-newspaper"></i>
+                <span>Lihat Semua Artikel</span>
+            </a>
         </div>
 
         {{-- STRUKTUR GRID TIGA KOLOM --}}
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+            
             {{-- Kolom Kiri: Latest Post --}}
             <div class="lg:col-span-3 flex flex-col">
                 <div class="mb-4 border-b border-gray-300">
                     <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Latest Post</h2>
                 </div>
-                <div class="flex flex-col space-y-6 flex-grow">
+                {{-- PERUBAHAN 2: Mengubah layout mobile menjadi 2 kolom --}}
+                <div class="grid grid-cols-2 gap-4 lg:flex lg:flex-col lg:space-y-6 lg:gap-0">
                     @forelse($latestPosts as $post)
-                        <a href="{{ route('articles.show', $post) }}" class="flex-1 block group relative overflow-hidden shadow-md rounded-md">
+                        {{-- Menyesuaikan tinggi agar konsisten di mobile --}}
+                        <a href="{{ route('articles.show', $post) }}" class="h-48 lg:h-auto lg:flex-1 block group relative overflow-hidden shadow-md rounded-md">
                             <img src="{{ asset('thumbnails/' . basename($post->thumbnail)) }}" alt="{{ $post->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                            <div class="absolute bottom-0 p-4 text-white z-10">
+                            <div class="absolute bottom-0 p-2 lg:p-4 text-white z-10">
                                 <span class="bg-red-600 text-white text-xs font-bold py-1 px-2 rounded-md">Latest</span>
-                                <h3 class="font-semibold text-lg mt-2">{{ $post->title }}</h3>
+                                <h3 class="font-semibold text-sm lg:text-lg mt-2">{{ \Illuminate\Support\Str::limit($post->title, 40) }}</h3>
                             </div>
                         </a>
                     @empty
-                        <div class="bg-white flex-1 rounded-md flex items-center justify-center text-gray-500 shadow-md">
+                        <div class="col-span-2 bg-white flex-1 rounded-md flex items-center justify-center text-gray-500 shadow-md">
                             <p>Tidak ada post hari ini.</p>
                         </div>
                     @endforelse
                 </div>
             </div>
-            {{-- Kolom Tengah: Main Story --}}
-            <div class="lg:col-span-6">
+
+            {{-- Kolom Tengah: Paling Banyak Dilihat (Slider) --}}
+            <div class="lg:col-span-6 flex flex-col">
                 <div class="mb-4 border-b border-gray-300">
-                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Main Story</h2>
+                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Paling Banyak Dilihat</h2>
                 </div>
+
                 @if($mainStories->isNotEmpty())
-                    <div class="grid grid-cols-1 gap-6">
-                        <a href="{{ route('articles.show', $mainStories->first()) }}" class="block group relative overflow-hidden shadow-md h-80 rounded-md">
-                            <img src="{{ asset('thumbnails/' . basename($mainStories->first()->thumbnail)) }}" alt="{{ $mainStories->first()->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                            <div class="absolute bottom-0 p-6 text-white z-10">
-                                <h3 class="font-bold text-3xl">{{ $mainStories->first()->title }}</h3>
-                            </div>
-                        </a>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            @foreach($mainStories->skip(1) as $story)
-                                <a href="{{ route('articles.show', $story) }}" class="block group relative overflow-hidden shadow-md h-40 rounded-md">
-                                     <img src="{{ asset('thumbnails/' . basename($story->thumbnail)) }}" alt="{{ $story->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                                    <div class="absolute inset-0 bg-black opacity-0 group-hover:opacity-60 transition-opacity duration-300"></div>
-                                    <div class="absolute inset-0 p-4 flex flex-col justify-end transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-in-out">
-                                        <h4 class="font-semibold text-white">{{ $story->title }}</h4>
+                    <div id="slider-container" class="relative h-96 lg:h-auto lg:flex-grow rounded-md shadow-lg overflow-hidden">
+                        <div id="slider-wrapper" class="h-full w-full">
+                            @foreach($mainStories as $article)
+                                <a href="{{ route('articles.show', $article) }}" class="slider-item absolute top-0 left-0 w-full h-full block group transition-opacity duration-700 ease-in-out">
+                                    <img src="{{ asset('thumbnails/' . basename($article->thumbnail)) }}" alt="{{ $article->title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                                    <div class="absolute inset-0 p-6 flex flex-col justify-end text-white transform translate-y-full group-hover:translate-y-0 transition-all duration-500 ease-in-out bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+                                        <h3 class="font-bold text-2xl drop-shadow-lg">{{ $article->title }}</h3>
+                                        <p class="mt-2 text-sm text-gray-200 drop-shadow-lg">
+                                            {{ \Illuminate\Support\Str::limit(strip_tags($article->content), 120) }}
+                                        </p>
+                                    </div>
+                                    <div class="absolute bottom-0 left-0 p-6 text-white z-10 group-hover:opacity-0 transition-opacity duration-300">
+                                        <h3 class="font-bold text-3xl drop-shadow-lg">{{ $article->title }}</h3>
                                     </div>
                                 </a>
                             @endforeach
                         </div>
+                        <button id="slider-prev" class="absolute top-1/2 -translate-y-1/2 left-4 z-20 w-12 h-12 bg-black/40 text-white rounded-full hover:bg-red-600 transition-colors flex items-center justify-center">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button id="slider-next" class="absolute top-1/2 -translate-y-1/2 right-4 z-20 w-12 h-12 bg-black/40 text-white rounded-full hover:bg-red-600 transition-colors flex items-center justify-center">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
                     </div>
                 @else
-                    <div class="bg-white h-[500px] flex items-center justify-center text-gray-500 shadow-md rounded-md"><p>Tidak ada cerita utama.</p></div>
+                    <div class="bg-white h-96 lg:h-auto lg:flex-grow flex items-center justify-center text-gray-500 shadow-md rounded-md"><p>Tidak ada artikel untuk ditampilkan.</p></div>
                 @endif
             </div>
+
             {{-- Kolom Kanan: Today Update --}}
             <div class="lg:col-span-3">
                 <div class="mb-4 border-b border-gray-300">
@@ -100,42 +106,63 @@
 
         {{-- BAGIAN PETA --}}
         <div class="mt-14">
-            {{-- Header Peta --}}
+            {{-- PERUBAHAN 4: Menyesuaikan layout tombol Peta --}}
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-300">
-                <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600 text-red-600">
-                    Peta SISIRAJA
-                </h2>
-                <a href="{{ route('gallery_maps.index') }}" 
-                class="text-sm mt-2 sm:mt-0 font-semibold text-red-600 hover:underline">
-                    Lihat Selengkapnya &rarr;
-                </a>
+                <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600 text-red-600">Peta SISIRAJA</h2>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2 sm:mt-0">
+                    <a href="{{ route('gallery_maps.peta') }}" class="inline-flex items-center justify-center gap-2 bg-gray-200 text-gray-800 text-sm font-semibold px-4 py-2 rounded-md hover:bg-gray-300 transition-colors">
+                        <i class="fas fa-images"></i>
+                        <span>Lihat Galeri Peta</span>
+                    </a>
+                    <a href="{{ route('visualisasi.index') }}" class="inline-flex items-center justify-center gap-2 bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <span>Lihat Peta SISIRAJA</span>
+                    </a>
+                </div>
             </div>
-
-            {{-- Container Peta --}}
             <div class="p-2 shadow-md rounded-md" style="height: 450px;">
-                <iframe 
-                    src="{{ route('visualisasi.index', ['embed' => true]) }}" 
-                    style="width: 100%; height: 100%; border: none; border-radius: 8px;"
-                    loading="lazy">
-                </iframe>
+                <iframe src="{{ route('visualisasi.index', ['embed' => true]) }}" style="width: 100%; height: 100%; border: none; border-radius: 8px;" loading="lazy"></iframe>
             </div>
         </div>
-
         
         {{-- BAGIAN GALERI --}}
         <div class="mt-12">
-            <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-300">
-                <div class="flex flex-wrap border-b-0 sm:border-b-0 -mb-px">
-                    <button data-category="Sesar Aktif" class="gallery-tab active-tab text-sm font-bold py-2 px-4 border-b-4 border-red-600 text-red-600">Sesar Aktif</button>
-                    <button data-category="Peta Geologi" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600">Peta Geologi</button>
-                    <button data-category="Mitigasi Bencana" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600">Mitigasi Bencana</button>
-                    <button data-category="Studi Lapangan" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600">Studi Lapangan</button>
-                    <button data-category="Lainnya" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600">Lainnya</button>
+            {{-- PERUBAHAN 1: Mengubah layout Galeri --}}
+            <div class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between border-b border-gray-300">
+                {{-- Kategori Navigasi --}}
+                <div class="relative lg:flex-grow flex items-center">
+                    {{-- Tombol Navigasi Mobile --}}
+                    <button id="gallery-mobile-prev" class="lg:hidden absolute -left-1 z-10 p-1 bg-white/80 rounded-full shadow-md text-gray-600 hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
+                    
+                    {{-- Wrapper untuk Kategori --}}
+                    <div id="gallery-cat-container" class="flex w-full justify-center lg:justify-start whitespace-nowrap overflow-x-hidden pb-2 -mb-px">
+                        <button data-category="Sesar Aktif" class="gallery-tab active-tab text-sm font-bold py-2 px-4 border-b-4 border-red-600 text-red-600 flex-shrink-0">Sesar Aktif</button>
+                        <button data-category="Peta Geologi" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600 flex-shrink-0">Peta Geologi</button>
+                        <button data-category="Mitigasi Bencana" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600 flex-shrink-0">Mitigasi Bencana</button>
+                        <button data-category="Studi Lapangan" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600 flex-shrink-0">Studi Lapangan</button>
+                        <button data-category="Lainnya" class="gallery-tab text-sm font-bold py-2 px-4 border-b-4 border-transparent text-gray-500 hover:text-red-600 flex-shrink-0">Lainnya</button>
+                    </div>
+                    
+                    {{-- Tombol Navigasi Mobile --}}
+                    <button id="gallery-mobile-next" class="lg:hidden absolute -right-1 z-10 p-1 bg-white/80 rounded-full shadow-md text-gray-600 hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <a href="{{ route('gallery.publik') }}" class="text-sm mt-2 sm:mt-0 font-semibold text-red-600 hover:underline">Lihat Semua Galeri &rarr;</a>
+                {{-- Tombol Lihat Semua (Hanya di Desktop) --}}
+                <a href="{{ route('gallery.publik') }}" class="hidden lg:inline-flex items-center gap-2 bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-red-700 transition-colors ml-4">
+                    <i class="fas fa-images"></i>
+                    <span>Lihat Semua Galeri</span>
+                </a>
             </div>
+            
             <div id="gallery-grid-home" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div class="h-48 col-span-full flex items-center justify-center text-gray-500">Memuat galeri...</div>
+            </div>
+
+            {{-- PERUBAHAN 3: Tombol Lihat Semua (Hanya di Mobile) --}}
+            <div class="flex justify-center mt-6 lg:hidden">
+                 <a href="{{ route('gallery.publik') }}" class="inline-flex items-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md hover:bg-red-700 transition-colors">
+                    <i class="fas fa-images"></i>
+                    <span>Lihat Semua Galeri</span>
+                </a>
             </div>
         </div>
     </div>
@@ -151,9 +178,10 @@
 <script>
 window.addEventListener('load', function () {
     
-    const tabs = document.querySelectorAll('.gallery-tab');
+    // Script untuk Galeri (Fetch Data)
+    const galleryTabs = document.querySelectorAll('.gallery-tab');
     const gridContainer = document.getElementById('gallery-grid-home');
-    if (tabs.length > 0 && gridContainer) {
+    if (galleryTabs.length > 0 && gridContainer) {
         const galleryPageUrl = "{{ route('gallery.publik') }}";
         const assetBaseUrl = "{{ asset('gallery/') }}";
         const apiBaseUrl = "{{ url('/gallery/category') }}";
@@ -187,159 +215,110 @@ window.addEventListener('load', function () {
                 gridContainer.innerHTML = `<div class="h-48 col-span-full flex items-center justify-center text-red-500">Gagal memuat galeri.</div>`;
             }
         }
-        tabs.forEach(tab => {
+        
+        // PERUBAHAN 1: Logika baru untuk navigasi kategori galeri
+        let currentCatIndex = 0;
+
+        function updateActiveCategory(index) {
+            galleryTabs.forEach((tab, i) => {
+                // Update tampilan untuk mobile (hanya satu yang terlihat)
+                tab.classList.toggle('hidden', i !== index && window.innerWidth < 1024);
+                tab.classList.toggle('lg:flex', window.innerWidth >= 1024);
+
+                // Update style active
+                if (i === index) {
+                    tab.classList.add('active-tab', 'border-red-600', 'text-red-600');
+                    tab.classList.remove('border-transparent', 'text-gray-500');
+                } else {
+                    tab.classList.remove('active-tab', 'border-red-600', 'text-red-600');
+                    tab.classList.add('border-transparent', 'text-gray-500');
+                }
+            });
+            fetchHomepageGallery(galleryTabs[index].dataset.category);
+        }
+
+        galleryTabs.forEach((tab, index) => {
             tab.addEventListener('click', function () {
-                tabs.forEach(t => {
-                    t.classList.remove('active-tab', 'border-red-600', 'text-red-600');
-                    t.classList.add('border-transparent', 'text-gray-500');
-                });
-                this.classList.add('active-tab', 'border-red-600', 'text-red-600');
-                this.classList.remove('border-transparent', 'text-gray-500');
-                const category = this.dataset.category;
-                fetchHomepageGallery(category);
+                currentCatIndex = index;
+                updateActiveCategory(currentCatIndex);
             });
         });
-        const initialActiveTab = document.querySelector('.gallery-tab.active-tab');
-        if (initialActiveTab) {
-            fetchHomepageGallery(initialActiveTab.dataset.category);
+
+        const prevCatBtn = document.getElementById('gallery-mobile-prev');
+        const nextCatBtn = document.getElementById('gallery-mobile-next');
+
+        if(prevCatBtn && nextCatBtn) {
+            prevCatBtn.addEventListener('click', () => {
+                currentCatIndex = (currentCatIndex - 1 + galleryTabs.length) % galleryTabs.length;
+                updateActiveCategory(currentCatIndex);
+            });
+
+            nextCatBtn.addEventListener('click', () => {
+                currentCatIndex = (currentCatIndex + 1) % galleryTabs.length;
+                updateActiveCategory(currentCatIndex);
+            });
+        }
+        
+        // Panggil saat load dan resize untuk menyesuaikan tampilan
+        updateActiveCategory(currentCatIndex);
+        window.addEventListener('resize', () => updateActiveCategory(currentCatIndex));
+    }
+    
+    // Script untuk Slider Artikel
+    const sliderContainer = document.getElementById('slider-container');
+    if (sliderContainer) {
+        const slides = sliderContainer.querySelectorAll('.slider-item');
+        const prevButton = document.getElementById('slider-prev');
+        const nextButton = document.getElementById('slider-next');
+        
+        if (slides.length > 0) {
+            let currentIndex = 0;
+            let autoPlayInterval;
+
+            function showSlide(index) {
+                slides.forEach((slide, i) => {
+                    slide.style.opacity = (i === index) ? '1' : '0';
+                    slide.style.zIndex = (i === index) ? '10' : '1';
+                });
+            }
+
+            function nextSlide() {
+                currentIndex = (currentIndex + 1) % slides.length;
+                showSlide(currentIndex);
+            }
+
+            function prevSlide() {
+                currentIndex = (currentIndex - 1 + slides.length) % slides.length;
+                showSlide(currentIndex);
+            }
+
+            function startAutoPlay() {
+                autoPlayInterval = setInterval(nextSlide, 5000);
+            }
+
+            function stopAutoPlay() {
+                clearInterval(autoPlayInterval);
+            }
+
+            nextButton.addEventListener('click', () => {
+                stopAutoPlay();
+                nextSlide();
+                startAutoPlay();
+            });
+
+            prevButton.addEventListener('click', () => {
+                stopAutoPlay();
+                prevSlide();
+                startAutoPlay();
+            });
+
+            showSlide(currentIndex);
+            startAutoPlay();
         }
     }
-    
-    const mapContainer = document.getElementById('home-map');
-    
-    if (mapContainer) {
-        const initialView = { coords: [-2.5489, 118.0149], zoom: 5 };
-        const googleSat = L.tileLayer('http://{s}.google.com/vt?lyrs=s,h&x={x}&y={y}&z={z}',{ maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3'], attribution: 'Â© Google Satellite' });
-        const baseMaps = { "Google Satellite": googleSat };
-        const map = L.map('home-map', { layers: [googleSat], scrollWheelZoom: false }).setView(initialView.coords, initialView.zoom);
-        let overlays = {};
-        const layerControl = L.control.layers(baseMaps, overlays, { position: 'bottomright' }).addTo(map);
 
-        @if(isset($mapForHome) && $mapForHome)
-            const geoJsonUrl = "{{ route('maps.geojson', $mapForHome->id) }}";
-            fetch(geoJsonUrl)
-                .then(response => response.json())
-                .then(data => {
-                    const dataLayer = L.geoJSON(data, {
-                        onEachFeature: function (feature, layer) {
-                            if (feature.properties && feature.properties.name) {
-                                layer.bindPopup(feature.properties.name);
-                            }
-                        }
-                    });
-                    dataLayer.addTo(map);
-                    layerControl.addOverlay(dataLayer, '{{ $mapForHome->name }}');
-                })
-                .catch(error => console.error('Gagal memuat data GeoJSON:', error));
-        @endif
-
-        L.Control.resetView = L.Control.extend({
-            onAdd: function(map) {
-                var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                container.innerHTML = '<a href="#" title="Reset View" role="button" style="width: 34px; height: 34px; line-height: 34px; text-align: center; font-size: 1.2rem;"><i class="fas fa-sync-alt"></i></a>';
-                container.onclick = function(e){ e.preventDefault(); map.setView(initialView.coords, initialView.zoom); }
-                return container;
-            },
-        });
-        new L.Control.resetView({ position: 'bottomright' }).addTo(map);
-
-        L.Control.Legend = L.Control.extend({
-            onAdd: function(map) {
-                var div = L.DomUtil.create('div', 'info legend');
-                div.innerHTML = '<h4>Keterangan Peta</h4>';
-                @if(isset($mapForHome) && $mapForHome)
-                    div.innerHTML += '<i style="background: #0000FF; border-radius: 50%;"></i> {{ $mapForHome->name }}<br>';
-                @endif
-                return div;
-            },
-        });
-        new L.Control.Legend({ position: 'bottomleft' }).addTo(map);
-        
-        const actionButtonContainer = document.createElement('div');
-        actionButtonContainer.classList.add('manual-action-buttons');
-
-        actionButtonContainer.innerHTML = `
-            <a href="{{ route('visualisasi.index') }}" class="action-button primary">
-                <i class="fas fa-map-marked-alt mr-2"></i> Lihat Peta Lengkap
-            </a>
-            <a href="{{ route('gallery_maps.peta') }}" class="action-button secondary">
-                <i class="fas fa-images mr-2"></i> Lihat Galeri Peta
-            </a>
-        `;
-
-        mapContainer.appendChild(actionButtonContainer);
-        L.DomEvent.disableClickPropagation(actionButtonContainer);
-
-        // CSS dengan layout yang diperbaiki
-        const customStyles = document.createElement('style');
-        customStyles.innerHTML = `
-            .info.legend { 
-                padding: 6px 8px; 
-                font: 14px/16px Arial, Helvetica, sans-serif; 
-                background: white; 
-                background: rgba(255,255,255,0.8); 
-                box-shadow: 0 0 15px rgba(0,0,0,0.2); 
-                border-radius: 5px; 
-                margin-bottom: 10px;
-            }
-            .info.legend h4 { margin: 0 0 5px; color: #777; }
-            .info.legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.9; }
-
-            /* CSS untuk tombol aksi di top right */
-            .manual-action-buttons {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                z-index: 1000;
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            .action-button {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 8px 12px;
-                font-size: 0.9rem;
-                font-weight: bold;
-                text-decoration: none;
-                transition: all 0.2s ease-in-out;
-                white-space: nowrap;
-                border-radius: 5px;
-                box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            }
-            .action-button.primary {
-                background-color: #DC2626;
-                color: white;
-            }
-            .action-button.primary:hover {
-                background-color: #B91C1C;
-            }
-            .action-button.secondary {
-                background-color: #ffffff;
-                color: #374151;
-            }
-            .action-button.secondary:hover {
-                 background-color: #f3f4f6;
-            }
-
-            /* Styling untuk kontrol di bottomright agar tidak bertabrakan */
-            .leaflet-bottom.leaflet-right {
-                margin-bottom: 15px;
-                margin-right: 10px;
-            }
-            
-            .leaflet-control-layers {
-                margin-bottom: 10px;
-            }
-            
-            .leaflet-bar .leaflet-control {
-                margin-bottom: 5px;
-            }
-        `;
-        document.head.appendChild(customStyles);
-    }
 });
 </script>
 
 @endpush
+    

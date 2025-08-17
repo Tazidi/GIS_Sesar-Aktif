@@ -61,7 +61,7 @@
         background: #ef4444;
     }
 
-/* 5. PERUBAHAN: CSS untuk tombol navigasi popup */
+/* 5. CSS untuk tombol navigasi popup (TIDAK DIUBAH) */
 .popup-nav-button {
     position: absolute;
     top: 50%;
@@ -70,36 +70,33 @@
     color: white;
     border: none;
     border-radius: 50%;
-    width: 4rem;      /* Diubah dari 3.5rem (64px) */
-    height: 4rem;     /* Diubah dari 3.5rem (64px) */
-    font-size: 1.75rem; /* Diubah dari 1.25rem (Ukuran ikon panah) */
+    width: 4rem;
+    height: 4rem;
+    font-size: 1.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    z-index: 20; /* Pastikan di atas gambar */
+    z-index: 20;
 }
     .popup-nav-button:hover {
         background: rgba(0, 0, 0, 0.7);
     }
-    /* PERUBAHAN: Posisi tombol disesuaikan untuk parent container */
     .popup-nav-button.prev {
         left: 1rem; 
     }
     .popup-nav-button.next {
         right: 1rem;
     }
-    /* Sembunyikan di layar kecil agar tidak menutupi gambar */
     @media (max-width: 768px) {
         .popup-nav-button {
             display: none;
         }
     }
 
-/* 6. CSS BARU: Untuk animasi slide pada gambar utama */
+/* 6. CSS untuk animasi slide pada gambar utama (TIDAK DIUBAH) */
 .main-image-wrapper {
-    /* Transisi untuk properti transform dan opacity selama 0.3 detik */
     transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
     transform: translateX(0);
     opacity: 1;
@@ -109,17 +106,13 @@
     align-items: center;
     justify-content: center;
 }
-
-/* Kelas untuk animasi keluar ke kiri (saat klik 'next') */
 .main-image-wrapper.slide-out-to-left {
-    transform: translateX(-50px); /* Geser 50px ke kiri */
-    opacity: 0; /* Pudar */
+    transform: translateX(-50px);
+    opacity: 0;
 }
-
-/* Kelas untuk animasi keluar ke kanan (saat klik 'prev') */
 .main-image-wrapper.slide-out-to-right {
-    transform: translateX(50px); /* Geser 50px ke kanan */
-    opacity: 0; /* Pudar */
+    transform: translateX(50px);
+    opacity: 0;
 }
 </style>
 @endpush
@@ -128,26 +121,43 @@
 <div class="py-12">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Header --}}
+        {{-- PERBAIKAN: Mengubah struktur header untuk garis bawah --}}
         <div class="mb-8 text-center">
-            <h1 class="text-4xl font-bold text-gray-800">Galeri</h1>
-            <p class="text-lg text-gray-500 mt-2">Jelajahi dokumentasi visual kami.</p>
+            <div class="inline-block">
+                <h1 class="text-4xl font-bold text-gray-800">Galeri</h1>
+                <!-- Line Container -->
+                {{-- PERBAIKAN: Membuat garis abu-abu lebih tipis (h-px) --}}
+                <div class="w-full h-px mt-2 relative bg-gray-200">
+                    <div class="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 h-[3px] w-24 bg-red-600"></div>
+                </div>
+                <p class="text-lg text-gray-500 mt-2">Jelajahi dokumentasi visual kami.</p>
+            </div>
         </div>
 
-        {{-- Search Bar dan Tab Kategori (TIDAK DIUBAH) --}}
+        {{-- Search Bar dan Tab Kategori --}}
         <div class="flex flex-col md:flex-row items-center justify-between mb-6 border-b border-gray-300 gap-4 pb-2">
-            <div class="flex flex-wrap justify-center md:justify-start">
-                @php
-                    $categories = ['Sesar Aktif', 'Peta Geologi', 'Mitigasi Bencana', 'Studi Lapangan', 'Lainnya'];
-                @endphp
-                @foreach ($categories as $category)
-                    <button data-category="{{ $category }}" 
-                            class="gallery-tab text-sm sm:text-base font-medium py-3 px-4 border-b-4 transition-colors duration-300 border-transparent text-gray-500 hover:text-red-600 hover:border-red-300">
-                        {{ $category }}
-                    </button>
-                @endforeach
+            <div class="relative flex-grow w-full flex items-center">
+                {{-- Tombol Navigasi Mobile --}}
+                <button id="gallery-mobile-prev" class="lg:hidden absolute -left-1 z-10 p-1 bg-white/80 rounded-full shadow-md text-gray-600 hover:bg-gray-200"><i class="fas fa-chevron-left"></i></button>
+                
+                {{-- Wrapper untuk Kategori --}}
+                <div id="gallery-cat-container" class="flex w-full justify-center lg:justify-start whitespace-nowrap overflow-x-hidden">
+                    @php
+                        $categories = ['Sesar Aktif', 'Peta Geologi', 'Mitigasi Bencana', 'Studi Lapangan', 'Lainnya'];
+                    @endphp
+                    @foreach ($categories as $category)
+                        <button data-category="{{ $category }}" 
+                                class="gallery-tab text-sm sm:text-base font-medium py-3 px-4 border-b-4 transition-colors duration-300 border-transparent text-gray-500 hover:text-red-600 hover:border-red-300 flex-shrink-0">
+                            {{ $category }}
+                        </button>
+                    @endforeach
+                </div>
+                
+                {{-- Tombol Navigasi Mobile --}}
+                <button id="gallery-mobile-next" class="lg:hidden absolute -right-1 z-10 p-1 bg-white/80 rounded-full shadow-md text-gray-600 hover:bg-gray-200"><i class="fas fa-chevron-right"></i></button>
             </div>
 
-            <div class="relative w-full md:w-auto">
+            <div class="relative w-full md:w-auto flex-shrink-0">
                 <input type="text" id="search-input" placeholder="Cari judul atau deskripsi..."
                        class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -171,15 +181,11 @@
 @endsection
 
 @push('scripts')
-{{-- PERUBAHAN: Menambahkan fungsi global untuk interaksi carousel --}}
+{{-- Script untuk interaksi popup (TIDAK DIUBAH) --}}
 <script>
     function switchPopupImage(event, newSrc, mainImageId, downloadLinkId) {
-        // Ganti gambar utama
         document.getElementById(mainImageId).src = newSrc;
-        // Ganti link download
         document.getElementById(downloadLinkId).href = newSrc;
-
-        // Atur status 'active' pada thumbnail
         const currentThumb = event.currentTarget;
         const container = currentThumb.closest('.carousel-container');
         if (container) {
@@ -188,47 +194,31 @@
         }
     }
 
-    // FUNGSI BARU untuk navigasi gambar internal dengan tombol panah
-// GANTI SELURUH FUNGSI INI
-function navigateInternal(carouselId, direction) {
-    const carouselContainer = document.getElementById(carouselId);
-    if (!carouselContainer) return;
-
-    // Ambil wrapper gambar utama yang akan dianimasikan
-    // Kita ambil ID gambar dari ID carousel untuk menemukannya
-    const imageId = carouselId.replace('carousel-container-', '');
-    const mainImageWrapper = document.getElementById(`main-image-wrapper-${imageId}`);
-    if (!mainImageWrapper) return;
-
-    const thumbs = Array.from(carouselContainer.querySelectorAll('.carousel-thumb'));
-    const activeThumb = carouselContainer.querySelector('.carousel-thumb.active');
-    if (!activeThumb || thumbs.length <= 1) return;
-
-    const currentIndex = thumbs.indexOf(activeThumb);
-    let nextIndex;
-
-    // Tentukan kelas animasi berdasarkan arah navigasi
-    if (direction === 'next') {
-        nextIndex = (currentIndex + 1) % thumbs.length;
-        mainImageWrapper.classList.add('slide-out-to-left'); // Animasi keluar ke kiri
-    } else { // 'prev'
-        nextIndex = (currentIndex - 1 + thumbs.length) % thumbs.length;
-        mainImageWrapper.classList.add('slide-out-to-right'); // Animasi keluar ke kanan
-    }
-    
-    // Tunggu animasi keluar berjalan sejenak, lalu ganti gambar dan mulai animasi masuk
-    setTimeout(() => {
-        // Picu klik pada thumbnail berikutnya untuk mengganti gambar (memakai logika lama)
-        if (thumbs[nextIndex]) {
-            thumbs[nextIndex].click();
+    function navigateInternal(carouselId, direction) {
+        const carouselContainer = document.getElementById(carouselId);
+        if (!carouselContainer) return;
+        const imageId = carouselId.replace('carousel-container-', '');
+        const mainImageWrapper = document.getElementById(`main-image-wrapper-${imageId}`);
+        if (!mainImageWrapper) return;
+        const thumbs = Array.from(carouselContainer.querySelectorAll('.carousel-thumb'));
+        const activeThumb = carouselContainer.querySelector('.carousel-thumb.active');
+        if (!activeThumb || thumbs.length <= 1) return;
+        const currentIndex = thumbs.indexOf(activeThumb);
+        let nextIndex;
+        if (direction === 'next') {
+            nextIndex = (currentIndex + 1) % thumbs.length;
+            mainImageWrapper.classList.add('slide-out-to-left');
+        } else {
+            nextIndex = (currentIndex - 1 + thumbs.length) % thumbs.length;
+            mainImageWrapper.classList.add('slide-out-to-right');
         }
-
-        // Hapus kelas animasi. Karena ada 'transition' di CSS,
-        // wrapper akan otomatis kembali ke posisi semula (transform: translateX(0), opacity: 1)
-        // menciptakan efek animasi "masuk".
-        mainImageWrapper.classList.remove('slide-out-to-left', 'slide-out-to-right');
-    }, 150); // Delay 150ms (setengah dari durasi transisi 0.3s)
-}
+        setTimeout(() => {
+            if (thumbs[nextIndex]) {
+                thumbs[nextIndex].click();
+            }
+            mainImageWrapper.classList.remove('slide-out-to-left', 'slide-out-to-right');
+        }, 150);
+    }
 </script>
 
 <script>
@@ -245,14 +235,46 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentCategory = '';
     let debounceTimer;
 
-    function buildApiUrl(category, page = 1, searchTerm = '') {
-        const encodedCategory = encodeURIComponent(category);
-        let url = `${apiBaseUrl}/${encodedCategory}?page=${page}`;
-        if (searchTerm) {
-            url += `&search=${encodeURIComponent(searchTerm)}`;
-        }
-        return url;
+    // Logika baru untuk navigasi kategori
+    let currentCatIndex = 0;
+
+    function updateActiveCategory(index, fromClick = false) {
+        currentCatIndex = index;
+        tabs.forEach((tab, i) => {
+            tab.classList.toggle('hidden', i !== index && window.innerWidth < 1024);
+            tab.classList.toggle('lg:inline-flex', window.innerWidth >= 1024);
+
+            if (i === index) {
+                tab.classList.add('active-tab', 'border-red-600', 'text-red-600');
+                tab.classList.remove('border-transparent', 'text-gray-500');
+                if (fromClick || !currentCategory) {
+                    currentCategory = tab.dataset.category;
+                    const searchTerm = searchInput.value;
+                    const url = buildApiUrl(currentCategory, 1, searchTerm);
+                    fetchGallery(url);
+                }
+            } else {
+                tab.classList.remove('active-tab', 'border-red-600', 'text-red-600');
+                tab.classList.add('border-transparent', 'text-gray-500');
+            }
+        });
     }
+
+    const prevCatBtn = document.getElementById('gallery-mobile-prev');
+    const nextCatBtn = document.getElementById('gallery-mobile-next');
+
+    if(prevCatBtn && nextCatBtn) {
+        prevCatBtn.addEventListener('click', () => {
+            const newIndex = (currentCatIndex - 1 + tabs.length) % tabs.length;
+            updateActiveCategory(newIndex, true);
+        });
+
+        nextCatBtn.addEventListener('click', () => {
+            const newIndex = (currentCatIndex + 1) % tabs.length;
+            updateActiveCategory(newIndex, true);
+        });
+    }
+    // Akhir dari logika baru
 
     async function fetchGallery(url) {
         gridContainer.innerHTML = `<div class="h-48 col-span-full flex items-center justify-center text-gray-500"><svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span>Memuat galeri...</span></div>`;
@@ -272,7 +294,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (images && images.length > 0) {
                 images.forEach(image => {
                     const mainImageUrl = `${assetBaseUrl}/${image.main_image}`;
-
                     const extraImages = Array.isArray(image.extra_images) ? image.extra_images : (image.extra_images ? JSON.parse(image.extra_images) : []);
                     const totalImages = 1 + extraImages.length;
                     
@@ -281,76 +302,39 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="aspect-video bg-gray-200">
                             <img src="${mainImageUrl}" alt="${image.title}" class="w-full h-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110">
                         </div>
-                        ${totalImages > 1 ? `
-                        <div class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                            <i class="fas fa-images mr-1"></i> ${totalImages} foto
-                        </div>
-                        ` : ''}
+                        ${totalImages > 1 ? `<div class="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded"><i class="fas fa-images mr-1"></i> ${totalImages} foto</div>` : ''}
                         <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out">
                             <h3 class="font-bold text-base truncate">${image.title}</h3>
                             <p class="text-sm opacity-90 mt-1 truncate">${image.description || 'Klik untuk melihat detail'}</p>
                         </div>
-                    </a>
-                    `;
+                    </a>`;
                     gridContainer.insertAdjacentHTML('beforeend', galleryItemHTML);
                     
                     const allImageFiles = [image.main_image, ...extraImages];
                     const mainPopupImageId = `main-popup-image-${image.id}`;
                     const downloadLinkId = `download-link-${image.id}`;
                     const carouselId = `carousel-container-${image.id}`;
+                    const thumbnailsHTML = allImageFiles.map((imgFile, index) => `<img src="${assetBaseUrl}/${imgFile}" class="carousel-thumb w-full h-16 object-cover mb-2 rounded cursor-pointer ${index === 0 ? 'active' : ''}" onclick="switchPopupImage(event, '${assetBaseUrl}/${imgFile}', '${mainPopupImageId}', '${downloadLinkId}')">`).join('');
 
-                    const thumbnailsHTML = allImageFiles.map((imgFile, index) => {
-                        const fullUrl = `${assetBaseUrl}/${imgFile}`;
-                        return `<img src="${fullUrl}" class="carousel-thumb w-full h-16 object-cover mb-2 rounded cursor-pointer ${index === 0 ? 'active' : ''}" onclick="switchPopupImage(event, '${fullUrl}', '${mainPopupImageId}', '${downloadLinkId}')">`;
-                    }).join('');
-
-                    // **PERUBAHAN STRUKTUR HTML UNTUK POSISI TOMBOL**
-                    // **PERUBAHAN STRUKTUR HTML UNTUK POSISI TOMBOL**
                     const popupContentHTML = `
                     <div id="popup-${image.id}" style="display:none; max-width: 100%; width: 100%; height: 100%;">
                         <div class="flex flex-col md:flex-row w-full h-full gap-6">
-                            
                             <div class="w-full md:w-2/3 h-full flex items-center justify-center gap-2">
-                                
-                                ${totalImages > 1 ? `
-                                <div id="${carouselId}" class="flex-shrink-0 w-24 h-full overflow-y-auto pr-2 carousel-container">
-                                    ${thumbnailsHTML}
-                                </div>
-                                ` : ''}
-
+                                ${totalImages > 1 ? `<div id="${carouselId}" class="flex-shrink-0 w-24 h-full overflow-y-auto pr-2 carousel-container">${thumbnailsHTML}</div>` : ''}
                                 <div class="relative flex-grow h-full w-full flex items-center justify-center">
-
-                                    ${totalImages > 1 ? `
-                                    <button onclick="navigateInternal('${carouselId}', 'prev')" class="popup-nav-button prev" title="Sebelumnya">
-                                        <i class="fas fa-chevron-left"></i>
-                                    </button>
-                                    ` : ''}
-
+                                    ${totalImages > 1 ? `<button onclick="navigateInternal('${carouselId}', 'prev')" class="popup-nav-button prev" title="Sebelumnya"><i class="fas fa-chevron-left"></i></button>` : ''}
                                     <div class="flex-grow h-full w-full flex items-center justify-center overflow-hidden">
-                                        <div id="main-image-wrapper-${image.id}" class="main-image-wrapper">
-                                            <img src="${mainImageUrl}" id="${mainPopupImageId}" class="w-auto h-auto max-w-full max-h-full object-contain" draggable="false">
-                                        </div>
-                                        
-                                        <a href="${mainImageUrl}" id="${downloadLinkId}" download="${image.title.replace(/ /g, '_')}.jpg" class="absolute top-3 right-3 w-10 h-10 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75 transition-all flex items-center justify-center" title="Unduh Gambar">
-                                            <i class="fas fa-download"></i>
-                                        </a>
+                                        <div id="main-image-wrapper-${image.id}" class="main-image-wrapper"><img src="${mainImageUrl}" id="${mainPopupImageId}" class="w-auto h-auto max-w-full max-h-full object-contain" draggable="false"></div>
+                                        <a href="${mainImageUrl}" id="${downloadLinkId}" download="${image.title.replace(/ /g, '_')}.jpg" class="absolute top-3 right-3 w-10 h-10 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-75 transition-all flex items-center justify-center" title="Unduh Gambar"><i class="fas fa-download"></i></a>
                                     </div>
-                                    
-                                    ${totalImages > 1 ? `
-                                    <button onclick="navigateInternal('${carouselId}', 'next')" class="popup-nav-button next" title="Berikutnya">
-                                        <i class="fas fa-chevron-right"></i>
-                                    </button>
-                                    ` : ''}
-
-                                </div> </div>
-
+                                    ${totalImages > 1 ? `<button onclick="navigateInternal('${carouselId}', 'next')" class="popup-nav-button next" title="Berikutnya"><i class="fas fa-chevron-right"></i></button>` : ''}
+                                </div>
+                            </div>
                             <div class="w-full md:w-1/3 h-full flex flex-col bg-white rounded-lg shadow-xl overflow-hidden">
                                 <div class="p-6 flex-grow overflow-y-auto">
                                     <h3 class="text-2xl font-bold text-gray-800 mb-2">${image.title}</h3>
                                     <p class="text-sm text-white bg-red-600 inline-block px-2 py-1 rounded mb-4">${image.category}</p>
-                                    <div class="prose max-w-none text-gray-600">
-                                        ${image.description || 'Tidak ada deskripsi.'}
-                                    </div>
+                                    <div class="prose max-w-none text-gray-600">${image.description || 'Tidak ada deskripsi.'}</div>
                                 </div>
                             </div>
                         </div>
@@ -358,76 +342,27 @@ document.addEventListener('DOMContentLoaded', function () {
                     fancyboxContainer.insertAdjacentHTML('beforeend', popupContentHTML);
                 });
 
-                // Inisialisasi ulang Fancybox
                 if (typeof Fancybox !== 'undefined') {
                     Fancybox.destroy();
                     Fancybox.bind('[data-fancybox="gallery"]', {
-                        groupAll: true, 
-                        dragToClose: false, click: false,
+                        groupAll: true, dragToClose: false, click: false,
                         Panzoom: { mouseWheel: true, panOnlyZoomed: true },
                         Toolbar: false, Thumbs: false,
-                        keyboard: { 
-                            Escape: "close",
-                            ArrowLeft: "prev",
-                            ArrowRight: "next",
-                        },
-                        template: {
-                            closeButton: '<button data-fancybox-close class="fancybox__button" title="Tutup" style="position: absolute; top: 1rem; right: 1rem; z-index: 9999; background: rgba(0,0,0,0.5); color: white; border-radius: 50%; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>',
-                        },
+                        keyboard: { Escape: "close", ArrowLeft: "prev", ArrowRight: "next" },
+                        template: { closeButton: '<button data-fancybox-close class="fancybox__button" title="Tutup" style="position: absolute; top: 1rem; right: 1rem; z-index: 9999; background: rgba(0,0,0,0.5); color: white; border-radius: 50%; width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center;"><i class="fas fa-times"></i></button>' },
                         on: {
                             ready: (fancybox) => {
-                                const container = fancybox.container;
-                                if (!container) return;
-
-                                let touchstartX = 0;
-                                let touchendX = 0;
-                                let touchstartY = 0;
-                                let touchendY = 0;
-
-                                container.addEventListener('touchstart', e => {
-                                    if (e.target.closest('a, button, .carousel-thumb, .carousel-container, .prose')) {
-                                        return;
-                                    }
-                                    touchstartX = e.changedTouches[0].screenX;
-                                    touchstartY = e.changedTouches[0].screenY;
-                                }, { passive: true });
-
-                                container.addEventListener('touchend', e => {
-                                     if (e.target.closest('a, button, .carousel-thumb, .carousel-container, .prose')) {
-                                        return;
-                                    }
-                                    touchendX = e.changedTouches[0].screenX;
-                                    touchendY = e.changedTouches[0].screenY;
-                                    handleGesture();
-                                }, { passive: true });
-
-                                function handleGesture() {
-                                    const deltaX = touchendX - touchstartX;
-                                    const deltaY = touchendY - touchstartY;
-
-                                    if (Math.abs(deltaY) > Math.abs(deltaX)) {
-                                        return;
-                                    }
-                                    
-                                    if (Math.abs(deltaX) > 50) {
-                                        if (touchendX < touchstartX) {
-                                            fancybox.next();
-                                        }
-                                        if (touchendX > touchstartX) {
-                                            fancybox.prev();
-                                        }
-                                    }
-                                }
+                                const container = fancybox.container; if (!container) return; let touchstartX = 0, touchendX = 0, touchstartY = 0, touchendY = 0;
+                                container.addEventListener('touchstart', e => { if (e.target.closest('a, button, .carousel-thumb, .carousel-container, .prose')) return; touchstartX = e.changedTouches[0].screenX; touchstartY = e.changedTouches[0].screenY; }, { passive: true });
+                                container.addEventListener('touchend', e => { if (e.target.closest('a, button, .carousel-thumb, .carousel-container, .prose')) return; touchendX = e.changedTouches[0].screenX; touchendY = e.changedTouches[0].screenY; handleGesture(); }, { passive: true });
+                                function handleGesture() { const deltaX = touchendX - touchstartX; const deltaY = touchendY - touchstartY; if (Math.abs(deltaY) > Math.abs(deltaX)) return; if (Math.abs(deltaX) > 50) { if (touchendX < touchstartX) fancybox.next(); if (touchendX > touchstartX) fancybox.prev(); } }
                             }
                         }
                     });
                 }
                 
-                // Render pagination (TIDAK DIUBAH)
                 if (links && links.length > 2) {
-                    paginationContainer.innerHTML = links.map(link => 
-                        `<a href="#" class="pagination-link inline-block px-4 py-2 mr-1 mb-1 text-sm font-medium rounded-md ${link.active ? 'bg-red-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'} ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}" data-url="${link.url}">${link.label.replace('&laquo;', '«').replace('&raquo;', '»')}</a>`
-                    ).join('');
+                    paginationContainer.innerHTML = links.map(link => `<a href="#" class="pagination-link inline-block px-4 py-2 mr-1 mb-1 text-sm font-medium rounded-md ${link.active ? 'bg-red-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'} ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}" data-url="${link.url}">${link.label.replace('&laquo;', '«').replace('&raquo;', '»')}</a>`).join('');
                 }
 
             } else {
@@ -439,25 +374,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Sisa dari script (event listener untuk tab, pagination, search) tidak diubah
-    function setActiveTab(category) {
-        currentCategory = category;
-        tabs.forEach(t => {
-            t.classList.remove('active-tab', 'border-red-600', 'text-red-600');
-            t.classList.add('border-transparent', 'text-gray-500');
-            if (t.dataset.category === category) {
-                t.classList.add('active-tab', 'border-red-600', 'text-red-600');
-                t.classList.remove('border-transparent', 'text-gray-500');
-            }
-        });
-        const searchTerm = searchInput.value;
-        const url = buildApiUrl(category, 1, searchTerm);
-        fetchGallery(url);
+    function buildApiUrl(category, page = 1, searchTerm = '') {
+        const encodedCategory = encodeURIComponent(category);
+        let url = `${apiBaseUrl}/${encodedCategory}?page=${page}`;
+        if (searchTerm) {
+            url += `&search=${encodeURIComponent(searchTerm)}`;
+        }
+        return url;
     }
-
-    tabs.forEach(tab => {
+    
+    tabs.forEach((tab, index) => {
         tab.addEventListener('click', function() {
-            setActiveTab(this.dataset.category);
+            updateActiveCategory(index, true);
         });
     });
 
@@ -467,7 +395,8 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             const url = link.dataset.url;
             if (url && url !== 'null') {
-                fetchGallery(url);
+                const searchTerm = searchInput.value;
+                fetchGallery(`${url}&search=${encodeURIComponent(searchTerm)}`);
             }
         }
     });
@@ -475,18 +404,12 @@ document.addEventListener('DOMContentLoaded', function () {
     searchInput.addEventListener('input', function() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
-            setActiveTab(currentCategory);
+            updateActiveCategory(currentCatIndex, true);
         }, 500);
     });
 
-    function initializeGallery() {
-        const firstTab = document.querySelector('.gallery-tab');
-        if (firstTab) {
-            setActiveTab(firstTab.dataset.category);
-        }
-    }
-
-    initializeGallery();
+    updateActiveCategory(0, true);
+    window.addEventListener('resize', () => updateActiveCategory(currentCatIndex));
 });
 </script>
 @endpush

@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\Map;
 use App\Models\Gallery;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class HomeController extends Controller
 {
@@ -23,9 +24,8 @@ class HomeController extends Controller
 
         // Artikel yang di-approve sebelum hari ini (Main Story)
         $mainStories = Article::where('status', 'approved')
-            ->whereDate('created_at', '<', Carbon::today())
             ->orderByDesc('visit_count')
-            ->take(3)
+            ->take(5)
             ->get();
 
         // Artikel populer random (simulasi)
