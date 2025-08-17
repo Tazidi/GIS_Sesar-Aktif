@@ -47,11 +47,12 @@ class ArticleSeeder extends Seeder
                 ['thumbnail' => 'thumbnails/' . $fileName], // Kondisi untuk mencari
                 [
                     'title' => Str::title(str_replace(['-', '_'], ' ', pathinfo($fileName, PATHINFO_FILENAME))),
-                    'slug' => Str::slug(pathinfo($fileName, PATHINFO_FILENAME)),
                     'content' => 'Ini adalah konten default yang dibuat secara otomatis oleh seeder. Silakan ganti dengan konten yang sebenarnya.',
                     'category' => 'Berita', // Ganti dengan kategori default
                     'status' => 'approved',
                     'visit_count' => rand(10, 500), // Jumlah pengunjung acak
+                    'user_id' => \App\Models\User::first()->id,
+                    'author' => \App\Models\User::first()->name,
                 ]
             );
         }

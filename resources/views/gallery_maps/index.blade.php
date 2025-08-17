@@ -6,118 +6,120 @@
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
     <style>
+        /* === VARIABEL WARNA UTAMA === */
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;  
+            --secondary-color: #2563eb;
+            --text-dark: #111827;
+            --text-medium: #374151;
+            --text-light: #6b7280;
+            --text-muted: #9ca3af;
+            --border-color: #e5e7eb;
+            --background-white: #ffffff;
+            --background-light: #f9fafb;
+            --success-bg: #dcfce7;
+            --success-text: #166534;
+        }
+
+        /* === PETA SECTION === */
         .preview-map {
             height: 200px;
             width: 100%;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        
-        .map-card {
-            background: white;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
+        }
+
+        .map-card {
+            background: var(--background-white);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
             margin-bottom: 20px;
             padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
-        
+
         .map-title {
             font-size: 18px;
-            font-weight: 600;
-            color: #333;
+            font-weight: 700;
+            color: var(--text-dark);
             margin-bottom: 8px;
         }
-        
+
         .map-description {
-            color: #666;
+            color: var(--text-light);
             font-size: 14px;
             margin-bottom: 15px;
             line-height: 1.5;
+            max-height: 3.9em;
+            overflow: hidden;
+            position: relative;
         }
-        
+
+        .map-description::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 40%;
+            height: 1.5em;
+            background: linear-gradient(to right, transparent, var(--background-white));
+        }
+
         .map-details {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
             margin-bottom: 15px;
             padding: 15px 0;
-            border-top: 1px solid #eee;
+            border-top: 1px solid var(--border-color);
         }
-        
+
         .detail-item {
             font-size: 13px;
         }
-        
+
         .detail-label {
             font-weight: 600;
-            color: #555;
+            color: var(--text-medium);
             margin-bottom: 4px;
         }
-        
+
         .detail-value {
-            color: #333;
+            color: var(--text-dark);
         }
-        
+
+        /* Button untuk map - sesuaikan dengan primary color */
         .btn-view {
             display: inline-block;
-            background: #007bff;
+            background: var(--primary-color);
             color: white;
             padding: 8px 16px;
             text-decoration: none;
-            border-radius: 4px;
+            border-radius: 8px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
         }
-        
+
         .btn-view:hover {
-            background: #0056b3;
+            background: var(--primary-hover);
             color: white;
             text-decoration: none;
         }
-        
+
         .asset-images {
             display: flex;
             gap: 8px;
             align-items: center;
         }
-        
+
         .asset-images img {
             width: 24px;
             height: 24px;
             object-fit: contain;
-            border: 1px solid #ddd;
-            border-radius: 2px;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            color: #666;
-        }
-        .map-description {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 15px;
-            line-height: 1.5;
-            
-            /* Batas tinggi */
-            max-height: 3.9em; /* sekitar 2 baris */
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Efek blur di akhir teks */
-        .map-description::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 40%; /* lebar gradasi */
-            height: 1.5em; /* tinggi gradasi */
-            background: linear-gradient(to right, transparent, white);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
         }
 
         @media (min-width: 768px) {
@@ -126,6 +128,121 @@
                 grid-template-columns: 300px 1fr;
                 gap: 20px;
                 align-items: start;
+            }
+        }
+
+        /* === PROYEK SECTION === */
+        .project-section { 
+            max-width: 1000px; 
+            margin: 40px auto 0; 
+        }
+
+        .project-card {
+            background: var(--background-white);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .project-title { 
+            font-weight: 700; 
+            color: var(--text-dark);
+            font-size: 18px;
+            margin-bottom: 6px;
+        }
+
+        .project-desc { 
+            color: var(--text-light); 
+            font-size: 14px; 
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        .badge { 
+            display: inline-block; 
+            background: var(--success-bg); 
+            color: var(--success-text); 
+            font-size: 12px; 
+            padding: 4px 8px; 
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .project-meta { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 12px; 
+            margin-top: 12px; 
+            font-size: 13px; 
+            color: var(--text-medium);
+            align-items: center;
+        }
+
+        .proj-link { 
+            margin-left: auto; 
+        }
+
+        /* Button untuk project - sama dengan map button */
+        .proj-view { 
+            background: var(--primary-color); 
+            color: #fff; 
+            padding: 8px 16px; 
+            border-radius: 8px; 
+            text-decoration: none; 
+            font-weight: 600;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+
+        .proj-view:hover { 
+            background: var(--primary-hover);
+            color: #fff;
+            text-decoration: none;
+        }
+
+        /* === SHARED COMPONENTS === */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--background-white);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-light);
+        }
+
+        .empty-state h3 {
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .project-card > div {
+                flex-direction: column !important;
+                gap: 16px !important;
+            }
+            
+            .proj-link {
+                margin-left: 0 !important;
+                align-self: flex-start;
+            }
+            
+            .map-card {
+                padding: 16px;
+            }
+            
+            .map-details {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .mini-map {
+                height: 200px;
+                border-radius: 10px;
             }
         }
     </style>
@@ -204,6 +321,99 @@
             </div>
         @endforelse
     </div>
+    {{-- ====== BAGIAN: Proyek Survey ====== --}}
+    <div class="project-section">
+        <h2 class="text-center" style="font-size:22px; font-weight:800; margin-bottom:16px;">Proyek Survey</h2>
+
+        @forelse($projects as $project)
+            <div class="map-card">
+                <div class="map-content">
+                    {{-- Bagian Peta (kiri) --}}
+                    <div>
+                        <div id="proj-map-{{ $project->id }}" class="preview-map"></div>
+                    </div>
+
+                    {{-- Bagian Informasi (kanan) --}}
+                    <div>
+                        <h2 class="map-title">{{ $project->name }}</h2>
+
+                        <p class="map-description">
+                            {{ $project->description ?? 'Belum ada deskripsi proyek.' }}
+                        </p>
+
+                        <div class="map-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Jumlah Lokasi</div>
+                                <div class="detail-value">{{ $project->survey_locations_count }} lokasi</div>
+                            </div>
+                            
+                            @if(isset($project->user) && $project->user)
+                                <div class="detail-item">
+                                    <div class="detail-label">Surveyor</div>
+                                    <div class="detail-value">{{ $project->user->name }}</div>
+                                </div>
+                            @endif
+                        </div>
+
+                        <a href="{{ route('gallery_maps.projects.show', $project) }}" class="btn-view">
+                            Lihat Detail
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Data lokasi untuk tiap proyek --}}
+            @php
+                $locationsForMap = $project->surveyLocations->map(function($loc) {
+                    return [
+                        'lat' => $loc->geometry['lat'] ?? 0,
+                        'lng' => $loc->geometry['lng'] ?? 0,
+                        'nama' => $loc->nama,
+                        'image' => $loc->primary_image ? asset('survey/' . $loc->primary_image) : null
+                    ];
+                });
+            @endphp
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const locations = @json($locationsForMap);
+                    const mapId = "proj-map-{{ $project->id }}";
+                    const mapContainer = document.getElementById(mapId);
+                    if (!mapContainer) return;
+
+                    const map = L.map(mapId, {
+                        zoomControl: false,
+                        scrollWheelZoom: false,
+                        dragging: false,
+                    }).setView([-2.5, 117], 5);
+
+                    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                        attribution: '© Google',
+                        maxZoom: 20,
+                    }).addTo(map);
+
+                    const markers = [];
+                    locations.forEach(loc => {
+                        if (!loc.lat || !loc.lng) return;
+                        const popupContent = `<b>${loc.nama}</b>` + 
+                            (loc.image ? `<br><img src="${loc.image}" style="width:100px;margin-top:5px;border-radius:4px;">` : '');
+                        const marker = L.marker([loc.lat, loc.lng]).addTo(map);
+                        markers.push(marker);
+                    });
+
+                    if (markers.length > 0) {
+                        const group = L.featureGroup(markers);
+                        map.fitBounds(group.getBounds().pad(0.2));
+                    }
+
+                    setTimeout(() => map.invalidateSize(), 100);
+                });
+            </script>
+
+        @empty
+            <div class="empty-state">Belum ada proyek untuk ditampilkan.</div>
+        @endforelse
+    </div>
 @endsection
 
 @section('scripts')
@@ -216,14 +426,7 @@
         const mapsData = @json($maps);
         
         const initPreviewMap = (mapData) => {
-            const mapContainerId = `map-${mapData.id}`;
-            let geojsonUrl;
-            if (mapData.name.toLowerCase() === 'lokasi survey') {
-                geojsonUrl = `{{ route('maps.semua-marker.geojson') }}`;
-            } else {
-                geojsonUrl = `{{ url('maps') }}/${mapData.id}/geojson`;
-            }
-            
+            const mapContainerId = `map-${mapData.id}`;        
             const mapContainer = document.getElementById(mapContainerId);
             if (!mapContainer) return;
             
@@ -252,6 +455,7 @@
             
             const renderFeatures = async () => {
                 try {
+                    const geojsonUrl = `{{ url('maps') }}/${mapData.id}/geojson`;
                     const response = await fetch(geojsonUrl);
                     if (!response.ok) throw new Error('GeoJSON not found');
                     

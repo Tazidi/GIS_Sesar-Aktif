@@ -30,13 +30,6 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // Halaman Visualisasi Peta Publik
 Route::get('/visualisasi', [MapController::class, 'visualisasi'])->name('visualisasi.index');
 
-// Endpoint GeoJSON khusus Lokasi Survey (fix kartu peta index)
-Route::get('/maps/lokasi-survey/geojson', [GalleryMapsController::class, 'lokasiSurveyGeojson'])
-    ->name('maps.lokasi-survey.geojson');
-
-Route::get('/maps/semua-marker/geojson', [GalleryMapsController::class, 'semuaMarkerGeojson'])
-    ->name('maps.semua-marker.geojson');
-
 // Endpoint GeoJSON
 Route::get('/maps/{map}/geojson', [MapController::class, 'geojson'])->name('maps.geojson');
 
@@ -181,3 +174,18 @@ Route::get('/galeri-peta', [GalleryMapsController::class, 'galeriPeta'])->name('
 Route::get('/gallery/{id}', [GalleryMapsController::class, 'show'])->name('gallery.show');
 Route::get('/gallery-maps', [GalleryMapsController::class, 'galeriPeta'])
      ->name('gallery_maps.index');
+
+// --- Galeri Peta (Maps + Proyek) ---
+Route::get('/galeri-peta', [GalleryMapsController::class, 'galeriPeta'])->name('gallery_maps.index');
+
+// Detail Map (eksisting)
+Route::get('/galeri-peta/maps/{id}', [GalleryMapsController::class, 'show'])->name('gallery_maps.show');
+
+// Detail Proyek (view-only di galeri)
+Route::get('/galeri-peta/projects/{project}', [GalleryMapsController::class, 'showProject'])->name('gallery_maps.projects.show');
+Route::get('/galeri-peta', [GalleryMapsController::class, 'galeriPeta'])
+    ->name('gallery_maps.peta');
+// Detail lokasi proyek di galeri (view-only)
+Route::get('/galeri-peta/projects/{project}/locations/{location}', 
+    [GalleryMapsController::class, 'showProjectLocation']
+)->name('gallery_maps.projects.locations.show');

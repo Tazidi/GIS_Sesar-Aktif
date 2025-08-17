@@ -36,9 +36,9 @@
             <p class="text-gray-500 text-sm">Tambahkan dan atur layer untuk visualisasi peta.</p>
         </a>
 
-        {{-- Kartu Kelola Survey Lokasi --}}
-        <a href="{{ route('survey-locations.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
-            <h2 class="text-lg font-semibold text-red-600 mb-1"><i class="fas fa-map-marker-alt mr-2"></i>Kelola Survey Lokasi</h2>
+        {{-- Kartu Project --}}
+        <a href="{{ route('projects.index') }}" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition">
+            <h2 class="text-lg font-semibold text-red-600 mb-1"><i class="fas fa-map-marker-alt mr-2"></i>Kelola Project Survey</h2>
             <p class="text-gray-500 text-sm">Lihat dan kelola data lokasi hasil survey dari surveyor.</p>
         </a>
 
