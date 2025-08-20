@@ -21,11 +21,16 @@ class ProjectPolicy
      */
     public function view(User $user, Project $project): bool
     {
+        // Admin bisa lihat semua
         if ($user->role === 'admin') {
             return true;
         }
-        // Surveyor hanya bisa melihat proyek miliknya
-        return $user->id === $project->user_id;
+        // Surveyor juga boleh lihat semua (read-only)
+        if ($user->role === 'surveyor') {
+            return true;
+        }
+        // Role lain default false
+        return false;
     }
 
     /**

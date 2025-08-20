@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Project;
 use App\Models\SurveyLocation;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -39,14 +40,18 @@ class SurveyLocationPolicy
      */
     public function view(User $user, SurveyLocation $surveyLocation): bool
     {
-        // Izinkan surveyor melihat data miliknya sendiri
-        return $user->id === $surveyLocation->user_id;
+        // Admin bisa lihat semua (sudah handle di before)
+        if ($user->role === 'surveyor') {
+            // Semua surveyor boleh lihat semua lokasi (untuk collab)
+            return true;
+        }
+        return false;
     }
 
     /**
      * Tentukan apakah pengguna dapat membuat data baru.
      */
-    public function create(User $user): bool
+    public function create(User $user, Project $project): bool
     {
         // Izinkan surveyor membuat data baru
         return $user->role === 'surveyor';

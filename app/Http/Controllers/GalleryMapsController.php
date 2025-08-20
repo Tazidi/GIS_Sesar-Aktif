@@ -60,7 +60,7 @@ class GalleryMapsController extends Controller
     public function showProject(Project $project)
     {
         // Eager-load lokasi untuk peta
-        $project->load('surveyLocations');
+        $project->load('surveyLocations.user'); //
 
         // Kita gunakan view yang sama (gallery_maps.show) tetapi dengan variabel $project
         return view('gallery_maps.show', compact('project'));

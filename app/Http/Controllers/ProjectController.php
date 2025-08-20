@@ -16,7 +16,8 @@ class ProjectController extends Controller
     {
         $query = Project::query()->withCount('surveyLocations');
 
-        if (Auth::user()->role !== 'admin') {
+        // Admin & Surveyor lihat semua
+        if (!in_array(Auth::user()->role, ['admin','surveyor'])) {
             $query->where('user_id', Auth::id());
         }
 

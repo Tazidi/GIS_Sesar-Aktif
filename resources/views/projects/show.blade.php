@@ -24,9 +24,12 @@
             <h1 class="text-3xl font-bold text-gray-800">{{ $project->name }}</h1>
             <p class="mt-1 text-gray-600">{{ $project->description }}</p>
         </div>
-        <a href="{{ route('projects.survey-locations.create', $project) }}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold text-xs uppercase">
-            + Tambah Lokasi
-        </a>
+        @can('create', [App\Models\SurveyLocation::class, $project])
+            <a href="{{ route('projects.survey-locations.create', $project) }}" 
+            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold text-xs uppercase">
+                + Tambah Lokasi
+            </a>
+        @endcan
     </div>
 
     {{-- Notifikasi Sukses --}}
@@ -59,12 +62,15 @@
                     <p class="text-sm text-gray-600 mt-1 flex-grow">{{ $location->deskripsi ?? 'Tidak ada deskripsi.' }}</p>
                     <p class="text-xs text-gray-500 mt-2">Lat: {{ $location->geometry['lat'] ?? 'N/A' }}, Lng: {{ $location->geometry['lng'] ?? 'N/A' }}</p>
                     <div class="mt-4 flex justify-end space-x-3 border-t pt-3">
-                         <a href="{{ route('survey-locations.edit', $location) }}" class="font-medium text-indigo-600 hover:text-indigo-900 text-sm">Edit</a>
-                         <form action="{{ route('survey-locations.destroy', $location) }}" method="POST" class="inline" onsubmit="return confirm('Anda yakin ingin menghapus lokasi ini?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="font-medium text-red-600 hover:text-red-900 text-sm">Hapus</button>
-                        </form>
+                         {{-- Edit/Hapus lokasi: hanya pemilik lokasi atau admin --}}
+                        @if(Auth::user()->id === $location->user_id || Auth::user()->role === 'admin')
+                            <a href="{{ route('survey-locations.edit', $location) }}" class="font-medium text-indigo-600 hover:text-indigo-900 text-sm">Edit</a>
+                            <form action="{{ route('survey-locations.destroy', $location) }}" method="POST" class="inline" onsubmit="return confirm('Anda yakin ingin menghapus lokasi ini?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="font-medium text-red-600 hover:text-red-900 text-sm">Hapus</button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             </div>

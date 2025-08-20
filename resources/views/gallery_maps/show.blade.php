@@ -135,7 +135,8 @@
                 'lat' => $loc->geometry['lat'] ?? 0,
                 'lng' => $loc->geometry['lng'] ?? 0,
                 'nama' => $loc->nama,
-                'image' => $loc->primary_image ? asset('survey/' . $loc->primary_image) : null
+                'image' => $loc->primary_image ? asset('survey/' . $loc->primary_image) : null,
+                'user_name' => $loc->user->name ?? 'Tidak diketahui'
             ];
         });
     @endphp
@@ -385,9 +386,11 @@ document.addEventListener('DOMContentLoaded', function () {
             "OpenTopoMap": topo
         };
 
-        // === Overlay lokasi per item ===
+        // === Overlay lokasi ===
         const overlayMaps = {};
         const markers = [];
+
+        const grouped = {}; // { user_name: [marker1, marker2, ...] }
 
         locations.forEach(loc => {
             let popupContent = `<b class="font-semibold">${loc.nama}</b>`;
@@ -396,9 +399,18 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const marker = L.marker([loc.lat, loc.lng]).bindPopup(popupContent);
-            overlayMaps[loc.nama] = marker;
-            marker.addTo(map); // default tampil
+            
+            // masukkan ke grup sesuai user
+            if (!grouped[loc.user_name]) grouped[loc.user_name] = L.layerGroup();
+            grouped[loc.user_name].addLayer(marker);
+
             markers.push(marker);
+        });
+
+        // Jadikan overlay berdasarkan user
+        Object.keys(grouped).forEach(user => {
+            overlayMaps[user] = grouped[user];
+            grouped[user].addTo(map); // default aktif
         });
 
         // Tambahkan control box (basemap + lokasi checkbox)

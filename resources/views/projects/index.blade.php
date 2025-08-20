@@ -59,13 +59,18 @@
                             </td>
                             <td class="px-6 py-4 text-center whitespace-nowrap space-x-2">
                                 {{-- Tombol untuk melihat detail proyek (peta dan daftar lokasi) --}}
+                                {{-- Semua boleh lihat --}}
                                 <a href="{{ route('projects.show', $project) }}" class="px-3 py-1 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">Lihat</a>
-                                <a href="{{ route('projects.edit', $project) }}" class="px-3 py-1 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">Edit</a>
-                                <form action="{{ route('projects.destroy', $project) }}" method="POST" class="inline" onsubmit="return confirm('Anda yakin ingin menghapus proyek ini beserta semua lokasinya?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="px-3 py-1 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Hapus</button>
-                                </form>
+                                
+                                {{-- Edit/Hapus hanya pemilik atau admin --}}
+                                @if(Auth::user()->id === $project->user_id || Auth::user()->role === 'admin')
+                                    <a href="{{ route('projects.edit', $project) }}" class="px-3 py-1 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">Edit</a>
+                                    <form action="{{ route('projects.destroy', $project) }}" method="POST" class="inline" onsubmit="return confirm('Anda yakin ingin menghapus proyek ini beserta semua lokasinya?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="px-3 py-1 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Hapus</button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @empty

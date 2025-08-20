@@ -16,7 +16,7 @@ class SurveyLocationController extends Controller
      */
     public function create(Project $project)
     {
-        Gate::authorize('update', $project);
+        Gate::authorize('create', [SurveyLocation::class, $project]);
         return view('survey_locations.create', compact('project'));
     }
 
@@ -25,7 +25,7 @@ class SurveyLocationController extends Controller
      */
     public function store(Request $request, Project $project)
     {
-        Gate::authorize('update', $project);
+        Gate::authorize('create', [SurveyLocation::class, $project]);
 
         $data = $request->validate([
             'nama' => 'required|string|max:255',

@@ -346,13 +346,6 @@
                                 <div class="detail-label">Jumlah Lokasi</div>
                                 <div class="detail-value">{{ $project->survey_locations_count }} lokasi</div>
                             </div>
-                            
-                            @if(isset($project->user) && $project->user)
-                                <div class="detail-item">
-                                    <div class="detail-label">Surveyor</div>
-                                    <div class="detail-value">{{ $project->user->name }}</div>
-                                </div>
-                            @endif
                         </div>
 
                         <a href="{{ route('gallery_maps.projects.show', $project) }}" class="btn-view">
