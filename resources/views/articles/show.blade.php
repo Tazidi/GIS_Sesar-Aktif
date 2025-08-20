@@ -8,7 +8,7 @@
     @endif
     <h1 class="text-3xl font-bold text-gray-900">{{ $article->title }}</h1>
     
-    <!-- Modified Section for Author, Date, and View Count -->
+    <!-- Modified Section for Author, Date, View Count, and Share -->
     <div class="flex justify-between items-center mt-2 text-sm text-gray-600">
       <p>Oleh <span class="font-semibold">{{ $article->author }}</span> • {{ $article->created_at->format('d M Y') }}</p>
       <div class="flex items-center">
@@ -17,6 +17,19 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
         <span>{{ $article->visit_count ?? 0 }} dilihat</span>
+
+        <!-- Share Button Section -->
+        <div class="relative ml-4">
+          <button id="shareButton" class="flex items-center text-gray-600 hover:text-gray-900 transition-colors" title="Bagikan artikel">
+            <svg class="w-5 h-5 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+            <span>Bagikan</span>
+          </button>
+          <div id="copyFeedback" class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max bg-gray-800 text-white text-xs font-bold px-3 py-1 rounded-md opacity-0 transition-opacity duration-300 pointer-events-none">
+            Link disalin!
+          </div>
+        </div>
       </div>
     </div>
     <!-- End of Modified Section -->
@@ -47,4 +60,50 @@
     
   </div>
 </div>
+
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const shareButton = document.getElementById('shareButton');
+  const copyFeedback = document.getElementById('copyFeedback');
+
+  shareButton.addEventListener('click', async () => {
+    const articleUrl = window.location.href;
+    const articleTitle = document.title;
+
+    // Check if the Web Share API is supported
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: articleTitle,
+          url: articleUrl,
+        });
+        console.log('Artikel berhasil dibagikan');
+      } catch (error) {
+        console.error('Gagal membagikan:', error);
+      }
+    } else {
+      // Fallback for desktop: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(articleUrl);
+        
+        // Show feedback message
+        copyFeedback.classList.remove('opacity-0');
+        copyFeedback.classList.add('opacity-100');
+
+        setTimeout(() => {
+          copyFeedback.classList.remove('opacity-100');
+          copyFeedback.classList.add('opacity-0');
+        }, 2000); // Hide after 2 seconds
+
+      } catch (err) {
+        console.error('Gagal menyalin link:', err);
+        // You could add a fallback here for older browsers, like a prompt
+      }
+    }
+  });
+});
+</script>
+@endpush

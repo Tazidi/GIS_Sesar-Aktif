@@ -196,7 +196,7 @@ window.addEventListener('load', function () {
                 if (images.length > 0) {
                     images.forEach(image => {
                         const linkUrl = `${galleryPageUrl}?category=${encodeURIComponent(image.category)}`;
-                        const imageUrl = `${assetBaseUrl}/${image.image_path}`;
+                        const imageUrl = `${assetBaseUrl}/${image.main_image}`;
                         const galleryItem = `
                             <a href="${linkUrl}" class="relative block aspect-square group overflow-hidden rounded-md shadow-md">
                                 <img src="${imageUrl}" alt="${image.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
