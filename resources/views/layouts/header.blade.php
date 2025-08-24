@@ -1,30 +1,18 @@
 <header class="bg-white shadow-sm">
-    {{-- Baris paling atas (Ticker) --}}
-    {{-- DIHAPUS: Kelas 'hidden md:block' dihapus agar baris ini muncul di semua perangkat --}}
-    <div class="bg-gray-800 text-white text-sm py-1">
+{{-- Baris paling atas --}}
+    <div class="bg-gray-800 text-white py-1">
         <div class="px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center">
-                {{-- Bagian Trending News (tetap terlihat) --}}
-                <div class="flex items-center flex-grow min-w-0">
-                    <span class="bg-red-600 font-bold py-1 px-3 rounded-md mr-4 flex items-center space-x-2 whitespace-nowrap">
-                        <i class="fas fa-fire"></i>
-                        <span>Trending</span>
-                    </span>
-                    <div class="ticker-wrap flex-grow">
-                        <div class="ticker-move">
-                            <p>Berita terkini seputar sesar aktif di Jawa Barat.</p>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- DIUBAH: Ditambahkan 'hidden md:flex' untuk menyembunyikan di HP/Tablet --}}
-                <div class="hidden md:flex items-center space-x-4 mx-6 shrink-0">
+            {{-- DIUBAH: Menambahkan kelas responsif md:justify-end dan md:gap-6 --}}
+            <div class="flex justify-between md:justify-end items-center md:gap-6">
+                
+                {{-- Waktu & Tanggal --}}
+                <div class="flex items-center space-x-2 text-xs sm:text-sm shrink-0">
                     <i class="far fa-calendar-alt"></i>
                     <span id="datetime-widget">Memuat waktu...</span>
                 </div>
 
-                {{-- DIUBAH: Ditambahkan 'hidden md:flex' untuk menyembunyikan di HP/Tablet --}}
-                <div class="hidden md:flex items-center space-x-2 shrink-0">
+                {{-- Cuaca --}}
+                <div class="flex items-center space-x-2 text-xs sm:text-sm shrink-0">
                     <i class="fas fa-sun text-yellow-400"></i>
                     <span>Bandung, 28°C</span>
                 </div>
@@ -41,7 +29,7 @@
                     <div class="flex items-center space-x-3">
                         <a href="https://www.facebook.com/brin.indonesia/" class="h-8 w-8 rounded-full flex items-center justify-center bg-blue-600 text-white hover:opacity-80"><i class="fab fa-facebook-f"></i></a>
                         <a href="https://www.instagram.com/brin_indonesia/" class="h-8 w-8 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-500 text-white hover:opacity-80"><i class="fab fa-instagram"></i></a>
-                        <a href="https://www.instagram.com/brin_indonesia/" class="h-8 w-8 rounded-full flex items-center justify-center bg-gray-900 text-white hover:opacity-80"><i class="fab fa-x-twitter"></i></a>
+                        <a href="https://x.com/brin_indonesia" class="h-8 w-8 rounded-full flex items-center justify-center bg-gray-900 text-white hover:opacity-80"><i class="fab fa-x-twitter"></i></a>
                         <a href="https://www.youtube.com/channel/UCr1ihEI566IJib9P-JjENSA" class="h-8 w-8 rounded-full flex items-center justify-center bg-red-600 text-white hover:opacity-80"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>

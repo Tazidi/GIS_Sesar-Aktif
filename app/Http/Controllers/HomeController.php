@@ -30,8 +30,8 @@ class HomeController extends Controller
 
         // Artikel populer random (simulasi)
         $popularArticles = Article::where('status', 'approved')
-            ->inRandomOrder()
-            ->take(5)
+            ->orderBy('visit_count', 'desc')
+            ->take(6)
             ->get();
 
         // Galeri terbaru

@@ -21,7 +21,7 @@
             {{-- Kolom Kiri: Latest Post --}}
             <div class="lg:col-span-3 flex flex-col">
                 <div class="mb-4 border-b border-gray-300">
-                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Latest Post</h2>
+                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Artikel Terbaru</h2>
                 </div>
                 {{-- PERUBAHAN 2: Mengubah layout mobile menjadi 2 kolom --}}
                 <div class="grid grid-cols-2 gap-4 lg:flex lg:flex-col lg:space-y-6 lg:gap-0">
@@ -46,7 +46,7 @@
             {{-- Kolom Tengah: Paling Banyak Dilihat (Slider) --}}
             <div class="lg:col-span-6 flex flex-col">
                 <div class="mb-4 border-b border-gray-300">
-                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Paling Banyak Dilihat</h2>
+                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Artikel Pilihan Kami</h2>
                 </div>
 
                 @if($mainStories->isNotEmpty())
@@ -80,21 +80,29 @@
                 @endif
             </div>
 
-            {{-- Kolom Kanan: Today Update --}}
-            <div class="lg:col-span-3">
+{{-- Kolom Kanan: Paling banyak dilihat --}}
+            {{-- DIUBAH: Menambahkan 'flex flex-col' agar tingginya bisa sejajar --}}
+            <div class="lg:col-span-3 flex flex-col">
                 <div class="mb-4 border-b border-gray-300">
-                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Today Update</h2>
+                    <h2 class="text-xl font-bold inline-block pb-2 border-b-4 border-red-600">Paling Banyak Dilihat</h2>
                 </div>
-                <div class="bg-white p-4 shadow-md rounded-md">
-                    <div class="flex border-b mb-4">
-                        <button class="flex-1 py-2 text-sm font-bold bg-red-600 text-white rounded-t-md"><i class="fas fa-fire mr-2"></i>Most viewed</button>
-                        <button class="flex-1 py-2 text-sm text-gray-500 hover:text-gray-800"><i class="far fa-clock mr-2"></i>Recent</button>
-                    </div>
+                {{-- DIUBAH: Menambahkan 'flex-grow' agar box putih mengisi sisa ruang vertikal --}}
+                <div class="bg-white p-4 shadow-md rounded-md flex-grow">
                     <ul>
                         @forelse($popularArticles as $article)
                             <li class="border-b py-3 last:border-b-0">
-                                <a href="{{ route('articles.show', $article) }}" class="font-semibold text-gray-800 hover:text-red-600">{{ $article->title }}</a>
-                                <p class="text-xs text-gray-500 mt-1">{{ $article->created_at->format('d F Y') }}</p>
+                                {{-- DIUBAH: Menambahkan baris untuk tanggal dan ikon mata (views) --}}
+                                <div class="flex justify-between items-center text-xs text-gray-500 mb-2">
+                                    <span>{{ $article->created_at->format('d F Y') }}</span>
+                                    <span class="flex items-center gap-1.5">
+                                        <i class="fas fa-eye"></i>
+                                        {{-- Ganti 'views' jika nama kolom di database Anda berbeda --}}
+                                        {{ $article->visit_count ?? 0 }}
+                                    </span>
+                                </div>
+                                <a href="{{ route('articles.show', $article) }}" class="font-semibold text-gray-800 hover:text-red-600 text-sm leading-tight">
+                                    {{ $article->title }}
+                                </a>
                             </li>
                         @empty
                             <p class="text-sm text-gray-500">Tidak ada artikel populer saat ini.</p>

@@ -63,51 +63,34 @@
             </div>
         </div>
 
-        {{-- Layout Konten Artikel --}}
-        {{-- Layout Konten Artikel --}}
+{{-- Layout Konten Artikel --}}
         @if ($articles->isNotEmpty())
 
-            {{-- Tampilkan layout spesial HANYA di halaman pertama --}}
+            {{-- Logika Halaman Pertama --}}
             @if ($articles->currentPage() == 1)
                 
-                {{-- Bagian Atas: Grid 2+1 --}}
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-                    
-                    {{-- Kolom Kiri: 2 Artikel Horizontal Pertama --}}
-                    <div class="lg:col-span-2 space-y-8">
-                        @foreach ($articles->take(2) as $article)
-                            @include('partials.article_card_horizontal', ['article' => $article])
-                        @endforeach
-                    </div>
-                    
-                    {{-- Kolom Kanan: Artikel Vertikal ke-3 --}}
-                    <div class="lg:col-span-1">
-                        {{-- Ambil artikel ke-3 dari koleksi. Jika ada, tampilkan. --}}
-                        @php
-                            $topRightArticle = $articles->slice(2, 1)->first();
-                        @endphp
-
-                        @if($topRightArticle)
-                           @include('partials.article_card_vertical', ['article' => $topRightArticle])
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Tampilkan pemisah HANYA jika ada lebih dari 3 artikel --}}
-                @if($articles->count() > 3)
-                    <hr class="my-8 border-gray-300">
-                    <h3 class="text-2xl font-bold text-gray-800 mb-6">Artikel Lainnya</h3>
-                @endif
-                
-                {{-- Grid Bawah: Mulai dari artikel ke-4 --}}
+                {{-- Grid Atas: 3 Artikel pertama dalam bentuk card vertikal --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    @foreach ($articles->skip(3) as $article)
+                    @foreach ($articles->take(3) as $article)
                         @include('partials.article_card_vertical', ['article' => $article])
                     @endforeach
                 </div>
 
+                {{-- Pemisah dan judul untuk artikel lainnya (jika ada) --}}
+                @if($articles->count() > 3)
+                    <hr class="my-12 border-gray-300">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6">Artikel Lainnya</h3>
+                
+                    {{-- Grid Bawah: Menampilkan sisa artikel --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        @foreach ($articles->skip(3) as $article)
+                            @include('partials.article_card_vertical', ['article' => $article])
+                        @endforeach
+                    </div>
+                @endif
+
             @else 
-                {{-- Untuk Halaman 2 dan seterusnya, tampilkan grid biasa --}}
+                {{-- Logika untuk Halaman 2 dan seterusnya (tetap sama) --}}
                 <h3 class="text-2xl font-bold text-gray-800 mb-6">Artikel Lainnya</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     @foreach ($articles as $article)
