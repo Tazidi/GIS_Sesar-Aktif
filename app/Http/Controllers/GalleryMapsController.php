@@ -8,36 +8,24 @@ use App\Models\Project;
 
 class GalleryMapsController extends Controller
 {
-    /**
-     * Halaman Galeri Peta:
-     * - Menampilkan daftar Map (eksisting, tidak diubah)
-     * - Menampilkan daftar Proyek (view-only; jumlah lokasi diambil via withCount)
-     */
+    
     public function galeriPeta()
-    {
-        $maps = Map::with(['layer', 'features'])
-            ->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta'])
-            ->get();
+{
+    $layers = \App\Models\Layer::with('maps')->withCount('maps')->get(); 
+    
+    $projects = \App\Models\Project::query()
+        ->withCount('surveyLocations')
+        ->get();
 
-        $projects = Project::query()
-            ->withCount('surveyLocations')
-            ->with(['user']) // opsional, untuk menampilkan nama surveyor di kartu
-            ->latest()
-            ->get();
+    return view('gallery_maps.index', compact('layers', 'projects'));
+}
 
-        return view('gallery_maps.index', compact('maps', 'projects'));
-    }
-
-    /**
-     * Menampilkan detail satu Map (tetap seperti semula).
-     */
     public function show($id)
     {
-        $map = Map::with(['layer', 'features'])
+        $map = Map::with(['layers', 'features'])
             ->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta'])
             ->findOrFail($id);
 
-        // Tambahkan URL publik untuk setiap feature (tetap seperti pola sebelumnya)
         $map->features->transform(function ($feature) {
             $feature->feature_image_path = $feature->image_path
                 ? asset($feature->image_path)
@@ -47,22 +35,22 @@ class GalleryMapsController extends Controller
             return $feature;
         });
 
-        // Agar script show eksisting tetap bekerja (butuh collection $maps)
         $maps = collect([$map]);
 
         return view('gallery_maps.show', compact('map', 'maps'));
     }
 
-    /**
-     * Menampilkan detail satu Proyek (view-only) di halaman galeri.
-     * Mengadopsi tampilan dari projects.show (tanpa tombol CRUD). :contentReference[oaicite:1]{index=1}
-     */
+    public function showLayer(\App\Models\Layer $layer)
+{
+    $layer->load('maps.layers');
+    
+    return view('gallery_maps.show', compact('layer'));
+}
+
+    
     public function showProject(Project $project)
     {
-        // Eager-load lokasi untuk peta
-        $project->load('surveyLocations.user'); //
-
-        // Kita gunakan view yang sama (gallery_maps.show) tetapi dengan variabel $project
+        $project->load('surveyLocations.user'); 
         return view('gallery_maps.show', compact('project'));
     }
 

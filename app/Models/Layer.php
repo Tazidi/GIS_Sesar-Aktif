@@ -10,6 +10,17 @@ class Layer extends Model
     
     public function maps()
     {
-        return $this->belongsToMany(Map::class, 'layer_map');
+        return $this->belongsToMany(Map::class, 'layer_map')
+        ->withPivot([
+                    'layer_type',
+                    'lat',
+                    'lng',
+                    'stroke_color',
+                    'fill_color',
+                    'weight',
+                    'opacity',
+                    'radius',
+                    'icon_url'
+                ]);
     }
 }

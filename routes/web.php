@@ -111,6 +111,7 @@ Route::middleware(['auth', 'role:admin,editor'])->group(function () {
     Route::put('/galeri/{gallery}', [GalleryController::class, 'update'])->name('gallery.update');
     Route::delete('/galeri/{gallery}', [GalleryController::class, 'destroy'])->name('gallery.destroy');
     Route::patch('/gallery/{gallery}/status', [GalleryController::class, 'updateStatus'])->name('gallery.updateStatus');
+    Route::get('/galeri-peta/layer/{layer}', [GalleryMapsController::class, 'showLayer'])->name('gallery.layer.show');
 });
 
 /*

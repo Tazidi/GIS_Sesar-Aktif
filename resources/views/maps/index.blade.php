@@ -49,7 +49,7 @@
         </div>
 
         <form method="GET" action="{{ route('maps.index') }}" class="mb-4 flex items-center gap-2">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama peta atau jenis fitur..."
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama peta atau layer..."
                 class="border-gray-300 rounded-md shadow-sm w-full sm:w-64">
             <select name="kategori" class="border-gray-300 rounded-md shadow-sm w-full sm:w-48">
                 <option value="">Semua Kategori</option>
@@ -67,6 +67,7 @@
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
                             <th scope="col" class="px-4 py-3">Nama Peta</th>
+                            <th scope="col" class="px-4 py-3">Layers</th>
                             <th scope="col" class="px-4 py-3">Jenis Fitur</th>
                             <th scope="col" class="px-4 py-3">Koordinat</th>
                             <th scope="col" class="px-4 py-3">Radius</th>
@@ -81,17 +82,18 @@
                         @forelse ($maps as $map)
                             <tr class="bg-white border-b hover:bg-gray-50">
                                 <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">{{ $map->name }}</td>
-                                <td class="px-4 py-2">{{ ucfirst($map->layer_type) }}</td>
+                                <td class="px-4 py-2">{{ $map->layers->pluck('nama_layer')->join(', ') }}</td>
+                                <td class="px-4 py-2">{{ ucfirst($map->layer_type ?? 'N/A') }}</td>
                                 <td class="px-4 py-2">{{ $map->lat && $map->lng ? $map->lat . ', ' . $map->lng : '-' }}</td>
                                 <td class="px-4 py-2">{{ $map->layer_type == 'circle' ? ($map->radius ?? '-') . ' m' : '-' }}</td>
                                 <td class="px-4 py-2">
                                     @if ($map->icon_url || $map->image_path)
                                         <div class="flex items-center gap-2">
                                             @if ($map->icon_url)
-                                                <img src="{{ asset($map->icon_url) }}" alt="Ikon untuk {{ $map->name }}" title="Ikon: {{ basename($map->icon_url) }}" class="map-thumbnail">
+                                                <img src="{{ $map->icon_url }}" alt="Ikon" class="map-thumbnail">
                                             @endif
                                             @if ($map->image_path)
-                                                <img src="{{ asset($map->image_path) }}" alt="Gambar untuk {{ $map->name }}" title="Gambar: {{ basename($map->image_path) }}" class="map-thumbnail">
+                                                <img src="{{ asset('storage/' . $map->image_path) }}" alt="Gambar" class="map-thumbnail">
                                             @endif
                                         </div>
                                     @else
@@ -99,14 +101,13 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-2">
-                                    @if ($map->file_path)
-                                        <a href="{{ asset($map->file_path) }}" target="_blank" class="text-blue-600 hover:underline">Lihat File</a>
+                                    @if($map->features->isNotEmpty() || $map->geometry)
+                                        <a href="{{ route('maps.geojson', $map) }}" target="_blank" class="text-blue-600 hover:underline">Lihat File</a>
                                     @else
                                         <span class="text-gray-400 italic">Tidak ada</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-2">
-                                    {{-- Container untuk peta pratinjau Leaflet --}}
                                     <div id="map-{{ $map->id }}" class="preview-map"></div>
                                 </td>
                                 <td class="px-4 py-2">
@@ -134,7 +135,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-6 text-gray-500">
+                                <td colspan="10" class="text-center py-6 text-gray-500">
                                     Belum ada data peta yang ditambahkan.
                                 </td>
                             </tr>
@@ -149,111 +150,65 @@
 @section('scripts')
     {{-- Leaflet JS --}}
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Data semua peta dari controller
             const mapsData = @json($maps);
 
-            // Fungsi untuk inisialisasi setiap peta pratinjau
             const initPreviewMap = (mapData) => {
                 const mapContainerId = `map-${mapData.id}`;
-                const geojsonUrl = `{{ url('maps') }}/${mapData.id}/geojson`;
+                const mapContainer = document.getElementById(mapContainerId);
+                if (!mapContainer || mapContainer.classList.contains('leaflet-container')) return;
 
-                // Inisialisasi peta dengan opsi interaksi dinonaktifkan
                 const previewMap = L.map(mapContainerId, {
-                    zoomControl: false,
-                    scrollWheelZoom: false,
-                    dragging: false,
-                    doubleClickZoom: false,
-                    touchZoom: false,
-                }).setView([-2.54, 118.01], 5); // Center of Indonesia
+                    zoomControl: false, scrollWheelZoom: false, dragging: false, doubleClickZoom: false,
+                    touchZoom: false, boxZoom: false, keyboard: false
+                }).setView([-2.54, 118.01], 4);
 
-                // Tambahkan tile layer OpenStreetMap
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap',
-                    maxZoom: 18,
+                    attribution: '&copy; OpenStreetMap', maxZoom: 18
                 }).addTo(previewMap);
-
-                // Fungsi untuk membuat style layer dari properties
-                const createStyle = (props = {}) => ({
-                    color: props.stroke_color || mapData.stroke_color || '#3388ff',
-                    fillColor: props.fill_color || mapData.fill_color || '#3388ff',
-                    weight: props.weight || mapData.weight || 3,
-                    opacity: props.opacity || mapData.opacity || 1.0,
-                    fillOpacity: (props.fill_opacity || mapData.fill_opacity || 0.2) * 0.7, // Sedikit lebih transparan untuk pratinjau
-                });
                 
-                // Fungsi untuk menampilkan fitur GeoJSON atau fallback
-                const renderFeatures = async () => {
-                    try {
-                        const response = await fetch(geojsonUrl);
-                        if (!response.ok) throw new Error('GeoJSON not found');
-                        const geojsonData = await response.json();
+                const style = {
+                    color: mapData.stroke_color || '#3388ff',
+                    fillColor: mapData.fill_color || '#3388ff',
+                    weight: mapData.weight || 3,
+                    opacity: mapData.opacity || 1.0,
+                    fillOpacity: (mapData.opacity || 0.2) * 0.7
+                };
 
+                const geojsonUrl = `{{ url('maps') }}/${mapData.id}/geojson`;
+                fetch(geojsonUrl)
+                    .then(response => response.json())
+                    .then(geojsonData => {
                         const geoLayer = L.geoJSON(geojsonData, {
-                            style: (feature) => createStyle(feature.properties),
+                            style: () => style,
                             pointToLayer: (feature, latlng) => {
-                                const props = feature.properties || {};
-                                const type = props.layer_type || mapData.layer_type;
-                                const style = createStyle(props);
-                                const iconUrl = props.icon_url || mapData.icon_url;
-
-                                if (type === 'circle') {
-                                    return L.circle(latlng, { ...style, radius: props.radius || mapData.radius || 300 });
+                                const layerType = mapData.layer_type || 'marker';
+                                const iconUrl = mapData.icon_url;
+                                if (layerType === 'circle') {
+                                    return L.circle(latlng, { ...style, radius: mapData.radius || 300 });
                                 }
-                                if (type === 'marker' && iconUrl) {
+                                if (layerType === 'marker' && iconUrl) {
                                     const icon = L.icon({ iconUrl: iconUrl, iconSize: [28, 28], iconAnchor: [14, 14] });
                                     return L.marker(latlng, { icon });
                                 }
                                 return L.circleMarker(latlng, { ...style, radius: 6 });
-                            },
-                            onEachFeature: (feature, layer) => {
-                                const title = feature.properties.name || mapData.name || 'Info';
-                                layer.bindPopup(`<b>${title}</b>`);
                             }
                         }).addTo(previewMap);
 
                         if (geoLayer.getBounds().isValid()) {
                             previewMap.fitBounds(geoLayer.getBounds(), { padding: [20, 20], maxZoom: 16 });
                         }
-
-                    } catch (error) {
-                        // Fallback: Gunakan data lat/lng dari database jika GeoJSON gagal dimuat
-                        const lat = parseFloat(mapData.lat);
-                        const lng = parseFloat(mapData.lng);
-
-                        if (!isNaN(lat) && !isNaN(lng)) {
-                            const latlng = L.latLng(lat, lng);
-                            const style = createStyle();
-                            let fallbackLayer;
-
-                            if (mapData.layer_type === 'circle') {
-                                fallbackLayer = L.circle(latlng, { ...style, radius: mapData.radius || 300 });
-                            } else if (mapData.layer_type === 'marker' && mapData.icon_url) {
-                                const icon = L.icon({ iconUrl: mapData.icon_url, iconSize: [28, 28], iconAnchor: [14, 14] });
-                                fallbackLayer = L.marker(latlng, { icon });
-                            } else {
-                                fallbackLayer = L.circleMarker(latlng, { ...style, radius: 6 });
-                            }
-
-                            fallbackLayer.bindPopup(`<b>${mapData.name}</b>`).addTo(previewMap);
-                            previewMap.setView(latlng, 13);
-                        }
-                    } finally {
-                        // Pastikan peta di-render ulang dengan ukuran yang benar
-                        setTimeout(() => previewMap.invalidateSize(), 100);
-                    }
-                };
-
-                renderFeatures();
+                    })
+                    .catch(error => console.error(`Gagal memuat GeoJSON untuk peta ${mapData.id}:`, error));
+                
+                setTimeout(() => previewMap.invalidateSize(), 100);
             };
 
-            // Inisialisasi peta untuk setiap data yang ada
             mapsData.forEach(initPreviewMap);
 
-            // --- SCRIPT TAMBAHAN UNTUK UPDATE RADIO BUTTON ---
             document.querySelectorAll('.kategori-radio').forEach(radio => {
                 radio.addEventListener('change', function() {
                     const mapId = this.dataset.id;
@@ -265,7 +220,7 @@
                     formData.append('kategori', kategori);
 
                     fetch(`/maps/${mapId}/update-kategori`, {
-                        method: 'POST', // Laravel akan baca sebagai PUT karena _method diisi
+                        method: 'POST',
                         body: formData
                     })
                     .then(res => res.json())

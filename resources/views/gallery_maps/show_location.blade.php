@@ -17,7 +17,7 @@
     {{-- Card Detail Lokasi --}}
     <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-20">
         @if ($location->primary_image)
-            <img src="{{ asset('survey/' . $location->primary_image) }}"
+            <img src="{{ asset('storage/survey/' . $location->primary_image) }}"
                  alt="{{ $location->nama }}"
                  class="w-full h-64 md:h-96 object-cover">
         @endif
