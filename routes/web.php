@@ -190,3 +190,5 @@ Route::get('/galeri-peta', [GalleryMapsController::class, 'galeriPeta'])
 Route::get('/galeri-peta/projects/{project}/locations/{location}', 
     [GalleryMapsController::class, 'showProjectLocation']
 )->name('gallery_maps.projects.locations.show');
+
+Route::get('/gallery/layer/{layer}', [GalleryMapsController::class, 'showLayer'])->name('gallery_maps.showLayer');

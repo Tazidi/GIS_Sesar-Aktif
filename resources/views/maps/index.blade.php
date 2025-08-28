@@ -93,7 +93,7 @@
                                                 <img src="{{ $map->icon_url }}" alt="Ikon" class="map-thumbnail">
                                             @endif
                                             @if ($map->image_path)
-                                                <img src="{{ asset('storage/' . $map->image_path) }}" alt="Gambar" class="map-thumbnail">
+                                                <img src="{{ asset('map_images/' . $map->image_path) }}" alt="Gambar" class="map-thumbnail">
                                             @endif
                                         </div>
                                     @else

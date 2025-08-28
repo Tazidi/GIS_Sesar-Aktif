@@ -5,20 +5,32 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Map;
 use App\Models\Project;
+use App\Models\Layer;
 
 class GalleryMapsController extends Controller
 {
     
     public function galeriPeta()
-{
-    $layers = \App\Models\Layer::with('maps')->withCount('maps')->get(); 
-    
-    $projects = \App\Models\Project::query()
-        ->withCount('surveyLocations')
-        ->get();
+    {
+        // Ambil semua layer dengan peta sesuai kategori
+        $layers = Layer::withCount(['maps' => function($query) {
+                $query->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta']);
+            }])
+            ->with(['maps' => function($query) {
+                $query->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta'])
+                    ->with('layers'); // load style dari relasi
+            }])
+            ->whereHas('maps', function($query) {
+                $query->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta']);
+            })
+            ->get();
 
-    return view('gallery_maps.index', compact('layers', 'projects'));
-}
+        $projects = Project::with('surveyLocations')
+            ->withCount('surveyLocations')
+            ->get();
+
+        return view('gallery_maps.index', compact('layers', 'projects'));
+    }
 
     public function show($id)
     {
@@ -41,13 +53,16 @@ class GalleryMapsController extends Controller
     }
 
     public function showLayer(\App\Models\Layer $layer)
-{
-    $layer->load('maps.layers');
-    
-    return view('gallery_maps.show', compact('layer'));
-}
+    {
+        // Filter maps berdasarkan kategori
+        $layer->load(['maps' => function($query) {
+            $query->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta'])
+                ->with('layers');
+        }]);
+        
+        return view('gallery_maps.show_layer', compact('layer'));
+    }
 
-    
     public function showProject(Project $project)
     {
         $project->load('surveyLocations.user'); 

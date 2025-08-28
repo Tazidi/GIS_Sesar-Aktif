@@ -7,10 +7,12 @@ use App\Models\Map;
 use App\Models\Layer;
 use App\Models\MapFeature;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+// use Illuminate\Support\Facades\Storage; // Tidak lagi digunakan untuk image_path
+use Illuminate\Support\Facades\File; // Ganti Storage dengan File untuk operasi file di direktori public
 
 class MapController extends Controller
 {
+    // ... (method index, create tidak ada perubahan) ...
     public function index(Request $request)
     {
         $query = Map::with('layers');
@@ -19,7 +21,6 @@ class MapController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('maps.name', 'like', "%$search%")
-                  ->orWhere('maps.layer_type', 'like', "%$search%")
                   ->orWhereHas('layers', function ($layerQuery) use ($search) {
                       $layerQuery->where('nama_layer', 'like', "%$search%");
                   });
@@ -32,21 +33,29 @@ class MapController extends Controller
 
         $maps = $query->latest()->get();
         
-    foreach ($maps as $map) {
-        
-        $firstLayer = $map->layers->first();
-
-        
-        if ($firstLayer) {
-            $map->layer_type   = $firstLayer->pivot->layer_type;
-            $map->stroke_color = $firstLayer->pivot->stroke_color;
-            $map->fill_color   = $firstLayer->pivot->fill_color;
-            $map->weight       = $firstLayer->pivot->weight;
-            $map->opacity      = $firstLayer->pivot->opacity;
-            $map->radius       = $firstLayer->pivot->radius;
-            $map->icon_url     = $firstLayer->pivot->icon_url;
+        foreach ($maps as $map) {
+            $firstLayer = $map->layers->first();
+            
+            if ($firstLayer) {
+                $map->layer_type   = $firstLayer->pivot->layer_type;
+                $map->stroke_color = $firstLayer->pivot->stroke_color;
+                $map->fill_color   = $firstLayer->pivot->fill_color;
+                $map->weight       = $firstLayer->pivot->weight;
+                $map->opacity      = $firstLayer->pivot->opacity;
+                $map->radius       = $firstLayer->pivot->radius;
+                $map->icon_url     = $firstLayer->pivot->icon_url;
+                
+                if ($map->geometry) {
+                    $geometry = json_decode($map->geometry, true);
+                    $center = $this->extractCenterFromGeometry($geometry);
+                    if ($center) {
+                        $map->lat = $center['lat'];
+                        $map->lng = $center['lng'];
+                    }
+                }
+            }
         }
-    }
+        
         return view('maps.index', compact('maps'));
     }
 
@@ -69,32 +78,50 @@ class MapController extends Controller
             'geometry' => 'nullable|json',
             'kategori' => 'required|in:Peta SISIRAJA,Galeri Peta,Peta SISIRAJA & Galeri Peta',
             'feature_properties' => 'nullable|array',
+            'stroke_color' => 'nullable|string|max:7',
+            'fill_color' => 'nullable|string|max:7',
+            'weight' => 'nullable|numeric',
+            'opacity' => 'nullable|numeric|min:0|max:1',
+            'radius' => 'nullable|numeric',
+            'icon_url' => 'nullable|string|max:255',
         ]);
 
+        // === PERUBAHAN UNGGAHAN FILE DIMULAI DI SINI ===
         if ($request->hasFile('image_path')) {
-            $data['image_path'] = $request->file('image_path')->store('map_images', 'public');
+            $file = $request->file('image_path');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('map_images'), $filename);
+            $data['image_path'] = $filename; // Simpan nama filenya saja
         }
+        // === PERUBAHAN SELESAI ===
 
         $map = Map::create($data);
 
         $pivotData = [];
-    $styleData = [
-        'layer_type'   => $request->layer_type,
-        'lat'          => $request->lat,
-        'lng'          => $request->lng,
-        'stroke_color' => $request->stroke_color,
-        'fill_color'   => $request->fill_color,
-        'weight'       => $request->weight,
-        'opacity'      => $request->opacity,
-        'radius'       => $request->radius,
-        'icon_url'     => $request->icon_url,
-    ];
+        $styleData = [
+            'layer_type'   => $request->layer_type,
+            'stroke_color' => $request->stroke_color,
+            'fill_color'   => $request->fill_color,
+            'weight'       => $request->weight,
+            'opacity'      => $request->opacity,
+            'radius'       => $request->radius,
+            'icon_url'     => $request->icon_url,
+        ];
 
-    foreach ($request->input('layers') as $layerId) {
-        $pivotData[$layerId] = $styleData;
-    }
+        if ($request->filled('geometry')) {
+            $geometry = json_decode($request->geometry, true);
+            $center = $this->extractCenterFromGeometry($geometry);
+            if ($center) {
+                $styleData['lat'] = $center['lat'];
+                $styleData['lng'] = $center['lng'];
+            }
+        }
 
-    $map->layers()->attach($pivotData);
+        foreach ($request->input('layers') as $layerId) {
+            $pivotData[$layerId] = $styleData;
+        }
+
+        $map->layers()->attach($pivotData);
 
         if ($request->filled('geometry')) {
             $geojson = json_decode($request->geometry, true);
@@ -112,11 +139,37 @@ class MapController extends Controller
         return redirect()->route('maps.index')->with('success', 'Peta berhasil ditambahkan!');
     }
 
+    // ... (method edit tidak ada perubahan) ...
     public function edit(Map $map)
     {
         $layers = Layer::all();
+        
+        $firstLayer = $map->layers->first();
+        if ($firstLayer) {
+            $map->layer_type = $firstLayer->pivot->layer_type;
+            $map->stroke_color = $firstLayer->pivot->stroke_color;
+            $map->fill_color = $firstLayer->pivot->fill_color;
+            $map->weight = $firstLayer->pivot->weight;
+            $map->opacity = $firstLayer->pivot->opacity;
+            $map->radius = $firstLayer->pivot->radius;
+            $map->icon_url = $firstLayer->pivot->icon_url;
+            
+            if ($firstLayer->pivot->lat && $firstLayer->pivot->lng) {
+                $map->lat = $firstLayer->pivot->lat;
+                $map->lng = $firstLayer->pivot->lng;
+            } elseif ($map->geometry) {
+                $geometry = json_decode($map->geometry, true);
+                $center = $this->extractCenterFromGeometry($geometry);
+                if ($center) {
+                    $map->lat = $center['lat'];
+                    $map->lng = $center['lng'];
+                }
+            }
+        }
+        
         return view('maps.form', compact('map', 'layers'));
     }
+
 
     public function update(Request $request, Map $map)
     {
@@ -129,50 +182,81 @@ class MapController extends Controller
             'layer_type' => 'nullable|string|max:50',
             'geometry' => 'nullable|json',
             'kategori' => 'required|in:Peta SISIRAJA,Galeri Peta,Peta SISIRAJA & Galeri Peta',
-            'lat' => 'nullable|numeric',
-    'lng' => 'nullable|numeric',
-    'radius' => 'nullable|numeric',
-    'weight' => 'nullable|numeric',
-    'opacity' => 'nullable|numeric|min:0|max:1',
-    'stroke_color' => 'nullable|string|max:7',
-    'fill_color' => 'nullable|string|max:7',
-    'icon_url' => 'nullable|string|max:255',
+            'stroke_color' => 'nullable|string|max:7',
+            'fill_color' => 'nullable|string|max:7',
+            'weight' => 'nullable|numeric',
+            'opacity' => 'nullable|numeric|min:0|max:1',
+            'radius' => 'nullable|numeric',
+            'icon_url' => 'nullable|string|max:255',
         ]);
 
+        // === PERUBAHAN UNGGAHAN & HAPUS FILE DIMULAI DI SINI ===
         if ($request->hasFile('image_path')) {
-            if ($map->image_path) {
-                Storage::disk('public')->delete($map->image_path);
+            // Hapus gambar lama jika ada
+            if ($map->image_path && File::exists(public_path('map_images/' . $map->image_path))) {
+                File::delete(public_path('map_images/' . $map->image_path));
             }
-            $data['image_path'] = $request->file('image_path')->store('map_images', 'public');
+            
+            $file = $request->file('image_path');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('map_images'), $filename);
+            $data['image_path'] = $filename;
         }
+        // === PERUBAHAN SELESAI ===
 
         $map->update($data);
 
         $pivotData = [];
-    $styleData = [
-        'layer_type'   => $request->layer_type,
-        'lat'          => $request->lat,
-        'lng'          => $request->lng,
-        'stroke_color' => $request->stroke_color,
-        'fill_color'   => $request->fill_color,
-        'weight'       => $request->weight,
-        'opacity'      => $request->opacity,
-        'radius'       => $request->radius,
-        'icon_url'     => $request->icon_url,
-    ];
+        $styleData = [
+            'layer_type'   => $request->layer_type,
+            'stroke_color' => $request->stroke_color,
+            'fill_color'   => $request->fill_color,
+            'weight'       => $request->weight,
+            'opacity'      => $request->opacity,
+            'radius'       => $request->radius,
+            'icon_url'     => $request->icon_url,
+        ];
 
-    foreach ($request->input('layers') as $layerId) {
-        $pivotData[$layerId] = $styleData;
-    }
+        if ($request->filled('geometry')) {
+            $geometry = json_decode($request->geometry, true);
+            $center = $this->extractCenterFromGeometry($geometry);
+            if ($center) {
+                $styleData['lat'] = $center['lat'];
+                $styleData['lng'] = $center['lng'];
+            }
+        } else {
+            $firstLayer = $map->layers->first();
+            if ($firstLayer && $firstLayer->pivot->lat && $firstLayer->pivot->lng) {
+                $styleData['lat'] = $firstLayer->pivot->lat;
+                $styleData['lng'] = $firstLayer->pivot->lng;
+            }
+        }
 
-    $map->layers()->sync($pivotData);
+        foreach ($request->input('layers') as $layerId) {
+            $pivotData[$layerId] = $styleData;
+        }
+
+        $map->layers()->sync($pivotData);
         
         return redirect()->route('maps.index')->with('success', 'Peta berhasil diperbarui!');
     }
 
+    // ... (method show tidak ada perubahan) ...
     public function show(Map $map)
     {
         $map->load('features', 'layers');
+        
+        $firstLayer = $map->layers->first();
+        if ($firstLayer) {
+            $map->layer_type = $firstLayer->pivot->layer_type;
+            $map->stroke_color = $firstLayer->pivot->stroke_color;
+            $map->fill_color = $firstLayer->pivot->fill_color;
+            $map->weight = $firstLayer->pivot->weight;
+            $map->opacity = $firstLayer->pivot->opacity;
+            $map->radius = $firstLayer->pivot->radius;
+            $map->icon_url = $firstLayer->pivot->icon_url;
+        }
+        
         return view('maps.show', compact('map'));
     }
 
@@ -181,17 +265,34 @@ class MapController extends Controller
         $map->layers()->detach();
         $map->features()->delete();
 
-        if ($map->image_path) {
-            Storage::disk('public')->delete($map->image_path);
+        // === PERUBAHAN HAPUS FILE DIMULAI DI SINI ===
+        if ($map->image_path && File::exists(public_path('map_images/' . $map->image_path))) {
+            File::delete(public_path('map_images/' . $map->image_path));
         }
+        // === PERUBAHAN SELESAI ===
 
         $map->delete();
         return redirect()->route('maps.index')->with('success', 'Peta berhasil dihapus!');
     }
 
+    // ... (method visualisasi, geojson, updateKategori, extractCenterFromGeometry tidak ada perubahan) ...
     public function visualisasi()
     {
         $maps = Map::with(['layers', 'features'])->get();
+        
+        foreach ($maps as $map) {
+            $firstLayer = $map->layers->first();
+            if ($firstLayer) {
+                $map->layer_type = $firstLayer->pivot->layer_type;
+                $map->stroke_color = $firstLayer->pivot->stroke_color;
+                $map->fill_color = $firstLayer->pivot->fill_color;
+                $map->weight = $firstLayer->pivot->weight;
+                $map->opacity = $firstLayer->pivot->opacity;
+                $map->radius = $firstLayer->pivot->radius;
+                $map->icon_url = $firstLayer->pivot->icon_url;
+            }
+        }
+        
         return view('visualisasi.index', compact('maps'));
     }
     
@@ -213,7 +314,7 @@ class MapController extends Controller
         }
         
         if ($map->geometry) {
-             return response()->json(json_decode($map->geometry));
+            return response()->json(json_decode($map->geometry));
         }
 
         return response()->json(['error' => 'Tidak ada data GeoJSON yang tersedia'], 404);
@@ -232,5 +333,38 @@ class MapController extends Controller
             'message' => 'Kategori berhasil diperbarui',
             'kategori' => $map->kategori
         ]);
+    }
+    
+    private function extractCenterFromGeometry($geometry)
+    {
+        if (!$geometry || !isset($geometry['coordinates'])) {
+            return null;
+        }
+
+        $coordinates = $geometry['coordinates'];
+        $lats = [];
+        $lngs = [];
+        
+        $flattenCoords = function ($arr) use (&$lats, &$lngs, &$flattenCoords) {
+            foreach ($arr as $item) {
+                if (is_array($item) && count($item) === 2 && is_numeric($item[0]) && is_numeric($item[1])) {
+                    $lngs[] = $item[0];
+                    $lats[] = $item[1];
+                } elseif (is_array($item)) {
+                    $flattenCoords($item);
+                }
+            }
+        };
+        
+        $flattenCoords($coordinates);
+        
+        if (!empty($lats) && !empty($lngs)) {
+            return [
+                'lat' => array_sum($lats) / count($lats),
+                'lng' => array_sum($lngs) / count($lngs)
+            ];
+        }
+        
+        return null;
     }
 }

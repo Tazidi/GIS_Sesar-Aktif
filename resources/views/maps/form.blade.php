@@ -1,4 +1,4 @@
-@extends('layouts.app') {{-- Sesuaikan jika nama layout Anda berbeda --}}
+@extends('layouts.app')
 
 @section('title', $map->exists ? 'Edit Peta' : 'Tambah Peta Baru')
 
@@ -87,7 +87,7 @@
                         <div id="image-preview-container" class="mt-2">
                             <img id="image-preview" src="#" alt="Image preview" class="w-full rounded-md shadow-sm" style="display: none;"/>
                             @if ($map->exists && $map->image_path)
-                                <img id="existing-image" src="{{ asset('storage/' . $map->image_path) }}" alt="Gambar lama" class="w-full rounded-md shadow-sm">
+                                <img id="existing-image" src="{{ asset('map_images/' . $map->image_path) }}" alt="Gambar lama" class="w-full rounded-md shadow-sm">
                             @endif
                         </div>
                     </div>
@@ -114,8 +114,26 @@
                         <button type="button" class="draw-tool-btn p-2 rounded hover:bg-gray-200" data-type="circle" title="Circle">⭕</button>
                     </div>
 
+                    {{-- NEW: Manual Coordinate Input Section --}}
+                    <div class="my-2">
+                        <button type="button" id="toggle-manual-coords" class="text-sm text-blue-600 hover:text-blue-800 font-semibold focus:outline-none">
+                            Tambahkan Latitude & Longitude Manual
+                        </button>
+                        <div id="manual-coords-container" class="hidden grid grid-cols-2 gap-4 mt-2 p-3 border border-dashed rounded-md">
+                            <div>
+                                <label for="manual-lat" class="block text-xs font-medium text-gray-600">Latitude</label>
+                                <input type="number" step="any" id="manual-lat" class="mt-1 w-full border-gray-300 rounded-md shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label for="manual-lng" class="block text-xs font-medium text-gray-600">Longitude</label>
+                                <input type="number" step="any" id="manual-lng" class="mt-1 w-full border-gray-300 rounded-md shadow-sm text-sm">
+                            </div>
+                        </div>
+                    </div>
+                    {{-- END NEW --}}
+
                     <div id="select-map" class="w-full h-[450px] rounded-md border border-gray-300 shadow-sm"></div>
-                    <p class="text-xs text-gray-500 mt-1">Pilih alat gambar, lalu klik di peta.</p>
+                    <p class="text-xs text-gray-500 mt-1">Pilih alat gambar, lalu klik di peta atau masukkan koordinat manual.</p>
                 </div>
             </div>
         </div>
@@ -127,54 +145,40 @@
         <div id="dynamic-options-container" class="mt-6 border border-gray-300 rounded-md p-4 space-y-4" style="display: none;">
             <h3 class="text-sm font-medium text-gray-900">Opsi Fitur Terpilih</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="layer-dependent" id="lat-field">
-                    <label class="block text-sm font-medium text-gray-700">Latitude</label>
-                    <input type="number" step="any" name="lat"
-                        value="{{ old('lat', $firstLayer->pivot->lat ?? $map->lat) }}"
-                        class="mt-1 w-full border-gray-300 rounded-md shadow-sm"
-                        required>
-                </div>
-                <div class="layer-dependent" id="lng-field">
-                    <label class="block text-sm font-medium text-gray-700">Longitude</label>
-                    <input type="number" step="any" name="lng"
-                        value="{{ old('lng', $firstLayer->pivot->lng ?? $map->lng) }}"
-                        class="mt-1 w-full border-gray-300 rounded-md shadow-sm"
-                        required>
-                </div>
                 <div class="layer-dependent" id="radius-field">
                     <label class="block text-sm font-medium text-gray-700">Radius (m)</label>
                     <input type="number" step="1" name="radius"
-                        value="{{ old('radius', $firstLayer->pivot->radius ?? $map->radius) }}"
+                        value="{{ old('radius', $firstLayer->pivot->radius ?? 300) }}"
                         class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="layer-dependent" id="weight-field">
                     <label class="block text-sm font-medium text-gray-700">Tebal Garis</label>
                     <input type="number" step="1" min="0" name="weight"
-                        value="{{ old('weight', $firstLayer->pivot->weight ?? $map->weight) }}"
+                        value="{{ old('weight', $firstLayer->pivot->weight ?? 3) }}"
                         class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="layer-dependent" id="opacity-field">
                     <label class="block text-sm font-medium text-gray-700">Opacity (0-1)</label>
                     <input type="number" step="0.1" max="1" min="0" name="opacity"
-                        value="{{ old('opacity', $firstLayer->pivot->opacity ?? $map->opacity) }}"
+                        value="{{ old('opacity', $firstLayer->pivot->opacity ?? 0.5) }}"
                         class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div class="layer-dependent" id="stroke-field">
                     <label class="block text-sm font-medium text-gray-700">Warna Garis</label>
                     <input type="color" name="stroke_color"
-                        value="{{ old('stroke_color', $firstLayer->pivot->stroke_color ?? $map->stroke_color ?? '#3388ff') }}"
+                        value="{{ old('stroke_color', $firstLayer->pivot->stroke_color ?? '#3388ff') }}"
                         class="mt-1 h-8 w-full border-gray-300 rounded-md">
                 </div>
                 <div class="layer-dependent" id="fill-field">
                     <label class="block text-sm font-medium text-gray-700">Warna Isi</label>
                     <input type="color" name="fill_color"
-                        value="{{ old('fill_color', $firstLayer->pivot->fill_color ?? $map->fill_color ?? '#3388ff') }}"
+                        value="{{ old('fill_color', $firstLayer->pivot->fill_color ?? '#3388ff') }}"
                         class="mt-1 h-8 w-full border-gray-300 rounded-md">
                 </div>
                 <div class="layer-dependent" id="icon-field">
                     <label class="block text-sm font-medium text-gray-700">Ikon Marker</label>
                     @php
-                        $selectedIcon = old('icon_url', $firstLayer->pivot->icon_url ?? $map->icon_url);
+                        $selectedIcon = old('icon_url', $firstLayer->pivot->icon_url ?? '');
                     @endphp
                     <select name="icon_url" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
                         <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png"
@@ -236,16 +240,111 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const geometryInput = document.getElementById('geometry');
     const layerTypeInput = document.getElementById('layer_type');
-    const latInput = document.querySelector('input[name="lat"]');
-    const lngInput = document.querySelector('input[name="lng"]');
     const toolbarButtons = document.querySelectorAll('.draw-tool-btn');
     const optionsContainer = document.getElementById('dynamic-options-container');
-    const dynamicFields = { lat: document.getElementById('lat-field'), lng: document.getElementById('lng-field'), radius: document.getElementById('radius-field'), icon: document.getElementById('icon-field'), stroke: document.getElementById('stroke-field'), fill: document.getElementById('fill-field'), opacity: document.getElementById('opacity-field'), weight: document.getElementById('weight-field') };
+    const dynamicFields = { 
+        radius: document.getElementById('radius-field'), 
+        icon: document.getElementById('icon-field'), 
+        stroke: document.getElementById('stroke-field'), 
+        fill: document.getElementById('fill-field'), 
+        opacity: document.getElementById('opacity-field'), 
+        weight: document.getElementById('weight-field') 
+    };
 
     const imageInput = document.getElementById('image_path');
     const imagePreview = document.getElementById('image-preview');
     const existingImage = document.getElementById('existing-image');
     const geojsonInput = document.getElementById('geojson_file');
+    
+    // {{-- NEW: Get DOM elements for manual coordinates --}}
+    const toggleCoordsBtn = document.getElementById('toggle-manual-coords');
+    const manualCoordsContainer = document.getElementById('manual-coords-container');
+    const manualLatInput = document.getElementById('manual-lat');
+    const manualLngInput = document.getElementById('manual-lng');
+
+    // {{-- MODIFIED: Function to create a point layer from manual lat/lng input --}}
+    function updateMapFromManualCoords() {
+        const lat = parseFloat(manualLatInput.value);
+        const lng = parseFloat(manualLngInput.value);
+
+        if (!isNaN(lat) && !isNaN(lng)) {
+            // Only create point-based features (marker or circle)
+            if (currentLayerType !== 'marker' && currentLayerType !== 'circle') {
+                alert('Input manual hanya untuk tipe Marker atau Circle. Silakan pilih salah satu alat tersebut.');
+                return;
+            }
+
+            clearDrawing();
+            const latlng = L.latLng(lat, lng);
+            
+            const style = getStyleOptions();
+            
+            if (currentLayerType === 'marker') {
+                const iconUrl = document.querySelector('select[name="icon_url"]').value;
+                if (iconUrl) {
+                    const icon = L.icon({ iconUrl: iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
+                    drawnLayer = L.marker(latlng, { icon }).addTo(map);
+                } else {
+                    drawnLayer = L.circleMarker(latlng, { ...style, radius: 5 }).addTo(map);
+                }
+            } else if (currentLayerType === 'circle') {
+                drawnLayer = L.circle(latlng, { ...style, weight: 1 }).addTo(map);
+            }
+
+            if (drawnLayer) {
+                const geojson = drawnLayer.toGeoJSON().geometry;
+                geometryInput.value = JSON.stringify(geojson);
+                map.panTo(latlng);
+            }
+        }
+    }
+
+    // {{-- MODIFIED: Helper function to get current style options from the form --}}
+    function getStyleOptions() {
+        return {
+            color: document.querySelector('input[name="stroke_color"]').value || '#3388ff',
+            fillColor: document.querySelector('input[name="fill_color"]').value || '#3388ff',
+            fillOpacity: parseFloat(document.querySelector('input[name="opacity"]').value) || 0.5,
+            weight: parseInt(document.querySelector('input[name="weight"]').value) || 3,
+            radius: parseInt(document.querySelector('input[name="radius"]').value) || 300
+        };
+    }
+
+    // Function to extract center from any geometry type
+    function extractCenterFromGeometry(geometry) {
+        if (!geometry || !geometry.coordinates) return null;
+
+        // Handle simple Point geometry
+        if (geometry.type === 'Point') {
+            return { lat: geometry.coordinates[1], lng: geometry.coordinates[0] };
+        }
+        
+        const coordinates = geometry.coordinates;
+        let lats = [];
+        let lngs = [];
+        
+        const flattenCoords = (arr) => {
+            arr.forEach(item => {
+                if (Array.isArray(item) && typeof item[0] === 'number' && typeof item[1] === 'number') {
+                    lngs.push(item[0]);
+                    lats.push(item[1]);
+                } else if (Array.isArray(item)) {
+                    flattenCoords(item);
+                }
+            });
+        };
+        
+        flattenCoords(coordinates);
+        
+        if (lats.length > 0 && lngs.length > 0) {
+            return {
+                lat: lats.reduce((a, b) => a + b, 0) / lats.length,
+                lng: lngs.reduce((a, b) => a + b, 0) / lngs.length
+            };
+        }
+        
+        return null;
+    }
 
     if (geojsonInput) {
         geojsonInput.addEventListener('change', function (event) {
@@ -280,25 +379,21 @@ document.addEventListener('DOMContentLoaded', function () {
                         return;
                     }
 
-                    const styleOptions = {
-                        color: document.querySelector('input[name="stroke_color"]').value || '#3388ff',
-                        fillColor: document.querySelector('input[name="fill_color"]').value || '#3388ff',
-                        fillOpacity: parseFloat(document.querySelector('input[name="opacity"]').value) || 0.5,
-                        weight: parseInt(document.querySelector('input[name="weight"]').value) || 3
-                    };
+                    const styleOptions = getStyleOptions();
 
                     drawnLayer = L.geoJSON(geojson, {
-                        style: function(feature) {
-                            return styleOptions;
-                        },
+                        style: function(feature) { return styleOptions; },
                         pointToLayer: function (feature, latlng) {
                             if (toolType === 'circle') {
                                 const radius = feature.properties.radius || parseInt(document.querySelector('input[name="radius"]').value) || 500;
                                 return L.circle(latlng, { ...styleOptions, radius: radius });
                             }
-                            const iconUrl = document.querySelector('select[name="icon_url"]')?.value || 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png';
-                            const icon = L.icon({ iconUrl: iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
-                            return L.marker(latlng, { icon: icon });
+                            const iconUrl = document.querySelector('select[name="icon_url"]')?.value || '';
+                            if (iconUrl) {
+                                const icon = L.icon({ iconUrl: iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
+                                return L.marker(latlng, { icon: icon });
+                            }
+                            return L.circleMarker(latlng, { ...styleOptions, radius: 5 });
                         }
                     }).addTo(map);
 
@@ -306,17 +401,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     const featureImagesContainer = document.getElementById('feature-images-container');
                     const featureImagesList = document.getElementById('feature-images-list');
-
                     featureImagesList.innerHTML = '';
+                    const existingExpandButton = featureImagesContainer.querySelector('.expand-button');
+                    if (existingExpandButton) existingExpandButton.remove();
+                    
                     featureImagesContainer.classList.remove('hidden');
 
                     geojson.features.forEach((feature, index) => {
                         const div = document.createElement('div');
-                        div.className = 'flex flex-col mb-4 p-3 border border-gray-300 rounded-lg bg-gray-50';
+                        div.className = 'feature-item flex flex-col mb-4 p-3 border border-gray-300 rounded-lg bg-gray-50';
+                        if (index > 0) div.classList.add('hidden');
 
                         const props = feature.properties || {};
                         const featureLabel = props.PopupInfo || props.Name || `Fitur #${index + 1}`;
-
                         const label = document.createElement('label');
                         label.textContent = `Gambar untuk: ${featureLabel}`;
                         label.className = 'text-sm font-medium text-gray-700 mb-1';
@@ -341,7 +438,6 @@ document.addEventListener('DOMContentLoaded', function () {
                             label.textContent = labelText;
                             label.className = 'text-xs font-medium text-gray-600';
                             parent.appendChild(label);
-
                             const input = document.createElement('input');
                             input.type = 'text';
                             input.name = name;
@@ -356,19 +452,28 @@ document.addEventListener('DOMContentLoaded', function () {
                         techHeader.textContent = `Informasi Teknis untuk: ${featureLabel}`;
                         techHeader.className = 'text-sm font-medium text-gray-700 mb-1';
                         div.appendChild(techHeader);
-
                         createTechInput('Panjang Sesar', `feature_properties[${index}][panjang_sesar]`, 'Contoh: 10 km', techFieldsWrapper);
                         createTechInput('Lebar Sesar', `feature_properties[${index}][lebar_sesar]`, 'Contoh: 5 m', techFieldsWrapper);
                         createTechInput('Tipe', `feature_properties[${index}][tipe]`, 'Contoh: Sesar Naik', techFieldsWrapper);
                         createTechInput('MMAX', `feature_properties[${index}][mmax]`, 'Contoh: 6.5', techFieldsWrapper);
-
                         div.appendChild(techFieldsWrapper);
-
                         featureImagesList.appendChild(div);
                     });
 
+                    if (geojson.features.length > 1) {
+                        const expandButton = document.createElement('button');
+                        expandButton.type = 'button';
+                        expandButton.textContent = `Tampilkan ${geojson.features.length - 1} Fitur Lainnya...`;
+                        expandButton.className = 'expand-button mt-2 text-sm text-blue-600 hover:text-blue-800 font-semibold focus:outline-none';
+                        expandButton.addEventListener('click', function() {
+                            featureImagesList.querySelectorAll('.feature-item.hidden').forEach(item => { item.classList.remove('hidden'); });
+                            this.style.display = 'none';
+                        });
+                        featureImagesContainer.appendChild(expandButton);
+
+                    }
+
                     geometryInput.value = JSON.stringify(geojson);
-                    
                     setActiveTool(toolType);
                     toggleFormFields(toolType);
 
@@ -388,18 +493,28 @@ document.addEventListener('DOMContentLoaded', function () {
             reader.onload = function(e) {
                 imagePreview.style.display = 'block';
                 imagePreview.src = e.target.result;
-                if (existingImage) {
-                    existingImage.style.display = 'none';
-                }
+                if (existingImage) existingImage.style.display = 'none';
             }
             reader.readAsDataURL(file);
         }
     });
 
+    // {{-- NEW: Add event listeners for manual coordinate controls --}}
+    toggleCoordsBtn.addEventListener('click', function() {
+        const isHidden = manualCoordsContainer.classList.toggle('hidden');
+        this.textContent = isHidden ? 'Tambahkan Latitude & Longitude Manual' : 'Sembunyikan Input Manual';
+    });
+    manualLatInput.addEventListener('input', updateMapFromManualCoords);
+    manualLngInput.addEventListener('input', updateMapFromManualCoords);
+
     function setActiveTool(type) {
         toolbarButtons.forEach(btn => btn.classList.toggle('bg-blue-200', btn.dataset.type === type));
         currentLayerType = type;
         layerTypeInput.value = type;
+        if (type !== 'marker') {
+            const iconSelect = document.querySelector('select[name="icon_url"]');
+            if (iconSelect) iconSelect.value = '';
+        }
     }
 
     function toggleFormFields(type) {
@@ -411,59 +526,60 @@ document.addEventListener('DOMContentLoaded', function () {
 
         optionsContainer.style.display = 'block';
         const fieldsToShow = {
-            marker: ['lat', 'lng', 'icon'],
-            circle: ['lat', 'lng', 'radius', 'stroke', 'fill', 'opacity', 'weight'],
+            marker: ['icon'],
+            circle: ['radius', 'stroke', 'fill', 'opacity', 'weight'],
             polygon: ['stroke', 'fill', 'opacity', 'weight'],
             polyline: ['stroke', 'opacity', 'weight']
         };
         if (fieldsToShow[type]) {
             fieldsToShow[type].forEach(key => dynamicFields[key] && (dynamicFields[key].style.display = 'block'));
         }
+        if (type !== 'marker' && dynamicFields.icon) {
+            dynamicFields.icon.style.display = 'none';
+        }
     }
 
     function clearDrawing() {
         if (drawnLayer) map.removeLayer(drawnLayer);
-        drawnLayer = null; polygonPoints = []; geometryInput.value = '';
-        if(latInput) latInput.value = '';
-        if(lngInput) lngInput.value = '';
+        drawnLayer = null; 
+        polygonPoints = []; 
+        geometryInput.value = '';
+        // {{-- MODIFIED: Clear manual inputs when drawing is cleared --}}
+        manualLatInput.value = '';
+        manualLngInput.value = '';
     }
 
     toolbarButtons.forEach(button => {
         button.addEventListener('click', function() {
             const type = this.dataset.type;
-            setActiveTool(type); clearDrawing(); toggleFormFields(type);
+            setActiveTool(type); 
+            clearDrawing(); 
+            toggleFormFields(type);
         });
     });
 
     map.on('click', function (e) {
         if (!currentLayerType) return;
         
-        if (latInput && lngInput) {
-            latInput.value = e.latlng.lat.toFixed(6);
-            lngInput.value = e.latlng.lng.toFixed(6);
-        }
-        
-        const style = {
-            color: document.querySelector('input[name="stroke_color"]').value || '#3388ff',
-            fillColor: document.querySelector('input[name="fill_color"]').value || '#3388ff',
-            fillOpacity: parseFloat(document.querySelector('input[name="opacity"]').value) || 0.5,
-            weight: parseInt(document.querySelector('input[name="weight"]').value) || 3,
-            radius: parseInt(document.querySelector('input[name="radius"]').value) || 300
-        };
+        const style = getStyleOptions();
 
         if (currentLayerType === 'marker' || currentLayerType === 'circle') {
             clearDrawing();
             if (currentLayerType === 'marker') {
                 const iconUrl = document.querySelector('select[name="icon_url"]').value;
-                const icon = L.icon({
-                    iconUrl: iconUrl,
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41]
-                });
-                drawnLayer = L.marker(e.latlng, { icon: icon }).addTo(map);
+                if (iconUrl) {
+                    const icon = L.icon({ iconUrl: iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
+                    drawnLayer = L.marker(e.latlng, { icon }).addTo(map);
+                } else {
+                    drawnLayer = L.circleMarker(e.latlng, { ...style, radius: 5 }).addTo(map);
+                }
             } else {
                 drawnLayer = L.circle(e.latlng, { ...style, weight: 1 }).addTo(map);
             }
+            // {{-- NEW: Update manual inputs when clicking the map --}}
+            manualLatInput.value = e.latlng.lat.toFixed(6);
+            manualLngInput.value = e.latlng.lng.toFixed(6);
+
         } else if (['polygon', 'polyline'].includes(currentLayerType)) {
             polygonPoints.push(e.latlng);
             if (drawnLayer) map.removeLayer(drawnLayer);
@@ -480,28 +596,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // {{-- MODIFIED: On Edit Mode --}}
     @if ($map->exists && $map->geometry)
         const geojsonData = {!! $map->geometry !!};
         const initialLayerType = "{{ $map->layers->first()->pivot->layer_type ?? 'marker' }}";
         const style = {
-            color: "{{ old('stroke_color', $map->layers->first()->pivot->stroke_color ?? $map->default_stroke_color) }}",
-            fillColor: "{{ old('fill_color', $map->layers->first()->pivot->fill_color ?? $map->default_fill_color) }}",
-            fillOpacity: {{ old('opacity', $map->layers->first()->pivot->opacity ?? $map->default_opacity) ?? 0.5 }},
-            weight: {{ old('weight', $map->layers->first()->pivot->weight ?? $map->default_weight) ?? 3 }}
+            color: "{{ old('stroke_color', $map->layers->first()->pivot->stroke_color ?? '#3388ff') }}",
+            fillColor: "{{ old('fill_color', $map->layers->first()->pivot->fill_color ?? '#3388ff') }}",
+            fillOpacity: {{ old('opacity', $map->layers->first()->pivot->opacity ?? 0.5) }},
+            weight: {{ old('weight', $map->layers->first()->pivot->weight ?? 3) }}
         };
 
         drawnLayer = L.geoJSON(geojsonData, {
             style: style,
             pointToLayer: function (feature, latlng) {
-                if (initialLayerType === 'circle') return L.circle(latlng, { ...style, radius: {{ old('radius', $map->layers->first()->pivot->radius ?? $map->default_radius) ?? 300 }} });
-                const iconUrl = "{{ old('icon_url', $map->layers->first()->pivot->icon_url ?? $map->default_icon_url) }}";
-                const icon = iconUrl ? L.icon({ iconUrl: iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] }) : L.marker(latlng).getIcon();
-                return L.marker(latlng, { icon: icon });
+                if (initialLayerType === 'circle') {
+                    return L.circle(latlng, { ...style, radius: {{ old('radius', $map->layers->first()->pivot->radius ?? 300) }} });
+                }
+                const iconUrl = "{{ old('icon_url', $map->layers->first()->pivot->icon_url ?? '') }}";
+                if (iconUrl && initialLayerType === 'marker') {
+                    const icon = L.icon({ iconUrl: iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
+                    return L.marker(latlng, { icon: icon });
+                }
+                return L.circleMarker(latlng, { ...style, radius: 5 });
             }
         }).addTo(map);
-        try { map.fitBounds(drawnLayer.getBounds()); } catch (e) {}
+        
+        try { 
+            map.fitBounds(drawnLayer.getBounds()); 
+        } catch (e) { console.error('Error fitting bounds:', e); }
+        
         setActiveTool(initialLayerType);
         toggleFormFields(initialLayerType);
+
+        // {{-- NEW: Populate and show manual coordinate inputs on edit --}}
+        const center = extractCenterFromGeometry(geojsonData);
+        if (center) {
+            manualLatInput.value = center.lat.toFixed(6);
+            manualLngInput.value = center.lng.toFixed(6);
+            manualCoordsContainer.classList.remove('hidden');
+            toggleCoordsBtn.textContent = 'Sembunyikan Input Manual';
+        }
     @endif
 });
 </script>
