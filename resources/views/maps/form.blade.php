@@ -114,8 +114,8 @@
                         <button type="button" class="draw-tool-btn p-2 rounded hover:bg-gray-200" data-type="circle" title="Circle">⭕</button>
                     </div>
 
-                    {{-- NEW: Manual Coordinate Input Section --}}
-                    <div class="my-2">
+                    {{-- MODIFIED: Wrapper for Point (Marker/Circle) manual input --}}
+                    <div id="point-manual-input-wrapper" class="my-2">
                         <button type="button" id="toggle-manual-coords" class="text-sm text-blue-600 hover:text-blue-800 font-semibold focus:outline-none">
                             Tambahkan Latitude & Longitude Manual
                         </button>
@@ -129,6 +129,15 @@
                                 <input type="number" step="any" id="manual-lng" class="mt-1 w-full border-gray-300 rounded-md shadow-sm text-sm">
                             </div>
                         </div>
+                    </div>
+                    
+                    {{-- NEW: Container for Polygon/Polyline vertex editing on Edit Mode --}}
+                    <div id="poly-manual-input-container" class="my-2 hidden">
+                        <h4 class="text-sm font-semibold text-gray-800 mb-2">Edit Titik Koordinat</h4>
+                        <div id="poly-coords-list" class="space-y-2 max-h-48 overflow-y-auto p-2 border border-dashed rounded-md bg-gray-50">
+                            {{-- Dynamic vertex inputs will be injected here by JavaScript --}}
+                        </div>
+                        <button type="button" id="add-poly-point" class="mt-2 text-xs text-blue-600 hover:text-blue-800 font-semibold">+ Tambah Titik</button>
                     </div>
                     {{-- END NEW --}}
 
@@ -230,6 +239,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const isEditMode = {{ $map->exists ? 'true' : 'false' }};
     const map = L.map('select-map').setView([-7.5, 107.5], 8);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
@@ -256,19 +266,25 @@ document.addEventListener('DOMContentLoaded', function () {
     const existingImage = document.getElementById('existing-image');
     const geojsonInput = document.getElementById('geojson_file');
     
-    // {{-- NEW: Get DOM elements for manual coordinates --}}
+    // {{-- Get DOM elements for manual coordinates --}}
+    const pointInputWrapper = document.getElementById('point-manual-input-wrapper');
     const toggleCoordsBtn = document.getElementById('toggle-manual-coords');
     const manualCoordsContainer = document.getElementById('manual-coords-container');
     const manualLatInput = document.getElementById('manual-lat');
     const manualLngInput = document.getElementById('manual-lng');
+    
+    // {{-- NEW: Get DOM elements for polygon/polyline vertex editor --}}
+    const polyInputContainer = document.getElementById('poly-manual-input-container');
+    const polyCoordsList = document.getElementById('poly-coords-list');
+    const addPolyPointBtn = document.getElementById('add-poly-point');
 
-    // {{-- MODIFIED: Function to create a point layer from manual lat/lng input --}}
+
+    // {{-- Function to create a point layer from manual lat/lng input --}}
     function updateMapFromManualCoords() {
         const lat = parseFloat(manualLatInput.value);
         const lng = parseFloat(manualLngInput.value);
 
         if (!isNaN(lat) && !isNaN(lng)) {
-            // Only create point-based features (marker or circle)
             if (currentLayerType !== 'marker' && currentLayerType !== 'circle') {
                 alert('Input manual hanya untuk tipe Marker atau Circle. Silakan pilih salah satu alat tersebut.');
                 return;
@@ -299,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // {{-- MODIFIED: Helper function to get current style options from the form --}}
+    // {{-- Helper function to get current style options from the form --}}
     function getStyleOptions() {
         return {
             color: document.querySelector('input[name="stroke_color"]').value || '#3388ff',
@@ -313,8 +329,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Function to extract center from any geometry type
     function extractCenterFromGeometry(geometry) {
         if (!geometry || !geometry.coordinates) return null;
-
-        // Handle simple Point geometry
         if (geometry.type === 'Point') {
             return { lat: geometry.coordinates[1], lng: geometry.coordinates[0] };
         }
@@ -499,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // {{-- NEW: Add event listeners for manual coordinate controls --}}
+    // {{-- Event listeners for manual coordinate controls --}}
     toggleCoordsBtn.addEventListener('click', function() {
         const isHidden = manualCoordsContainer.classList.toggle('hidden');
         this.textContent = isHidden ? 'Tambahkan Latitude & Longitude Manual' : 'Sembunyikan Input Manual';
@@ -514,6 +528,29 @@ document.addEventListener('DOMContentLoaded', function () {
         if (type !== 'marker') {
             const iconSelect = document.querySelector('select[name="icon_url"]');
             if (iconSelect) iconSelect.value = '';
+        }
+        toggleFormFields(type);
+        // {{-- MODIFIED: Also control visibility of manual inputs --}}
+        toggleManualInputVisibility(type);
+    }
+    
+    // {{-- NEW: Function to control which manual input is shown --}}
+    function toggleManualInputVisibility(type) {
+        if (type === 'marker' || type === 'circle') {
+            pointInputWrapper.style.display = 'block';
+            polyInputContainer.classList.add('hidden');
+        } else if (type === 'polygon' || type === 'polyline') {
+            pointInputWrapper.style.display = 'none';
+            // Only show the vertex editor when in edit mode
+            if (isEditMode) {
+                polyInputContainer.classList.remove('hidden');
+            } else {
+                polyInputContainer.classList.add('hidden');
+            }
+        } else {
+            // Hide both for safety if no type is selected
+            pointInputWrapper.style.display = 'none';
+            polyInputContainer.classList.add('hidden');
         }
     }
 
@@ -544,9 +581,15 @@ document.addEventListener('DOMContentLoaded', function () {
         drawnLayer = null; 
         polygonPoints = []; 
         geometryInput.value = '';
-        // {{-- MODIFIED: Clear manual inputs when drawing is cleared --}}
+        
+        // {{-- MODIFIED: Clear and reset all manual inputs --}}
         manualLatInput.value = '';
         manualLngInput.value = '';
+        polyCoordsList.innerHTML = '';
+        polyInputContainer.classList.add('hidden');
+        pointInputWrapper.style.display = 'block'; // Default state
+        manualCoordsContainer.classList.add('hidden');
+        toggleCoordsBtn.textContent = 'Tambahkan Latitude & Longitude Manual';
     }
 
     toolbarButtons.forEach(button => {
@@ -554,7 +597,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const type = this.dataset.type;
             setActiveTool(type); 
             clearDrawing(); 
-            toggleFormFields(type);
         });
     });
 
@@ -576,7 +618,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 drawnLayer = L.circle(e.latlng, { ...style, weight: 1 }).addTo(map);
             }
-            // {{-- NEW: Update manual inputs when clicking the map --}}
+            // {{-- Update manual inputs when clicking the map --}}
             manualLatInput.value = e.latlng.lat.toFixed(6);
             manualLngInput.value = e.latlng.lng.toFixed(6);
 
@@ -595,6 +637,102 @@ document.addEventListener('DOMContentLoaded', function () {
             geometryInput.value = JSON.stringify(geojson);
         }
     });
+
+    // --- NEW: Functions for managing Polygon/Polyline vertex editor ---
+    
+    function updateGeometryFromPolyInputs() {
+        const rows = polyCoordsList.querySelectorAll('.poly-coord-row');
+        const newCoords = [];
+        rows.forEach(row => {
+            const lat = parseFloat(row.querySelector('.poly-lat-input').value);
+            const lng = parseFloat(row.querySelector('.poly-lng-input').value);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                newCoords.push([lng, lat]); // GeoJSON format is [lng, lat]
+            }
+        });
+
+        if (drawnLayer && newCoords.length > 0) {
+            let finalCoords = newCoords;
+            let leafletCoords;
+
+            if (currentLayerType === 'polygon') {
+                if (newCoords.length >= 3) {
+                    // Create a copy to avoid modifying the original array in a loop
+                    const closedCoords = [...newCoords, [...newCoords[0]]];
+                    leafletCoords = L.GeoJSON.coordsToLatLngs(closedCoords, 1);
+                    drawnLayer.setLatLngs(leafletCoords);
+                }
+            } else { // Polyline
+                if (newCoords.length >= 2) {
+                    leafletCoords = L.GeoJSON.coordsToLatLngs(newCoords);
+                    drawnLayer.setLatLngs(leafletCoords);
+                }
+            }
+
+            if (drawnLayer.getLatLngs().length > 0) {
+                 const geojson = drawnLayer.toGeoJSON().geometry;
+                 geometryInput.value = JSON.stringify(geojson);
+            }
+        }
+    }
+
+    function populatePolyCoords(geometry) {
+        polyCoordsList.innerHTML = '';
+        if (!geometry || !geometry.coordinates) return;
+
+        const coords = (geometry.type === 'Polygon') ? geometry.coordinates[0] : geometry.coordinates;
+        // For polygons, don't show the redundant closing point in the editor
+        const pointsToShow = (geometry.type === 'Polygon') ? coords.slice(0, -1) : coords;
+
+        pointsToShow.forEach((point, index) => {
+            // point is [lng, lat]
+            createPolyCoordRow(point[1], point[0], index);
+        });
+
+        polyInputContainer.classList.remove('hidden');
+    }
+    
+    function createPolyCoordRow(lat, lng, index) {
+        const row = document.createElement('div');
+        row.className = 'poly-coord-row grid grid-cols-12 gap-2 items-center';
+        row.innerHTML = `
+            <span class="col-span-1 text-xs text-gray-500 font-semibold">${index + 1}.</span>
+            <div class="col-span-5">
+                <input type="number" step="any" value="${lat.toFixed(6)}" class="poly-lat-input w-full border-gray-300 rounded-md shadow-sm text-xs p-1">
+            </div>
+            <div class="col-span-5">
+                <input type="number" step="any" value="${lng.toFixed(6)}" class="poly-lng-input w-full border-gray-300 rounded-md shadow-sm text-xs p-1">
+            </div>
+            <button type="button" class="remove-poly-point col-span-1 text-red-500 hover:text-red-700 font-bold text-lg focus:outline-none">&times;</button>
+        `;
+        polyCoordsList.appendChild(row);
+
+        row.querySelector('.poly-lat-input').addEventListener('input', updateGeometryFromPolyInputs);
+        row.querySelector('.poly-lng-input').addEventListener('input', updateGeometryFromPolyInputs);
+        row.querySelector('.remove-poly-point').addEventListener('click', function() {
+            row.remove();
+            reindexPolyCoords();
+            updateGeometryFromPolyInputs();
+        });
+    }
+
+    function reindexPolyCoords() {
+        polyCoordsList.querySelectorAll('.poly-coord-row').forEach((row, index) => {
+            row.querySelector('span').textContent = `${index + 1}.`;
+        });
+    }
+
+    addPolyPointBtn.addEventListener('click', function() {
+        const lastRow = polyCoordsList.querySelector('.poly-coord-row:last-child');
+        let newLat = map.getCenter().lat, newLng = map.getCenter().lng; // Default to map center
+        if (lastRow) {
+             newLat = parseFloat(lastRow.querySelector('.poly-lat-input').value) + 0.001; // Offset a bit
+             newLng = parseFloat(lastRow.querySelector('.poly-lng-input').value) + 0.001;
+        }
+        createPolyCoordRow(newLat, newLng, polyCoordsList.children.length);
+        updateGeometryFromPolyInputs();
+    });
+    // --- END NEW ---
 
     // {{-- MODIFIED: On Edit Mode --}}
     @if ($map->exists && $map->geometry)
@@ -627,15 +765,18 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (e) { console.error('Error fitting bounds:', e); }
         
         setActiveTool(initialLayerType);
-        toggleFormFields(initialLayerType);
 
-        // {{-- NEW: Populate and show manual coordinate inputs on edit --}}
-        const center = extractCenterFromGeometry(geojsonData);
-        if (center) {
-            manualLatInput.value = center.lat.toFixed(6);
-            manualLngInput.value = center.lng.toFixed(6);
-            manualCoordsContainer.classList.remove('hidden');
-            toggleCoordsBtn.textContent = 'Sembunyikan Input Manual';
+        // {{-- MODIFIED: Populate appropriate manual inputs on edit --}}
+        if (initialLayerType === 'marker' || initialLayerType === 'circle') {
+            const center = extractCenterFromGeometry(geojsonData);
+            if (center) {
+                manualLatInput.value = center.lat.toFixed(6);
+                manualLngInput.value = center.lng.toFixed(6);
+                manualCoordsContainer.classList.remove('hidden');
+                toggleCoordsBtn.textContent = 'Sembunyikan Input Manual';
+            }
+        } else if (initialLayerType === 'polygon' || initialLayerType === 'polyline') {
+            populatePolyCoords(geojsonData);
         }
     @endif
 });
