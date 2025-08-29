@@ -76,8 +76,7 @@ class MapController extends Controller
             'image_path' => 'nullable|image|max:2048',
             'layer_type' => 'nullable|string|max:50',
             'geometry' => 'nullable|json',
-            'kategori' => 'required|in:Peta SISIRAJA,Galeri Peta,Peta SISIRAJA & Galeri Peta',
-            'feature_properties' => 'nullable|array',
+            'kategori' => 'required|in:Ya,Tidak',
             'stroke_color' => 'nullable|string|max:7',
             'fill_color' => 'nullable|string|max:7',
             'weight' => 'nullable|numeric',
@@ -86,14 +85,14 @@ class MapController extends Controller
             'icon_url' => 'nullable|string|max:255',
         ]);
 
-        // === PERUBAHAN UNGGAHAN FILE DIMULAI DI SINI ===
         if ($request->hasFile('image_path')) {
             $file = $request->file('image_path');
             $filename = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('map_images'), $filename);
             $data['image_path'] = $filename; // Simpan nama filenya saja
         }
-        // === PERUBAHAN SELESAI ===
+        
+        $data['kategori'] = $data['kategori']; // simpan langsung "Ya" atau "Tidak"
 
         $map = Map::create($data);
 
@@ -181,8 +180,7 @@ class MapController extends Controller
             'image_path' => 'nullable|image|max:2048',
             'layer_type' => 'nullable|string|max:50',
             'geometry' => 'nullable|json',
-            'kategori' => 'required|in:Peta SISIRAJA,Galeri Peta,Peta SISIRAJA & Galeri Peta',
-            'stroke_color' => 'nullable|string|max:7',
+            'kategori' => 'required|in:Ya,Tidak',
             'fill_color' => 'nullable|string|max:7',
             'weight' => 'nullable|numeric',
             'opacity' => 'nullable|numeric|min:0|max:1',
@@ -275,24 +273,31 @@ class MapController extends Controller
         return redirect()->route('maps.index')->with('success', 'Peta berhasil dihapus!');
     }
 
-    // ... (method visualisasi, geojson, updateKategori, extractCenterFromGeometry tidak ada perubahan) ...
-    public function visualisasi()
+    public function visualisasi(Request $request)
     {
-        $maps = Map::with(['layers', 'features'])->get();
-        
+        $query = Map::with(['layers', 'features']);
+        $query->where('kategori', 'Ya');
+
+        // Tambahkan filter kategori kalau ada di query string (?kategori=...)
+        if ($request->filled('kategori')) {
+            $query->where('kategori', $request->kategori);
+        }
+
+        $maps = $query->get();
+
         foreach ($maps as $map) {
             $firstLayer = $map->layers->first();
             if ($firstLayer) {
-                $map->layer_type = $firstLayer->pivot->layer_type;
+                $map->layer_type   = $firstLayer->pivot->layer_type;
                 $map->stroke_color = $firstLayer->pivot->stroke_color;
-                $map->fill_color = $firstLayer->pivot->fill_color;
-                $map->weight = $firstLayer->pivot->weight;
-                $map->opacity = $firstLayer->pivot->opacity;
-                $map->radius = $firstLayer->pivot->radius;
-                $map->icon_url = $firstLayer->pivot->icon_url;
+                $map->fill_color   = $firstLayer->pivot->fill_color;
+                $map->weight       = $firstLayer->pivot->weight;
+                $map->opacity      = $firstLayer->pivot->opacity;
+                $map->radius       = $firstLayer->pivot->radius;
+                $map->icon_url     = $firstLayer->pivot->icon_url;
             }
         }
-        
+
         return view('visualisasi.index', compact('maps'));
     }
     
@@ -323,10 +328,12 @@ class MapController extends Controller
     public function updateKategori(Request $request, Map $map)
     {
         $request->validate([
-            'kategori' => 'required|in:Peta SISIRAJA,Galeri Peta,Peta SISIRAJA & Galeri Peta'
+            'kategori' => 'required|in:Ya,Tidak'
         ]);
 
-        $map->update(['kategori' => $request->kategori]);
+        $map->update([
+            'kategori' => $request->kategori
+        ]);
 
         return response()->json([
             'success' => true,

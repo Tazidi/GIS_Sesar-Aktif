@@ -12,18 +12,19 @@ class GalleryMapsController extends Controller
     
     public function galeriPeta()
     {
-        // Ambil semua layer dengan peta sesuai kategori
-        $layers = Layer::withCount(['maps' => function($query) {
-                $query->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta']);
-            }])
+        // Ambil semua layer dengan semua peta (kategori Ya maupun Tidak)
+        $layers = Layer::withCount('maps')
             ->with(['maps' => function($query) {
-                $query->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta'])
-                    ->with('layers'); // load style dari relasi
+                $query->with('layers'); // tampilkan semua kategori
             }])
-            ->whereHas('maps', function($query) {
-                $query->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta']);
-            })
+            ->whereHas('maps')
             ->get();
+
+        $projects = Project::with('surveyLocations')
+            ->withCount('surveyLocations')
+            ->get();
+
+    return view('gallery_maps.index', compact('layers', 'projects'));
 
         $projects = Project::with('surveyLocations')
             ->withCount('surveyLocations')
@@ -34,9 +35,7 @@ class GalleryMapsController extends Controller
 
     public function show($id)
     {
-        $map = Map::with(['layers', 'features'])
-            ->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta'])
-            ->findOrFail($id);
+        $map = Map::with(['layers', 'features'])->findOrFail($id);
 
         $map->features->transform(function ($feature) {
             $feature->feature_image_path = $feature->image_path
@@ -54,10 +53,9 @@ class GalleryMapsController extends Controller
 
     public function showLayer(\App\Models\Layer $layer)
     {
-        // Filter maps berdasarkan kategori
+        // Semua kategori ditampilkan
         $layer->load(['maps' => function($query) {
-            $query->whereIn('kategori', ['Galeri Peta', 'Peta SISIRAJA & Galeri Peta'])
-                ->with('layers');
+            $query->with('layers');
         }]);
         
         return view('gallery_maps.show_layer', compact('layer'));
