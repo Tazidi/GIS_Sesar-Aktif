@@ -16,6 +16,7 @@
                     <li><a href="{{ route('home') }}" class="hover:text-white">Home</a></li>
                     <li><a href="{{ route('articles.index') }}" class="hover:text-white">Artikel</a></li>
                     <li><a href="{{ route('gallery.index') }}" class="hover:text-white">Galeri</a></li>
+                    <li><a href="{{ route('gallery_maps.peta') }}" class="hover:text-white">Galeri Peta</a></li> 
                     <li><a href="{{ route('visualisasi.index') }}" class="hover:text-white">Peta SISIRAJA</a></li>
                 </ul>
             </div>

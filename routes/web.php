@@ -16,6 +16,8 @@ use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\SurveyLocationController;
 use App\Http\Controllers\GalleryMapsController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\WeatherController; 
+
 
 
 /*
@@ -192,3 +194,5 @@ Route::get('/galeri-peta/projects/{project}/locations/{location}',
 )->name('gallery_maps.projects.locations.show');
 
 Route::get('/gallery/layer/{layer}', [GalleryMapsController::class, 'showLayer'])->name('gallery_maps.showLayer');
+
+Route::get('/api/weather', [WeatherController::class, 'get'])->name('weather.get');
