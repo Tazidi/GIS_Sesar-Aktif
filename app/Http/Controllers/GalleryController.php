@@ -133,10 +133,29 @@ class GalleryController extends Controller
             abort(403);
         }
 
-        Storage::disk('public')->delete($gallery->image_path);
+        // Hapus main image
+        if ($gallery->main_image) {
+            $mainPath = public_path('gallery/' . $gallery->main_image);
+            if (file_exists($mainPath)) {
+                unlink($mainPath);
+            }
+        }
+
+        // Hapus extra images (jika ada)
+        if (is_array($gallery->extra_images)) {
+            foreach ($gallery->extra_images as $extra) {
+                $extraPath = public_path('gallery/' . $extra);
+                if (file_exists($extraPath)) {
+                    unlink($extraPath);
+                }
+            }
+        }
+
+        // Hapus record dari database
         $gallery->delete();
 
-        return redirect()->route('gallery.index')->with('success', 'Gambar berhasil dihapus.');
+        return redirect()->route('gallery.index')
+                        ->with('success', 'Gambar berhasil dihapus.');
     }
 
     /**
