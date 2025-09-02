@@ -126,10 +126,29 @@ class MapController extends Controller
             $geojson = json_decode($request->geometry, true);
             if (isset($geojson['features'])) {
                 foreach ($geojson['features'] as $index => $feature) {
+                    // handle upload file per feature
+                    $imagePath = null;
+                    if ($request->hasFile("feature_images.$index")) {
+                        $imageFile = $request->file("feature_images.$index");
+                        $imagePath = time() . "_{$index}_" . $imageFile->getClientOriginalName();
+                        $imageFile->move(public_path('map_features'), $imagePath);
+                    }
+
+                    // ambil properti teknis dari form (array) kalau ada
+                    $technicalInfo = null;
+                    if ($request->has("feature_properties.$index")) {
+                        $technicalInfo = json_encode($request->input("feature_properties.$index"));
+                    }
+
                     MapFeature::create([
                         'map_id' => $map->id,
                         'geometry' => $feature['geometry'] ?? null,
                         'properties' => $feature['properties'] ?? [],
+                        'image_path' => $imagePath ?? ($feature['properties']['image_path'] ?? null),
+                        'caption' => $request->input("feature_captions.$index") 
+                                    ?? ($feature['properties']['caption'] ?? null),
+                        'technical_info' => $technicalInfo 
+                                            ?? ($feature['properties']['technical_info'] ?? null),
                     ]);
                 }
             }
@@ -305,10 +324,14 @@ class MapController extends Controller
     {
         if ($map->features()->exists()) {
             $features = $map->features->map(function ($feature) {
+                $properties = $feature->properties ?? [];
+                $properties['image_path'] = $feature->image_path;
+                $properties['caption'] = $feature->caption;
+                $properties['technical_info'] = $feature->technical_info;
                 return [
                     'type' => 'Feature',
                     'geometry' => $feature->geometry,
-                    'properties' => $feature->properties
+                    'properties' => $properties
                 ];
             });
 

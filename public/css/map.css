@@ -1,3 +1,6 @@
+/* ===================== */
+/* MAP STYLES (Tetap) */
+/* ===================== */
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -45,7 +48,9 @@
     margin-right: 8px;
 }
 
-/* Legend Box Styles */
+/* ===================== */
+/* LEGEND & CONTROL BOX */
+/* ===================== */
 .legend-box {
     position: absolute;
     bottom: 20px;
@@ -65,7 +70,7 @@
     font-size: 14px;
     margin-bottom: 10px;
     color: #333;
-    border-bottom: 2px solid #007bff;
+    border-bottom: 2px solid #ddd;
     padding-bottom: 5px;
 }
 
@@ -89,65 +94,109 @@
     flex-shrink: 0;
 }
 
-.legend-symbol.marker {
-    border-radius: 50%;
-}
-
-.legend-symbol.circle {
-    border-radius: 50%;
-    border: 2px solid;
-    background: none;
-}
-
-.legend-symbol.polyline {
-    height: 3px;
-    border-radius: 2px;
-    border: none;
-}
-
-.legend-symbol.polygon {
-    border-radius: 2px;
-}
+.legend-symbol.marker { border-radius: 50%; }
+.legend-symbol.circle { border-radius: 50%; border: 2px solid; background: none; }
+.legend-symbol.polyline { height: 3px; border-radius: 2px; border: none; }
+.legend-symbol.polygon { border-radius: 2px; }
 
 .legend-text {
     flex: 1;
     line-height: 1.3;
 }
 
-.legend-item.inactive {
-    opacity: 0.4;
+.legend-item.inactive { display: none; }
+
+/* Batasi tinggi Layer Control */
+.leaflet-control-layers-list {
+    max-height: 200px; /* kira-kira 5 checkbox */
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
-.legend-item.inactive .legend-text {
-    text-decoration: line-through;
+/* Scrollbar lebih rapi */
+.leaflet-control-layers-list::-webkit-scrollbar,
+.legend-box #legend-content::-webkit-scrollbar {
+    width: 6px;
+}
+.leaflet-control-layers-list::-webkit-scrollbar-thumb,
+.legend-box #legend-content::-webkit-scrollbar-thumb {
+    background: #bbb;
+    border-radius: 3px;
 }
 
-/* Modal Styles */
-.modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 10000;
-}
-
-.modal-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    max-width: 600px;
-    width: 90%;
-    max-height: 80vh;
+/* Batasi tinggi legend */
+.legend-box #legend-content {
+    max-height: 135px; /* kira-kira 5 item */
     overflow-y: auto;
 }
 
+/* ===================== */
+/* POPUP (Clean) */
+/* ===================== */
+.leaflet-popup-content-wrapper {
+    background: #fff;
+    color: #333;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.leaflet-popup-content {
+    margin: 15px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+.popup-header {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #222;
+}
+.popup-info-item {
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #444;
+}
+.btn-detail {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 8px 12px;
+    background-color: #444;   /* netral gelap */
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-detail:hover {
+    background-color: #222;
+}
+
+/* ===================== */
+/* MODAL (Clean) */
+/* ===================== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1050;
+}
+.modal-content {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
 .modal-header {
     padding: 20px;
     border-bottom: 1px solid #e0e0e0;
@@ -155,14 +204,12 @@
     justify-content: space-between;
     align-items: center;
 }
-
 .modal-title {
     font-size: 1.25rem;
     font-weight: bold;
     color: #333;
     margin: 0;
 }
-
 .modal-close {
     background: none;
     border: none;
@@ -178,131 +225,140 @@
     justify-content: center;
     transition: background-color 0.2s;
 }
-
 .modal-close:hover {
     background-color: #f0f0f0;
 }
-
 .modal-body {
-    padding: 20px;
+    padding: 18px;
+    max-height: calc(80vh - 70px);
+    overflow-y: auto;
+}
+/* ===================== */
+/* RESPONSIVE (Tetap) */
+/* ===================== */
+@media (max-width: 768px) {
+    .container { padding: 10px; }
+    #map { height: 60vh !important; min-height: 300px !important; }
+    .modal-content { width: 95%; max-height: 90vh; }
+    .modal-header, .modal-body { padding: 15px; }
 }
 
+body, html { overflow-x: hidden; }
+.container { overflow-x: hidden; }
+
+/* ===================== */
+/* POPUP (Clean) */
+/* ===================== */
+.leaflet-popup-content-wrapper {
+    background: #fff;
+    color: #333;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.leaflet-popup-content {
+    margin: 15px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+.popup-header {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #222;
+}
+.popup-info-item {
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #444;
+}
+.btn-detail {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 8px 12px;
+    background-color: #2563eb;   /* biru sesuai contoh */
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.btn-detail:hover {
+    background-color: #1d4ed8;
+}
+
+/* ===================== */
+/* MODAL (Clean) */
+/* ===================== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1050;
+}
+.modal-content {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+.modal-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+.modal-close:hover {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+.modal-body {
+    padding: 20px 24px 24px;
+    max-height: calc(80vh - 70px);
+    overflow-y: auto;
+}
+
+/* ===================== */
+/* DETAIL ITEM (Clean) */
+/* ===================== */
 .detail-item {
-    margin-bottom: 15px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 8px;
 }
-
 .detail-label {
     font-weight: bold;
-    color: #555;
-    margin-bottom: 5px;
+    color: #374151;
+    margin-bottom: 4px;
 }
-
 .detail-value {
-    color: #333;
-    background: #f8f9fa;
-    padding: 8px 12px;
-    border-radius: 6px;
-    border-left: 4px solid #007bff;
-}
-
-.photo-container {
-    text-align: center;
-    margin: 20px 0;
-}
-
-.photo-container img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.no-photo {
-    background: #f8f9fa;
-    border: 2px dashed #ddd;
-    border-radius: 8px;
-    padding: 40px;
-    text-align: center;
-    color: #666;
-    font-style: italic;
-}
-
-/* Popup Styles */
-.leaflet-popup-content {
-    margin: 12px 16px;
-    line-height: 1.4;
-}
-
-.popup-title {
-    font-weight: bold;
-    color: #333;
-    margin-bottom: 8px;
-    font-size: 1.1rem;
-}
-
-.popup-info {
-    margin-bottom: 12px;
-}
-
-.popup-info-item {
-    margin-bottom: 5px;
-    font-size: 0.9rem;
-}
-
-.popup-info-label {
-    font-weight: 600;
-    color: #555;
-}
-
-.popup-info-value {
-    color: #333;
-}
-
-.btn-detail {
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    width: 100%;
-    transition: all 0.3s ease;
-}
-
-.btn-detail:hover {
-    background: linear-gradient(135deg, #0056b3, #003d82);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-}
-
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-
-    #map {
-        height: 60vh !important;
-        min-height: 300px !important;
-    }
-
-    .modal-content {
-        width: 95%;
-        max-height: 90vh;
-    }
-
-    .modal-header,
-    .modal-body {
-        padding: 15px;
-    }
-}
-
-body,
-html {
-    overflow-x: hidden;
-}
-
-.container {
-    overflow-x: hidden;
+    color: #6b7280;
 }

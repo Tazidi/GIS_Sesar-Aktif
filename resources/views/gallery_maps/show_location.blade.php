@@ -16,12 +16,24 @@
 
     {{-- Card Detail Lokasi --}}
     <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-20">
+        {{-- Gambar utama --}}
         @if ($location->primary_image)
             <img src="{{ asset('survey/' . $location->primary_image) }}"
-                 alt="{{ $location->nama }}"
-                 class="w-full h-64 md:h-96 object-cover">
+                alt="{{ $location->nama }}"
+                class="w-full h-64 md:h-96 object-cover">
         @endif
-        
+
+        {{-- Gambar tambahan --}}
+        @if ($location->additional_images && count($location->additional_images) > 0)
+            <div class="grid grid-cols-2 gap-4 p-4">
+                @foreach ($location->additional_images as $index => $img)
+                    <img src="{{ asset('survey/' . $img) }}"
+                        alt="Foto tambahan {{ $index+1 }}"
+                        class="w-full h-40 object-cover rounded-lg shadow">
+                @endforeach
+            </div>
+        @endif
+
         <div class="p-6">
             <h1 class="text-3xl font-bold text-gray-800 mb-4">
                 {{ $location->nama }}

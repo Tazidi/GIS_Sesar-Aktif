@@ -4,112 +4,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="{{ asset('css/map.css') }}">
-    
-    <style>
-        /* Batasi tinggi Layer Control (max 5 item) */
-        .leaflet-control-layers-list {
-            max-height: 200px; /* kira-kira 5 checkbox */
-            overflow-y: auto;
-            padding-right: 5px; /* biar scrollbar nggak nutup teks */
-        }
-
-        /* Scrollbar lebih rapi */
-        .leaflet-control-layers-list::-webkit-scrollbar {
-            width: 6px;
-        }
-        .leaflet-control-layers-list::-webkit-scrollbar-thumb {
-            background: #bbb;
-            border-radius: 1px;
-        }
-
-        /* Batas maksimal tinggi keterangan peta */
-        .legend-box #legend-content {
-            max-height: 150px; /* kira-kira 5 item */
-            overflow-y: auto;
-        }
-
-        /* Scrollbar yang rapi */
-        .layer-controls::-webkit-scrollbar,
-        .legend-box #legend-content::-webkit-scrollbar {
-            width: 6px;
-        }
-        .layer-controls::-webkit-scrollbar-thumb,
-        .legend-box #legend-content::-webkit-scrollbar-thumb {
-            background: #bbb;
-            border-radius: 3px;
-        }
-
-        /* Sembunyikan item legenda yang tidak aktif */
-        .legend-item.inactive {
-            display: none;
-        }
-
-        /* Popup Styling */
-        .custom-popup .leaflet-popup-content-wrapper {
-            background: #fff;
-            color: #333;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        .custom-popup .leaflet-popup-content {
-            margin: 15px;
-            font-size: 14px;
-            line-height: 1.7;
-        }
-        .popup-header {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .popup-info-item {
-            margin-bottom: 4px;
-        }
-        .btn-detail {
-            display: block;
-            width: 100%;
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #0d6efd;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            text-align: center;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .btn-detail:hover {
-            background-color: #0b5ed7;
-        }
-
-        /* Modal Styling */
-        .modal-body {
-            background-color: #fff;
-            padding: 15px;
-        }
-        .modal-content {
-            background-color: #f0f2f5;
-        }
-        .detail-item {
-            background-color: #f8f9fa;
-            border-radius: 6px;
-            padding: 12px 18px;
-            margin-bottom: 12px;
-            position: relative;
-            border-left: 5px solid #0d6efd;
-        }
-        .detail-label {
-            font-size: 13px;
-            color: #6c757d;
-            margin-bottom: 4px;
-            display: block;
-        }
-        .detail-value {
-            font-size: 16px;
-            color: #212529;
-            font-weight: 500;
-        }
-    </style>
 
     @if(request()->boolean('embed'))
         <style>
@@ -155,8 +49,9 @@
                         {
                             "geometry": {!! $feature->geometry ? json_encode($feature->geometry) : 'null' !!},
                             "properties": {!! $feature->properties ? json_encode($feature->properties) : 'null' !!},
-                            "image_path": "{{ $feature->image_path ? asset('storage/' . $feature->image_path) : '' }}",
-                            "caption": {!! json_encode($feature->caption ?? '') !!}
+                            "image_path": "{{ $feature->image_path ? asset('map_features/' . $feature->image_path) : '' }}",
+                            "caption": {!! json_encode($feature->caption ?? '') !!},
+                            "technical_info": {!! json_encode($feature->technical_info ?? '') !!}
                         }@if(!$loop->last),@endif
                         @endforeach
                     ],
@@ -341,6 +236,7 @@
                 delete properties.dataSource;
                 delete properties.feature_image_path;
                 delete properties.caption;
+                delete properties.technical_info;
 
                 // Display properties, excluding the main title properties which are already in the header
                 Object.entries(properties).forEach(([key, value]) => {
@@ -348,6 +244,25 @@
                        content += `<div class="detail-item"><div class="detail-label">${formatLabel(key)}</div><div class="detail-value">${value}</div></div>`;
                     }
                 });
+
+                // Technical Info (parse JSON jika ada)
+                if (featureData.technical_info && featureData.technical_info.trim() !== '' && featureData.technical_info !== '{}' ) {
+                    try {
+                        const info = JSON.parse(featureData.technical_info);
+                        if (info && typeof info === 'object' && Object.keys(info).length > 0) {
+                            let list = '<ul>';
+                            for (const [k,v] of Object.entries(info)) {
+                                list += `<li><strong>${formatLabel(k)}:</strong> ${v}</li>`;
+                            }
+                            list += '</ul>';
+                            content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${list}</div></div>`;
+                        } else {
+                            content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${featureData.technical_info}</div></div>`;
+                        }
+                    } catch(e) {
+                        content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${featureData.technical_info}</div></div>`;
+                    }
+                }
 
                 // Add photo section with fallback
                 if (featureData.feature_image_path) {
@@ -358,6 +273,11 @@
                     </div></div>`;
                 } else {
                     content += `<div class="detail-item"><div class="detail-label">Foto</div><div class="detail-value"><i>Tidak ada foto</i></div></div>`;
+                }
+
+                // Caption
+                if (featureData.caption) {
+                    content += `<div class="detail-item"><div class="detail-label">Caption</div><div class="detail-value">${featureData.caption}</div></div>`;
                 }
             }
 
@@ -380,7 +300,7 @@
 
             if (isGeoJSON) {
                 title = props.Name || props.name || props.title || props.nama || 'Informasi';
-                dataForModal = { ...props, dataSource: 'geojson', feature_image_path: feature.image_path || '', caption: feature.caption || '' };
+                dataForModal = { ...props, dataSource: 'geojson', feature_image_path: feature.image_path || '', caption: feature.caption || '', technical_info: feature.technical_info || '' };
             } else {
                 title = mapData.name || 'Informasi';
                 dataForModal = { dataSource: 'manual', name: mapData.name, description: mapData.description, photo: mapData.image_path, caption: mapData.caption || '' };
@@ -512,7 +432,7 @@
                             hasData = true;
                             mapData.features.forEach(featureData => {
                                 try {
-                                    const geoJsonFeature = { type: 'Feature', geometry: featureData.geometry, properties: featureData.properties || {}, image_path: featureData.image_path, caption: featureData.caption };
+                                    const geoJsonFeature = { type: 'Feature', geometry: featureData.geometry, properties: featureData.properties, image_path: featureData.image_path, caption: featureData.caption, technical_info: featureData.technical_info || ''};
                                     const layer = L.geoJSON(geoJsonFeature, {
                                         style: () => style,
                                         onEachFeature: (feature, layer) => {

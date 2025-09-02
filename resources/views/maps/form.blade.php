@@ -433,8 +433,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         const input = document.createElement('input');
                         input.type = 'file';
-                        input.name = 'feature_images[]';
-                        input.accept = 'image/*';
+                        input.name = `feature_images[${index}]`;                        input.accept = 'image/*';
                         input.className = 'form-input mb-2';
                         div.appendChild(input);
 
