@@ -94,9 +94,78 @@
                         <input type="file" name="geojson_file" id="geojson_file" accept=".geojson,.json"
                             class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
-                    <div id="feature-images-container" class="mt-6 space-y-4 hidden">
-                        <label class="block text-sm font-medium text-gray-700">Upload Gambar untuk Tiap Fitur</label>
-                        <div id="feature-images-list" class="space-y-3"></div>
+                    <div id="feature-images-container" class="mt-6 space-y-4 {{ $map->exists && $map->features->count() > 0 ? '' : 'hidden' }}">
+                        <label class="block text-sm font-medium text-gray-700">Gambar & Info Fitur</label>
+                        <div id="feature-images-list" class="space-y-3">
+                            @if($map->exists && $map->features->count() > 0)
+                                @foreach($map->features as $index => $feature)
+                                    @php
+                                        $props = [];
+                                        if ($feature->properties) {
+                                            if (is_array($feature->properties)) {
+                                                $props = $feature->properties;
+                                            } else {
+                                                $props = json_decode($feature->properties, true) ?? [];
+                                            }
+                                        }
+                                        $featureLabel = $props['PopupInfo'] ?? $props['Name'] ?? 'Fitur #' . ($index+1);
+                                        $tech = $feature->technical_info ? json_decode($feature->technical_info, true) : [];
+                                    @endphp
+
+                                    <div class="feature-item flex flex-col mb-4 p-3 border border-gray-300 rounded-lg bg-gray-50">
+                                        <label class="text-sm font-medium text-gray-700 mb-1">
+                                            Gambar untuk: {{ $featureLabel }}
+                                        </label>
+
+                                        {{-- Hidden input id fitur --}}
+                                        <input type="hidden" name="feature_ids[{{ $index }}]" value="{{ $feature->id }}">
+
+                                        {{-- Gambar lama --}}
+                                        @if($feature->image_path)
+                                            <img src="{{ asset('map_features/' . $feature->image_path) }}" 
+                                                alt="Feature Image" class="w-32 rounded mb-2">
+                                        @endif
+
+                                        {{-- Upload gambar baru --}}
+                                        <input type="file" name="feature_images[{{ $index }}]" class="form-input mb-2">
+
+                                        {{-- Caption --}}
+                                        <input type="text" 
+                                            name="feature_captions[{{ $index }}]"
+                                            value="{{ old('feature_captions.'.$index, $feature->caption) }}"
+                                            placeholder="Caption foto"
+                                            maxlength="255"
+                                            class="mb-2 block w-full text-sm border-gray-300 rounded-md shadow-sm">
+                                        <p class="text-xs text-gray-500 mb-2">
+                                            Caption tidak boleh lebih dari 255 karakter.
+                                        </p>
+                                        
+                                        {{-- Info teknis --}}
+                                        <div class="mt-2 border-t pt-2">
+                                            <label class="block text-xs text-gray-600">Panjang Sesar</label>
+                                            <input type="text" name="feature_properties[{{ $index }}][panjang_sesar]"
+                                                value="{{ $tech['panjang_sesar'] ?? '' }}"
+                                                class="mb-2 w-full text-sm border-gray-300 rounded-md shadow-sm">
+
+                                            <label class="block text-xs text-gray-600">Lebar Sesar</label>
+                                            <input type="text" name="feature_properties[{{ $index }}][lebar_sesar]"
+                                                value="{{ $tech['lebar_sesar'] ?? '' }}"
+                                                class="mb-2 w-full text-sm border-gray-300 rounded-md shadow-sm">
+
+                                            <label class="block text-xs text-gray-600">Tipe</label>
+                                            <input type="text" name="feature_properties[{{ $index }}][tipe]"
+                                                value="{{ $tech['tipe'] ?? '' }}"
+                                                class="mb-2 w-full text-sm border-gray-300 rounded-md shadow-sm">
+
+                                            <label class="block text-xs text-gray-600">MMAX</label>
+                                            <input type="text" name="feature_properties[{{ $index }}][mmax]"
+                                                value="{{ $tech['mmax'] ?? '' }}"
+                                                class="mb-2 w-full text-sm border-gray-300 rounded-md shadow-sm">
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>

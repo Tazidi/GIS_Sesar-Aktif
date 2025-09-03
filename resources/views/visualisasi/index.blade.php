@@ -246,21 +246,25 @@
                 });
 
                 // Technical Info (parse JSON jika ada)
-                if (featureData.technical_info && featureData.technical_info.trim() !== '' && featureData.technical_info !== '{}' ) {
+                if (featureData.technical_info && featureData.technical_info.trim() !== '' && featureData.technical_info !== '{}') {
                     try {
                         const info = JSON.parse(featureData.technical_info);
-                        if (info && typeof info === 'object' && Object.keys(info).length > 0) {
-                            let list = '<ul>';
-                            for (const [k,v] of Object.entries(info)) {
-                                list += `<li><strong>${formatLabel(k)}:</strong> ${v}</li>`;
+                        if (info && typeof info === 'object') {
+                            // filter hanya value yang tidak null/kosong
+                            const validEntries = Object.entries(info).filter(([k, v]) => v !== null && v !== '' && v !== 'null' && v !== undefined);
+                            if (validEntries.length > 0) {
+                                let list = '<ul>';
+                                validEntries.forEach(([k,v]) => {
+                                    list += `<li><strong>${formatLabel(k)}:</strong> ${v}</li>`;
+                                });
+                                list += '</ul>';
+                                content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${list}</div></div>`;
                             }
-                            list += '</ul>';
-                            content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${list}</div></div>`;
-                        } else {
-                            content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${featureData.technical_info}</div></div>`;
                         }
                     } catch(e) {
-                        content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${featureData.technical_info}</div></div>`;
+                        if (featureData.technical_info !== 'null') {
+                            content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${featureData.technical_info}</div></div>`;
+                        }
                     }
                 }
 

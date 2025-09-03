@@ -41,17 +41,40 @@ class MapFeatureController extends Controller
             'geometry' => 'required|json',
             'feature_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'caption' => 'nullable|string|max:255',
-            'technical_info' => 'nullable|string|max:500',
+            'technical_info' => 'nullable|array', // ubah ke array
+            'technical_info.*' => 'nullable|string|max:500', // setiap elemen array string
         ]);
 
         try {
+            // Decode properties dengan fallback
+            $decodedProperties = $mapFeature->properties;
+            if ($request->filled('properties')) {
+                $tmp = json_decode($request->properties, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $decodedProperties = $tmp;
+                }
+            }
+
+            // Decode geometry dengan fallback
+            $decodedGeometry = $mapFeature->geometry;
+            if ($request->filled('geometry')) {
+                $tmp = json_decode($request->geometry, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $decodedGeometry = $tmp;
+                }
+            }
+
             $data = [
-                // Konversi string JSON dari form ke array sebelum disimpan
-                'properties' => json_decode($request->properties, true),
-                'geometry' => json_decode($request->geometry, true),
-                'caption' => $request->caption,
-                'technical_info' => $request->technical_info,
-            ];
+                'properties'     => $decodedProperties,
+                'geometry'       => $decodedGeometry,
+                'caption'        => $request->filled('caption') ? $request->caption : $mapFeature->caption,
+                ];
+                // Handle technical_info (array ke JSON)
+                $technicalInfo = $request->input('technical_info', []);
+                $technicalInfo = array_filter($technicalInfo, fn($v) => $v !== null && $v !== '');
+                $data['technical_info'] = !empty($technicalInfo)
+                    ? json_encode($technicalInfo, JSON_UNESCAPED_UNICODE)
+                    : $mapFeature->technical_info;
 
             // Handle upload gambar jika ada
             if ($request->hasFile('feature_image')) {
@@ -60,29 +83,24 @@ class MapFeatureController extends Controller
                     unlink(public_path($mapFeature->image_path));
                 }
 
-                // Simpan gambar baru secara manual ke folder public/map_feature_images
                 $file = $request->file('feature_image');
                 $filename = time() . '_' . $file->getClientOriginalName();
-                $destinationPath = public_path('map_feature_images');
+                $destinationPath = public_path('map_features');
                 
-                // Pastikan foldernya ada
                 if (!file_exists($destinationPath)) {
                     mkdir($destinationPath, 0755, true);
                 }
 
                 $file->move($destinationPath, $filename);
-
-                // Simpan path relatif (untuk digunakan di view)
-                $data['image_path'] = 'map_feature_images/' . $filename;
+                $data['image_path'] = $filename;
             }
 
             $mapFeature->update($data);
 
             return redirect()->route('map-features.index', $mapFeature->map_id)
-                         ->with('success', 'Fitur berhasil diperbarui.');
+                        ->with('success', 'Fitur berhasil diperbarui.');
 
         } catch (\Exception $e) {
-            // Catat error untuk debugging
             Log::error('Gagal memperbarui fitur: ' . $e->getMessage());
             return back()->with('error', 'Terjadi kesalahan saat memperbarui fitur.');
         }

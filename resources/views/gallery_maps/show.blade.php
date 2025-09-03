@@ -229,15 +229,23 @@
                     try {
                         const parsed = typeof techInfo === 'string' ? JSON.parse(techInfo) : techInfo;
                         if (parsed && typeof parsed === 'object') {
-                            let list = '<ul>';
-                            for (const [k,v] of Object.entries(parsed)) {
-                                list += `<li><strong>${formatLabel(k)}:</strong> ${v}</li>`;
+                            // filter hanya ambil yang ada isinya
+                            const validEntries = Object.entries(parsed).filter(([k,v]) => {
+                                return v !== null && v !== '' && v !== 'null' && v !== undefined;
+                            });
+                            if (validEntries.length > 0) {
+                                let list = '<ul>';
+                                for (const [k,v] of validEntries) {
+                                    list += `<li><strong>${formatLabel(k)}:</strong> ${v}</li>`;
+                                }
+                                list += '</ul>';
+                                content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${list}</div></div>`;
                             }
-                            list += '</ul>';
-                            content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${list}</div></div>`;
                         }
                     } catch(e) {
-                        content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${techInfo}</div></div>`;
+                        if (techInfo !== 'null' && techInfo.trim() !== '') {
+                            content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${techInfo}</div></div>`;
+                        }
                     }
                 }
 

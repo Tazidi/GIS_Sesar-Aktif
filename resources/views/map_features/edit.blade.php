@@ -38,14 +38,50 @@
                         <textarea name="properties" id="properties" rows="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 font-mono text-sm">{{ old('properties', json_encode($mapFeature->properties, JSON_PRETTY_PRINT)) }}</textarea>
                         <p class="mt-2 text-xs text-gray-500">Edit properti fitur dalam format JSON.</p>
                     </div>
+                    <div>
+                        <label for="technical_info" class="block text-sm font-medium text-gray-700">Informasi Teknis</label>
+                        @php
+                            $tech = $mapFeature->technical_info ? json_decode($mapFeature->technical_info, true) : [];
+                        @endphp
 
+                        <div class="mt-2 space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600">Panjang Sesar</label>
+                                <input type="text" name="technical_info[panjang_sesar]"
+                                    value="{{ old('technical_info.panjang_sesar', $tech['panjang_sesar'] ?? '') }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600">Lebar Sesar</label>
+                                <input type="text" name="technical_info[lebar_sesar]"
+                                    value="{{ old('technical_info.lebar_sesar', $tech['lebar_sesar'] ?? '') }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600">Tipe</label>
+                                <input type="text" name="technical_info[tipe]"
+                                    value="{{ old('technical_info.tipe', $tech['tipe'] ?? '') }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600">MMAX</label>
+                                <input type="text" name="technical_info[mmax]"
+                                    value="{{ old('technical_info.mmax', $tech['mmax'] ?? '') }}"
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm text-sm">
+                            </div>
+                        </div>
+                        <p class="mt-2 text-xs text-gray-500">Opsional. Informasi teknis tambahan terkait fitur.</p>
+                    </div>
                     <div>
                         <label for="feature_image" class="block text-sm font-medium text-gray-700">Upload Gambar Baru</label>
                         <input type="file" name="feature_image" id="feature_image" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         @if($mapFeature->image_path)
                             <div class="mt-4">
                                 <p class="text-sm font-medium text-gray-600">Gambar Saat Ini:</p>
-                                <img src="{{ asset($mapFeature->image_path) }}" alt="Gambar Fitur" class="mt-2 w-1/2 rounded-md shadow-sm">
+                                <img src="{{ asset('map_features/' . $mapFeature->image_path) }}" alt="Gambar Fitur" class="mt-2 w-1/2 rounded-md shadow-sm">
                             </div>
                         @endif
                     </div>

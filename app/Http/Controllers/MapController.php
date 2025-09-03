@@ -157,11 +157,11 @@ class MapController extends Controller
         return redirect()->route('maps.index')->with('success', 'Peta berhasil ditambahkan!');
     }
 
-    // ... (method edit tidak ada perubahan) ...
     public function edit(Map $map)
     {
         $layers = Layer::all();
-        
+        $map->load('features');
+
         $firstLayer = $map->layers->first();
         if ($firstLayer) {
             $map->layer_type = $firstLayer->pivot->layer_type;
@@ -254,6 +254,79 @@ class MapController extends Controller
         }
 
         $map->layers()->sync($pivotData);
+        
+        // === PERUBAHAN UNTUK UPDATE FEATURES ===
+        if ($request->filled('geometry')) {
+            $geojson = json_decode($request->geometry, true);
+
+            if (isset($geojson['features'])) {
+                foreach ($geojson['features'] as $index => $feature) {
+                    $featureId = $request->input("feature_ids.$index"); 
+
+                    // kalau ada id, update; kalau tidak ada id berarti fitur baru
+                    if ($featureId) {
+                        $mapFeature = $map->features()->find($featureId);
+                    } else {
+                        $mapFeature = new MapFeature(['map_id' => $map->id]);
+                    }
+
+                    // handle upload gambar baru
+                    $imagePath = $mapFeature->image_path;
+                    if ($request->hasFile("feature_images.$index")) {
+                        $imageFile = $request->file("feature_images.$index");
+                        $imagePath = time() . "_{$index}_" . $imageFile->getClientOriginalName();
+                        $imageFile->move(public_path('map_features'), $imagePath);
+                    }
+
+                    $technicalInfo = null;
+                    if ($request->has("feature_properties.$index")) {
+                        $technicalInfo = json_encode($request->input("feature_properties.$index"));
+                    }
+
+                    $mapFeature->geometry = $feature['geometry'] ?? null;
+                    $mapFeature->properties = $feature['properties'] ?? [];
+                    $mapFeature->image_path = $imagePath;
+                    $mapFeature->caption = $request->input("feature_captions.$index") 
+                                        ?? ($feature['properties']['caption'] ?? null);
+                    $mapFeature->technical_info = $technicalInfo 
+                                                ?? ($feature['properties']['technical_info'] ?? null);
+
+                    $mapFeature->save();
+                }
+
+                // opsional: hapus fitur yang tidak dikirim di form
+                $validIds = collect($request->input('feature_ids', []))->filter()->all();
+                $map->features()->whereNotIn('id', $validIds)->delete();
+            }
+        } else {
+            // === BLOK BARU: update fitur lama tanpa geojson baru ===
+            if ($request->has('feature_ids')) {
+                foreach ($request->input('feature_ids') as $index => $featureId) {
+                    $mapFeature = $map->features()->find($featureId);
+                    if (!$mapFeature) continue;
+
+                    // gambar lama
+                    $imagePath = $mapFeature->image_path;
+                    if ($request->hasFile("feature_images.$index")) {
+                        $imageFile = $request->file("feature_images.$index");
+                        $imagePath = time() . "_{$index}_" . $imageFile->getClientOriginalName();
+                        $imageFile->move(public_path('map_features'), $imagePath);
+                    }
+
+                    $technicalInfo = null;
+                    if ($request->has("feature_properties.$index")) {
+                        $technicalInfo = json_encode($request->input("feature_properties.$index"));
+                    }
+
+                    // update hanya caption/gambar/info teknis
+                    $mapFeature->image_path = $imagePath;
+                    $mapFeature->caption = $request->input("feature_captions.$index", $mapFeature->caption);
+                    $mapFeature->technical_info = $technicalInfo ?? $mapFeature->technical_info;
+
+                    $mapFeature->save();
+                }
+            }
+        }
         
         return redirect()->route('maps.index')->with('success', 'Peta berhasil diperbarui!');
     }
