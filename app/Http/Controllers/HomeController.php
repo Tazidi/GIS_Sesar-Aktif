@@ -24,9 +24,10 @@ class HomeController extends Controller
 
         // Artikel yang di-approve sebelum hari ini (Main Story)
         $mainStories = Article::where('status', 'approved')
-            ->orderByDesc('visit_count')
-            ->take(5)
-            ->get();
+                       ->where('is_featured', true) // <-- Ambil yang pilihan saja
+                       ->latest('updated_at')      // <-- Urutkan berdasarkan kapan terakhir di-update/dijadikan pilihan
+                       ->take(10)                  // <-- Batasi maksimal 10
+                       ->get();
 
         // Artikel populer random (simulasi)
         $popularArticles = Article::where('status', 'approved')

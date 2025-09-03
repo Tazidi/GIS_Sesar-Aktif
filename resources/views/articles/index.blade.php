@@ -109,6 +109,22 @@
                                                 </button>
                                             </form>
                                         @endif
+                                        
+                                         @if ($isAdmin)
+                                            <form action="{{ route('articles.toggleFeature', $article) }}" method="POST"
+                                                onsubmit="return confirm('{{ $article->is_featured ? 'Hapus artikel ini dari daftar Pilihan?' : 'Jadikan artikel ini sebagai Pilihan di Halaman Utama?' }}')">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit"
+                                                        class="{{ $article->is_featured ? 'text-yellow-500 hover:text-yellow-700' : 'text-gray-400 hover:text-yellow-500' }}"
+                                                        title="{{ $article->is_featured ? 'Hapus dari Pilihan' : 'Jadikan Pilihan' }}">
+                                                    {{-- Icon Bintang --}}
+                                                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.495c1.102.1 1.547 1.413.647 2.118l-4.182 3.328 1.188 5.29c.21 1.11-.904 1.975-1.83 1.422L12 18.354 7.429 21.05c-.926.552-2.04-.312-1.83-1.422l1.188-5.29-4.182-3.328c-.9-.705-.455-2.018.647-2.118l5.404-.495 2.082-5.006z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        @endif
 
                                         @if ($isAdmin)
                                             <form method="POST" action="{{ route('articles.updateStatus', $article) }}">
@@ -145,14 +161,19 @@
     <script src="https://cdn.datatables.net/2.0.7/js/dataTables.tailwindcss.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/3.0.2/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/3.0.2/js/responsive.tailwindcss.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#articlesTable').DataTable({
-                responsive: true,
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/2.0.7/i18n/id.json',
-                },
-            });
+<script>
+    $(document).ready(function() {
+        $('#articlesTable').DataTable({
+            responsive: true,
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/2.0.7/i18n/id.json',
+            },
+            // Tambahkan kode di bawah ini
+            columnDefs: [
+                { responsivePriority: 1, targets: -1 }, // Kolom terakhir (Aksi) jadi prioritas 1
+                { responsivePriority: 2, targets: 2 }   // Kolom ketiga (Judul) jadi prioritas 2
+            ]
         });
-    </script>
+    });
+</script>
 @endpush

@@ -196,3 +196,6 @@ Route::get('/galeri-peta/projects/{project}/locations/{location}',
 Route::get('/gallery/layer/{layer}', [GalleryMapsController::class, 'showLayer'])->name('gallery_maps.showLayer');
 
 Route::get('/api/weather', [WeatherController::class, 'get'])->name('weather.get');
+
+Route::patch('/articles/{article}/feature', [App\Http\Controllers\ArticleController::class, 'toggleFeature'])
+    ->name('articles.toggleFeature');

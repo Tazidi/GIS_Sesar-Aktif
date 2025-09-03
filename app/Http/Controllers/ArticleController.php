@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
 
 class ArticleController extends Controller
 {
@@ -206,7 +207,30 @@ class ArticleController extends Controller
 
         return back()->with('success', 'Status artikel diperbarui.');
     }
+    
+    public function toggleFeature(Article $article)
+{
+    // Hanya admin yang bisa melakukan ini
+    if (auth()->user()->role !== 'admin') {
+        abort(403, 'Unauthorized action.');
+    }
 
+    // Cek jumlah artikel pilihan saat ini
+    $featuredCount = DB::table('articles')->where('is_featured', true)->count();
+
+    // Jika artikel ini belum menjadi pilihan dan sudah ada 10 artikel pilihan
+    if (!$article->is_featured && $featuredCount >= 10) {
+        return back()->with('error', 'Maksimal hanya 10 artikel yang bisa dijadikan pilihan.');
+    }
+
+    // Ubah status is_featured (dari true jadi false, atau sebaliknya)
+    $article->is_featured = !$article->is_featured;
+    $article->save();
+
+    $message = $article->is_featured ? 'Artikel berhasil dijadikan pilihan.' : 'Artikel berhasil dihapus dari pilihan.';
+
+    return back()->with('success', $message);
+}
     public function uploadImage(Request $request)
     {
         if ($request->hasFile('upload')) {
