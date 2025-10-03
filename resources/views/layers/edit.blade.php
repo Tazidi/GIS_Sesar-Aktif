@@ -50,9 +50,9 @@
         <div class="space-y-8">
             @foreach ($layer->mapFeatures as $feature)
                 @php
-                    $props = json_decode($feature->properties, true) ?: [];
-                    $tech = json_decode($feature->technical_info, true) ?: [];
-                    $pivot = $feature->pivot; // Data dari tabel pivot (styling)
+                    $props = $feature->properties ?? [];
+                    $tech  = $feature->technical_info ?? [];
+                    $pivot = $feature->pivot;
                 @endphp
                 <div class="feature-card bg-white p-6 shadow-md">
                     <input type="hidden" name="features[{{ $feature->id }}][id]" value="{{ $feature->id }}">
