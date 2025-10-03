@@ -221,14 +221,6 @@
                             <div id="feature-images-showmore" class="mt-2"></div>
                         </div>
 
-                        {{-- Technical Info Container --}}
-                        <div id="technical-info-wrapper" class="hidden border-t pt-4 space-y-4">
-                            <h3 class="text-lg font-medium text-gray-900 -mb-2">Info Teknis</h3>
-                            <p class="text-sm text-gray-600">Properti teknis berikut diambil dari setiap fitur dalam file GeoJSON Anda.</p>
-                            <div id="technical-info-container" class="space-y-4"></div>
-                            <div id="show-more-container" class="mt-2"></div>
-                        </div>
-
                         {{-- Hidden Inputs for Geometry Data --}}
                         <input type="hidden" name="geometry" id="geometry-input" required>
                         <input type="hidden" name="geometry_type" id="geometry_type_input" required>
@@ -275,9 +267,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const geometryTypeInput = document.getElementById('geometry_type_input');
     const propertiesInput = document.getElementById('properties-input');
     const geojsonFileInput = document.getElementById('geojson_file');
-    const techInfoWrapper = document.getElementById('technical-info-wrapper');
-    const techInfoContainer = document.getElementById('technical-info-container');
-    const showMoreContainer = document.getElementById('show-more-container');
     const featureImagesContainer = document.getElementById('feature-images-container');
     const featureImagesList = document.getElementById('feature-images-list');
     const featureImagesShowmore = document.getElementById('feature-images-showmore');
@@ -346,9 +335,6 @@ document.addEventListener('DOMContentLoaded', function() {
         geometryInput.value = '';
         geojsonFileInput.value = '';
         propertiesInput.value = '';
-        techInfoContainer.innerHTML = '';
-        showMoreContainer.innerHTML = '';
-        techInfoWrapper.classList.add('hidden');
         featureImagesList.innerHTML = '';
         featureImagesShowmore.innerHTML = '';
         featureImagesContainer.classList.add('hidden');
@@ -602,26 +588,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (geojson.features[0].properties) {
                     document.getElementById('nama_layer').value = geojson.features[0].properties.name || document.getElementById('nama_layer').value;
                 }
-
-                // Tampilkan info teknis
-                let techInfoHtml = '';
-                geojson.features.forEach((feature, index) => {
-                    const props = feature.properties || {};
-                    const extraClasses = index > 0 ? 'hidden extra-tech-info' : '';
-                    techInfoHtml += `
-                        <div class="tech-info-block ${extraClasses}">
-                            <p class="text-sm font-semibold text-gray-800 mb-2">Info Teknis untuk Fitur #${index + 1}</p>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div><label for="panjang_sesar_${index}" class="block text-sm font-medium text-gray-700">Panjang Sesar</label><input type="text" name="technical_info[${index}][panjang_sesar]" id="panjang_sesar_${index}" value="${props.panjang_sesar || ''}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
-                                <div><label for="lebar_sesar_${index}" class="block text-sm font-medium text-gray-700">Lebar Sesar</label><input type="text" name="technical_info[${index}][lebar_sesar]" id="lebar_sesar_${index}" value="${props.lebar_sesar || ''}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
-                                <div><label for="tipe_${index}" class="block text-sm font-medium text-gray-700">Tipe</label><input type="text" name="technical_info[${index}][tipe]" id="tipe_${index}" value="${props.tipe || ''}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
-                                <div><label for="mmax_${index}" class="block text-sm font-medium text-gray-700">MMAX</label><input type="text" name="technical_info[${index}][mmax]" id="mmax_${index}" value="${props.mmax || ''}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
-                            </div>
-                        </div>
-                    `;
-                });
-                techInfoContainer.innerHTML = techInfoHtml;
-                techInfoWrapper.classList.remove('hidden');
 
                 showNotification(`File GeoJSON dengan ${geojson.features.length} fitur berhasil dimuat!`);
             } catch (error) {
