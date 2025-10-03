@@ -24,7 +24,16 @@ class Layer extends Model
                 ]);
     }
     public function mapFeatures()
-    {
-        return $this->belongsToMany(\App\Models\MapFeature::class, 'feature_layer', 'layer_id', 'feature_id');
-    }
+{
+    return $this->belongsToMany(MapFeature::class, 'feature_layer', 'layer_id', 'feature_id')
+        ->withPivot([
+            'layer_type',
+            'stroke_color',
+            'fill_color',
+            'weight',
+            'opacity',
+            'radius',
+            'icon_url'
+        ]);
+}
 }

@@ -64,37 +64,59 @@ class MapController extends Controller
         return view('maps.form', compact('map', 'layers'));
     }
 
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'name' => 'required|string|max:100',
-            'description' => 'nullable|string',
-            'layer_ids' => 'nullable|array', // Diubah menjadi nullable
-            'layer_ids.*' => 'exists:layers,id',           
-            'image_path' => 'nullable|image|max:2048',
-            'kategori' => 'required|in:Ya,Tidak',
-        ]);
+    // app/Http/Controllers/MapController.php
 
-        if ($request->hasFile('image_path')) {
-            $file = $request->file('image_path');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('map_images'), $filename);
-            $data['image_path'] = $filename;
-        }
-        
-        $data['kategori'] = $data['kategori'];
-        $data['map_type'] = 'multi_layer';
+public function store(Request $request)
+{
+    // 1. KEMBALIKAN VALIDASI KE VERSI SEDERHANA (tanpa field gaya)
+    $data = $request->validate([
+        'name'        => 'required|string|max:100',
+        'description' => 'nullable|string',
+        'layer_ids'   => 'nullable|array',
+        'layer_ids.*' => 'exists:layers,id',
+        'image_path'  => 'nullable|image|max:2048',
+        'kategori'    => 'required|in:Ya,Tidak',
+    ]);
 
-        $map = Map::create($data);
-
-        // Attach layer ke map hanya jika layer_ids ada
-        if (!empty($data['layer_ids'])) {
-            $map->layers()->attach($data['layer_ids']);
-        }
-
-        return redirect()->route('maps.geometries.index', $map)
-            ->with('success', 'Map berhasil dibuat! Sekarang Anda bisa menambahkan geometri.');
+    if ($request->hasFile('image_path')) {
+        $file = $request->file('image_path');
+        $filename = time() . '_' . $file->getClientOriginalName();
+        $file->move(public_path('map_images'), $filename);
+        $data['image_path'] = $filename;
     }
+    
+    $data['map_type'] = 'multi_layer';
+    $map = Map::create($data);
+
+    if (!empty($data['layer_ids'])) {
+        foreach ($data['layer_ids'] as $layerId) {
+            
+            $layer = Layer::with('mapFeatures')->find($layerId);
+            if (!$layer) continue;
+
+            $firstFeature = $layer->mapFeatures->first();
+
+            $styleData = [
+                'layer_type'   => null, 'stroke_color' => null, 'fill_color' => null,
+                'weight'       => null, 'opacity'      => null, 'radius'     => null, 'icon_url' => null,
+            ];
+
+            if ($firstFeature && $firstFeature->pivot) {
+                $styleData['layer_type']   = $firstFeature->pivot->layer_type;
+                $styleData['stroke_color'] = $firstFeature->pivot->stroke_color;
+                $styleData['fill_color']   = $firstFeature->pivot->fill_color;
+                $styleData['weight']       = $firstFeature->pivot->weight;
+                $styleData['opacity']      = $firstFeature->pivot->opacity;
+                $styleData['radius']       = $firstFeature->pivot->radius;
+                $styleData['icon_url']     = $firstFeature->pivot->icon_url;
+            }
+
+            $map->layers()->attach($layerId, $styleData);
+        }
+    }
+
+    return redirect()->route('maps.index')->with('success', 'Map berhasil dibuat!');
+}
 
     public function edit(Map $map)
     {
@@ -132,7 +154,7 @@ class MapController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string',
-            'layer_ids' => 'nullable|array', // Diubah menjadi nullable
+            'layer_ids' => 'nullable|array',
             'layer_ids.*' => 'exists:layers,id',
             'image_path' => 'nullable|image|max:2048',
             'layer_type' => 'nullable|string|max:50',
@@ -146,7 +168,6 @@ class MapController extends Controller
         ]);
 
         if ($request->hasFile('image_path')) {
-            // Hapus gambar lama jika ada
             if ($map->image_path && File::exists(public_path('map_images/' . $map->image_path))) {
                 File::delete(public_path('map_images/' . $map->image_path));
             }
@@ -159,7 +180,6 @@ class MapController extends Controller
 
         $map->update($data);
 
-        // Handle layer sync hanya jika layer_ids ada
         if ($request->has('layer_ids')) {
             $pivotData = [];
             $styleData = [
@@ -193,7 +213,6 @@ class MapController extends Controller
 
             $map->layers()->sync($pivotData);
         } else {
-            // Jika tidak ada layer_ids, detach semua layer yang ada
             $map->layers()->detach();
         }
         
@@ -317,21 +336,10 @@ class MapController extends Controller
                 $properties = is_string($feature->properties) ? json_decode($feature->properties, true) : ($feature->properties ?? []);
                 $technical_info = is_string($feature->technical_info) ? json_decode($feature->technical_info, true) : ($feature->technical_info ?? []);
 
-                // **PERBAIKAN: Ikuti pola gallery_maps/show – langsung asset jika relative path**
-                // Asumsi DB sudah simpan dengan folder 'map_features/' (seperti contoh DB)
                 $imagePath = $feature->image_path;
                 if ($imagePath && !filter_var($imagePath, FILTER_VALIDATE_URL)) {
-                    // Jika relative (dari DB), langsung asset (tanpa append lagi)
                     $imagePath = asset($imagePath);
-                    
-                    // Fallback opsional: Jika DB simpan tanpa folder (data lama), append
-                    // if (strpos($imagePath, 'map_features/') !== 0) {
-                    //     $imagePath = asset('map_features/' . basename($imagePath));
-                    // }
                 }
-
-                // Optional: Log untuk debug (hapus setelah test)
-                // \Log::info('Processed Feature ID ' . $feature->id . ': Image Path = ' . ($imagePath ?? 'null'));
 
                 return [
                     'type' => 'Feature',
@@ -354,7 +362,6 @@ class MapController extends Controller
     {
         if ($map->features()->exists()) {
             $features = $map->features->map(function ($feature) {
-                // pastikan properties array
                 $properties = $feature->properties ?? [];
                 if (is_string($properties)) {
                     $decoded = json_decode($properties, true);
@@ -366,7 +373,6 @@ class MapController extends Controller
                 $properties['technical_info'] = $feature->technical_info;
                 $properties['layer_ids'] = $feature->layers->pluck('id')->toArray();
 
-                // pastikan geometry valid
                 $geometry = $feature->geometry;
                 if (is_string($geometry)) {
                     $geometry = json_decode($geometry, true);
