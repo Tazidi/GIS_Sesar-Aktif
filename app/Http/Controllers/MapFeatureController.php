@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Map;
 use App\Models\MapFeature;
+use App\Models\Layer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log; // Tambahkan Log
@@ -28,6 +29,7 @@ class MapFeatureController extends Controller
     {
         // Load relasi map untuk navigasi (misal: tombol kembali)
         $mapFeature->load('map');
+        $feature = $mapFeature;
         return view('map_features.edit', compact('mapFeature'));
     }
 
@@ -43,6 +45,8 @@ class MapFeatureController extends Controller
             'caption' => 'nullable|string|max:255',
             'technical_info' => 'nullable|array', // ubah ke array
             'technical_info.*' => 'nullable|string|max:500', // setiap elemen array string
+            'layer_ids' => 'required|array',
+            'layer_ids.*' => 'exists:layers,id',
         ]);
 
         try {
@@ -65,10 +69,11 @@ class MapFeatureController extends Controller
             }
 
             $data = [
-                'properties'     => $decodedProperties,
-                'geometry'       => $decodedGeometry,
-                'caption'        => $request->filled('caption') ? $request->caption : $mapFeature->caption,
+                    'properties' => $request->properties ?? $mapFeature->properties,
+                    'geometry' => $request->geometry ?? $mapFeature->geometry,
+                    'caption' => $request->caption ?? $mapFeature->caption,
                 ];
+
                 // Handle technical_info (array ke JSON)
                 $technicalInfo = $request->input('technical_info', []);
                 $technicalInfo = array_filter($technicalInfo, fn($v) => $v !== null && $v !== '');
@@ -92,10 +97,11 @@ class MapFeatureController extends Controller
                 }
 
                 $file->move($destinationPath, $filename);
-                $data['image_path'] = $filename;
+                $data['image_path'] = 'map_features/' . $filename;
             }
 
             $mapFeature->update($data);
+            $mapFeature->layers()->sync($request->layer_ids);
 
             return redirect()->route('map-features.index', $mapFeature->map_id)
                         ->with('success', 'Fitur berhasil diperbarui.');
@@ -105,4 +111,52 @@ class MapFeatureController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat memperbarui fitur.');
         }
     }
+
+    public function create(Map $map)
+    {
+        $layers = Layer::all(); // Ambil semua layer
+        return view('map_features.create', compact('map', 'layers'));
+    }
+
+    public function store(Request $request, Map $map)
+    {
+        $validated = $request->validate([
+            'geometry' => 'required|json',
+            'properties' => 'nullable|string',
+            'feature_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'caption' => 'nullable|string|max:255',
+            'technical_info' => 'nullable|array',
+            'technical_info.*' => 'nullable|string|max:500',
+            'layer_ids' => 'required|array',
+            'layer_ids.*' => 'exists:layers,id',
+        ]);
+
+        $data = [
+            'properties' => $validated['properties'] ?? null,
+            'geometry' => $validated['geometry'],
+            'caption' => $validated['caption'] ?? null,
+            'technical_info' => $request->technical_info ? json_encode($request->technical_info) : null,
+        ];
+
+        // Upload image kalau ada
+        if ($request->hasFile('feature_image')) {
+            $file = $request->file('feature_image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $destinationPath = public_path('map_features');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+            $file->move($destinationPath, $filename);
+            $data['image_path'] = 'map_features/' . $filename;
+        }
+
+        $feature = $map->features()->create($data);
+
+        // Simpan multilayer ke pivot
+        $feature->layers()->sync($validated['layer_ids']);
+
+        return redirect()->route('map-features.index', $map)
+            ->with('success', 'Fitur berhasil ditambahkan.');
+    }
+
 }

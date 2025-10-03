@@ -7,12 +7,10 @@ use App\Models\Map;
 use App\Models\Layer;
 use App\Models\MapFeature;
 use Illuminate\Support\Facades\DB;
-// use Illuminate\Support\Facades\Storage; // Tidak lagi digunakan untuk image_path
-use Illuminate\Support\Facades\File; // Ganti Storage dengan File untuk operasi file di direktori public
+use Illuminate\Support\Facades\File;
 
 class MapController extends Controller
 {
-    // ... (method index, create tidak ada perubahan) ...
     public function index(Request $request)
     {
         $query = Map::with('layers');
@@ -71,90 +69,31 @@ class MapController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string',
-            'layers' => 'required|array', 
-            'layers.*' => 'exists:layers,id',
+            'layer_ids' => 'nullable|array', // Diubah menjadi nullable
+            'layer_ids.*' => 'exists:layers,id',           
             'image_path' => 'nullable|image|max:2048',
-            'layer_type' => 'nullable|string|max:50',
-            'geometry' => 'nullable|json',
             'kategori' => 'required|in:Ya,Tidak',
-            'stroke_color' => 'nullable|string|max:7',
-            'fill_color' => 'nullable|string|max:7',
-            'weight' => 'nullable|numeric',
-            'opacity' => 'nullable|numeric|min:0|max:1',
-            'radius' => 'nullable|numeric',
-            'icon_url' => 'nullable|string|max:255',
         ]);
 
         if ($request->hasFile('image_path')) {
             $file = $request->file('image_path');
             $filename = time() . '_' . $file->getClientOriginalName();
             $file->move(public_path('map_images'), $filename);
-            $data['image_path'] = $filename; // Simpan nama filenya saja
+            $data['image_path'] = $filename;
         }
         
-        $data['kategori'] = $data['kategori']; // simpan langsung "Ya" atau "Tidak"
+        $data['kategori'] = $data['kategori'];
+        $data['map_type'] = 'multi_layer';
 
         $map = Map::create($data);
 
-        $pivotData = [];
-        $styleData = [
-            'layer_type'   => $request->layer_type,
-            'stroke_color' => $request->stroke_color,
-            'fill_color'   => $request->fill_color,
-            'weight'       => $request->weight,
-            'opacity'      => $request->opacity,
-            'radius'       => $request->radius,
-            'icon_url'     => $request->icon_url,
-        ];
-
-        if ($request->filled('geometry')) {
-            $geometry = json_decode($request->geometry, true);
-            $center = $this->extractCenterFromGeometry($geometry);
-            if ($center) {
-                $styleData['lat'] = $center['lat'];
-                $styleData['lng'] = $center['lng'];
-            }
+        // Attach layer ke map hanya jika layer_ids ada
+        if (!empty($data['layer_ids'])) {
+            $map->layers()->attach($data['layer_ids']);
         }
 
-        foreach ($request->input('layers') as $layerId) {
-            $pivotData[$layerId] = $styleData;
-        }
-
-        $map->layers()->attach($pivotData);
-
-        if ($request->filled('geometry')) {
-            $geojson = json_decode($request->geometry, true);
-            if (isset($geojson['features'])) {
-                foreach ($geojson['features'] as $index => $feature) {
-                    // handle upload file per feature
-                    $imagePath = null;
-                    if ($request->hasFile("feature_images.$index")) {
-                        $imageFile = $request->file("feature_images.$index");
-                        $imagePath = time() . "_{$index}_" . $imageFile->getClientOriginalName();
-                        $imageFile->move(public_path('map_features'), $imagePath);
-                    }
-
-                    // ambil properti teknis dari form (array) kalau ada
-                    $technicalInfo = null;
-                    if ($request->has("feature_properties.$index")) {
-                        $technicalInfo = json_encode($request->input("feature_properties.$index"));
-                    }
-
-                    MapFeature::create([
-                        'map_id' => $map->id,
-                        'geometry' => $feature['geometry'] ?? null,
-                        'properties' => $feature['properties'] ?? [],
-                        'image_path' => $imagePath ?? ($feature['properties']['image_path'] ?? null),
-                        'caption' => $request->input("feature_captions.$index") 
-                                    ?? ($feature['properties']['caption'] ?? null),
-                        'technical_info' => $technicalInfo 
-                                            ?? ($feature['properties']['technical_info'] ?? null),
-                    ]);
-                }
-            }
-        }
-
-        return redirect()->route('maps.index')->with('success', 'Peta berhasil ditambahkan!');
+        return redirect()->route('maps.geometries.index', $map)
+            ->with('success', 'Map berhasil dibuat! Sekarang Anda bisa menambahkan geometri.');
     }
 
     public function edit(Map $map)
@@ -188,14 +127,13 @@ class MapController extends Controller
         return view('maps.form', compact('map', 'layers'));
     }
 
-
     public function update(Request $request, Map $map)
     {
         $data = $request->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string',
-            'layers' => 'required|array',
-            'layers.*' => 'exists:layers,id',
+            'layer_ids' => 'nullable|array', // Diubah menjadi nullable
+            'layer_ids.*' => 'exists:layers,id',
             'image_path' => 'nullable|image|max:2048',
             'layer_type' => 'nullable|string|max:50',
             'geometry' => 'nullable|json',
@@ -207,7 +145,6 @@ class MapController extends Controller
             'icon_url' => 'nullable|string|max:255',
         ]);
 
-        // === PERUBAHAN UNGGAHAN & HAPUS FILE DIMULAI DI SINI ===
         if ($request->hasFile('image_path')) {
             // Hapus gambar lama jika ada
             if ($map->image_path && File::exists(public_path('map_images/' . $map->image_path))) {
@@ -219,43 +156,47 @@ class MapController extends Controller
             $file->move(public_path('map_images'), $filename);
             $data['image_path'] = $filename;
         }
-        // === PERUBAHAN SELESAI ===
 
         $map->update($data);
 
-        $pivotData = [];
-        $styleData = [
-            'layer_type'   => $request->layer_type,
-            'stroke_color' => $request->stroke_color,
-            'fill_color'   => $request->fill_color,
-            'weight'       => $request->weight,
-            'opacity'      => $request->opacity,
-            'radius'       => $request->radius,
-            'icon_url'     => $request->icon_url,
-        ];
+        // Handle layer sync hanya jika layer_ids ada
+        if ($request->has('layer_ids')) {
+            $pivotData = [];
+            $styleData = [
+                'layer_type'   => $request->layer_type,
+                'stroke_color' => $request->stroke_color,
+                'fill_color'   => $request->fill_color,
+                'weight'       => $request->weight,
+                'opacity'      => $request->opacity,
+                'radius'       => $request->radius,
+                'icon_url'     => $request->icon_url,
+            ];
 
-        if ($request->filled('geometry')) {
-            $geometry = json_decode($request->geometry, true);
-            $center = $this->extractCenterFromGeometry($geometry);
-            if ($center) {
-                $styleData['lat'] = $center['lat'];
-                $styleData['lng'] = $center['lng'];
+            if ($request->filled('geometry')) {
+                $geometry = json_decode($request->geometry, true);
+                $center = $this->extractCenterFromGeometry($geometry);
+                if ($center) {
+                    $styleData['lat'] = $center['lat'];
+                    $styleData['lng'] = $center['lng'];
+                }
+            } else {
+                $firstLayer = $map->layers->first();
+                if ($firstLayer && $firstLayer->pivot->lat && $firstLayer->pivot->lng) {
+                    $styleData['lat'] = $firstLayer->pivot->lat;
+                    $styleData['lng'] = $firstLayer->pivot->lng;
+                }
             }
+
+            foreach ($request->input('layer_ids') as $layerId) {
+                $pivotData[$layerId] = $styleData;
+            }
+
+            $map->layers()->sync($pivotData);
         } else {
-            $firstLayer = $map->layers->first();
-            if ($firstLayer && $firstLayer->pivot->lat && $firstLayer->pivot->lng) {
-                $styleData['lat'] = $firstLayer->pivot->lat;
-                $styleData['lng'] = $firstLayer->pivot->lng;
-            }
+            // Jika tidak ada layer_ids, detach semua layer yang ada
+            $map->layers()->detach();
         }
-
-        foreach ($request->input('layers') as $layerId) {
-            $pivotData[$layerId] = $styleData;
-        }
-
-        $map->layers()->sync($pivotData);
         
-        // === PERUBAHAN UNTUK UPDATE FEATURES ===
         if ($request->filled('geometry')) {
             $geojson = json_decode($request->geometry, true);
 
@@ -263,14 +204,12 @@ class MapController extends Controller
                 foreach ($geojson['features'] as $index => $feature) {
                     $featureId = $request->input("feature_ids.$index"); 
 
-                    // kalau ada id, update; kalau tidak ada id berarti fitur baru
                     if ($featureId) {
                         $mapFeature = $map->features()->find($featureId);
                     } else {
                         $mapFeature = new MapFeature(['map_id' => $map->id]);
                     }
 
-                    // handle upload gambar baru
                     $imagePath = $mapFeature->image_path;
                     if ($request->hasFile("feature_images.$index")) {
                         $imageFile = $request->file("feature_images.$index");
@@ -294,18 +233,15 @@ class MapController extends Controller
                     $mapFeature->save();
                 }
 
-                // opsional: hapus fitur yang tidak dikirim di form
                 $validIds = collect($request->input('feature_ids', []))->filter()->all();
                 $map->features()->whereNotIn('id', $validIds)->delete();
             }
         } else {
-            // === BLOK BARU: update fitur lama tanpa geojson baru ===
             if ($request->has('feature_ids')) {
                 foreach ($request->input('feature_ids') as $index => $featureId) {
                     $mapFeature = $map->features()->find($featureId);
                     if (!$mapFeature) continue;
 
-                    // gambar lama
                     $imagePath = $mapFeature->image_path;
                     if ($request->hasFile("feature_images.$index")) {
                         $imageFile = $request->file("feature_images.$index");
@@ -318,7 +254,6 @@ class MapController extends Controller
                         $technicalInfo = json_encode($request->input("feature_properties.$index"));
                     }
 
-                    // update hanya caption/gambar/info teknis
                     $mapFeature->image_path = $imagePath;
                     $mapFeature->caption = $request->input("feature_captions.$index", $mapFeature->caption);
                     $mapFeature->technical_info = $technicalInfo ?? $mapFeature->technical_info;
@@ -331,7 +266,6 @@ class MapController extends Controller
         return redirect()->route('maps.index')->with('success', 'Peta berhasil diperbarui!');
     }
 
-    // ... (method show tidak ada perubahan) ...
     public function show(Map $map)
     {
         $map->load('features', 'layers');
@@ -355,11 +289,9 @@ class MapController extends Controller
         $map->layers()->detach();
         $map->features()->delete();
 
-        // === PERUBAHAN HAPUS FILE DIMULAI DI SINI ===
         if ($map->image_path && File::exists(public_path('map_images/' . $map->image_path))) {
             File::delete(public_path('map_images/' . $map->image_path));
         }
-        // === PERUBAHAN SELESAI ===
 
         $map->delete();
         return redirect()->route('maps.index')->with('success', 'Peta berhasil dihapus!');
@@ -367,58 +299,102 @@ class MapController extends Controller
 
     public function visualisasi(Request $request)
     {
-        $query = Map::with(['layers', 'features']);
-        $query->where('kategori', 'Ya');
+        $mapsForLegend = Map::with('layers')->where('kategori', 'Ya')->get();
 
-        // Tambahkan filter kategori kalau ada di query string (?kategori=...)
-        if ($request->filled('kategori')) {
-            $query->where('kategori', $request->kategori);
-        }
+        $activeLayerIds = $mapsForLegend->pluck('layers')->flatten()->pluck('id')->unique();
 
-        $maps = $query->get();
+        $features = MapFeature::with('layers')
+            ->whereHas('layers', function ($query) use ($activeLayerIds) {
+                $query->whereIn('layers.id', $activeLayerIds);
+            })
+            ->get()
+            ->filter(function ($feature) {
+                $geometry = is_string($feature->geometry) ? json_decode($feature->geometry, true) : $feature->geometry;
+                return $geometry && isset($geometry['type']) && isset($geometry['coordinates']);
+            })
+            ->map(function ($feature) {
+                $geometry = is_string($feature->geometry) ? json_decode($feature->geometry, true) : $feature->geometry;
+                $properties = is_string($feature->properties) ? json_decode($feature->properties, true) : ($feature->properties ?? []);
+                $technical_info = is_string($feature->technical_info) ? json_decode($feature->technical_info, true) : ($feature->technical_info ?? []);
 
-        foreach ($maps as $map) {
-            $firstLayer = $map->layers->first();
-            if ($firstLayer) {
-                $map->layer_type   = $firstLayer->pivot->layer_type;
-                $map->stroke_color = $firstLayer->pivot->stroke_color;
-                $map->fill_color   = $firstLayer->pivot->fill_color;
-                $map->weight       = $firstLayer->pivot->weight;
-                $map->opacity      = $firstLayer->pivot->opacity;
-                $map->radius       = $firstLayer->pivot->radius;
-                $map->icon_url     = $firstLayer->pivot->icon_url;
-            }
-        }
+                // **PERBAIKAN: Ikuti pola gallery_maps/show – langsung asset jika relative path**
+                // Asumsi DB sudah simpan dengan folder 'map_features/' (seperti contoh DB)
+                $imagePath = $feature->image_path;
+                if ($imagePath && !filter_var($imagePath, FILTER_VALIDATE_URL)) {
+                    // Jika relative (dari DB), langsung asset (tanpa append lagi)
+                    $imagePath = asset($imagePath);
+                    
+                    // Fallback opsional: Jika DB simpan tanpa folder (data lama), append
+                    // if (strpos($imagePath, 'map_features/') !== 0) {
+                    //     $imagePath = asset('map_features/' . basename($imagePath));
+                    // }
+                }
 
-        return view('visualisasi.index', compact('maps'));
+                // Optional: Log untuk debug (hapus setelah test)
+                // \Log::info('Processed Feature ID ' . $feature->id . ': Image Path = ' . ($imagePath ?? 'null'));
+
+                return [
+                    'type' => 'Feature',
+                    'geometry' => $geometry,
+                    'properties' => $properties,
+                    'image_path' => $imagePath,
+                    'caption' => $feature->caption ?? '',
+                    'technical_info' => $technical_info,
+                    'layer_ids' => $feature->layers->pluck('id')->toArray(),
+                ];
+            });
+
+        return view('visualisasi.index', [
+            'maps' => $mapsForLegend,
+            'allFeatures' => $features,
+        ]);
     }
     
     public function geojson(Map $map)
     {
         if ($map->features()->exists()) {
             $features = $map->features->map(function ($feature) {
+                // pastikan properties array
                 $properties = $feature->properties ?? [];
-                $properties['image_path'] = $feature->image_path;
+                if (is_string($properties)) {
+                    $decoded = json_decode($properties, true);
+                    $properties = is_array($decoded) ? $decoded : [];
+                }
+
+                $properties['image_path'] = $feature->image_path ? asset($feature->image_path) : null;
                 $properties['caption'] = $feature->caption;
                 $properties['technical_info'] = $feature->technical_info;
+                $properties['layer_ids'] = $feature->layers->pluck('id')->toArray();
+
+                // pastikan geometry valid
+                $geometry = $feature->geometry;
+                if (is_string($geometry)) {
+                    $geometry = json_decode($geometry, true);
+                }
+                if (isset($geometry['lat'], $geometry['lng'])) {
+                    $geometry = [
+                        'type' => 'Point',
+                        'coordinates' => [(float) $geometry['lng'], (float) $geometry['lat']],
+                    ];
+                }
+
                 return [
                     'type' => 'Feature',
-                    'geometry' => $feature->geometry,
-                    'properties' => $properties
+                    'geometry' => $geometry,
+                    'properties' => $properties,
                 ];
             });
 
             return response()->json([
                 'type' => 'FeatureCollection',
-                'features' => $features
+                'features' => $features,
             ]);
         }
-        
-        if ($map->geometry) {
-            return response()->json(json_decode($map->geometry));
-        }
 
-        return response()->json(['error' => 'Tidak ada data GeoJSON yang tersedia'], 404);
+        return response()->json([
+            'type' => 'FeatureCollection',
+            'features' => [],
+        ]);
     }
 
     public function updateKategori(Request $request, Map $map)

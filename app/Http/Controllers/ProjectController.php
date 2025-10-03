@@ -82,10 +82,23 @@ class ProjectController extends Controller
     {
         Gate::authorize('update', $project);
 
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
+        // Jika hanya update show_in_gallery (tanpa name), validasi name tidak wajib
+        if ($request->has('show_in_gallery') && !$request->has('name')) {
+            $data = $request->validate([
+                'show_in_gallery' => 'required|boolean',
+            ]);
+        } else {
+            $data = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'show_in_gallery' => 'nullable|boolean',
+            ]);
+        }
+
+        // Jika user bukan admin, jangan update show_in_gallery (security)
+        if (auth()->user()->role !== 'admin') {
+            unset($data['show_in_gallery']);
+        }
 
         $project->update($data);
 

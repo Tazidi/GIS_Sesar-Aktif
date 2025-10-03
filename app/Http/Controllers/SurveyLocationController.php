@@ -28,49 +28,55 @@ class SurveyLocationController extends Controller
         Gate::authorize('create', [SurveyLocation::class, $project]);
 
         $data = $request->validate([
-            'nama' => 'required|string|max:255',
-            'deskripsi' => 'nullable|string',
-            'lat' => 'required|numeric',
-            'lng' => 'required|numeric',
-            'image_primary' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'image_2' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'image_3' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'locations' => 'required|array',
+            'locations.*.nama' => 'required|string|max:255',
+            'locations.*.deskripsi' => 'nullable|string',
+            'locations.*.lat' => 'required|numeric',
+            'locations.*.lng' => 'required|numeric',
+            'locations.*.image_primary' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'locations.*.image_2' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'locations.*.image_3' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $imagePaths = [];
+        foreach ($data['locations'] as $index => $loc) {
+            $imagePaths = [];
 
-        // Process primary image
-        if ($request->hasFile('image_primary')) {
-            $file = $request->file('image_primary');
-            $filename = time() . '_1_' . $file->getClientOriginalName();
-            $file->move(public_path('survey'), $filename);
-            $imagePaths[] = $filename;
+            // Primary
+            if ($request->hasFile("locations.$index.image_primary")) {
+                $file = $request->file("locations.$index.image_primary");
+                $filename = time() . "_{$index}_1_" . $file->getClientOriginalName();
+                $file->move(public_path('survey'), $filename);
+                $imagePaths[] = $filename;
+            }
+
+            // Tambahan 1
+            if ($request->hasFile("locations.$index.image_2")) {
+                $file = $request->file("locations.$index.image_2");
+                $filename = time() . "_{$index}_2_" . $file->getClientOriginalName();
+                $file->move(public_path('survey'), $filename);
+                $imagePaths[] = $filename;
+            }
+
+            // Tambahan 2
+            if ($request->hasFile("locations.$index.image_3")) {
+                $file = $request->file("locations.$index.image_3");
+                $filename = time() . "_{$index}_3_" . $file->getClientOriginalName();
+                $file->move(public_path('survey'), $filename);
+                $imagePaths[] = $filename;
+            }
+
+            // Simpan per lokasi
+            $project->surveyLocations()->create([
+                'user_id'   => Auth::id(),
+                'nama'      => $loc['nama'],
+                'deskripsi' => $loc['deskripsi'] ?? null,
+                'geometry'  => ['lat' => $loc['lat'], 'lng' => $loc['lng']],
+                'images'    => $imagePaths,
+            ]);
         }
 
-        // Process additional images
-        if ($request->hasFile('image_2')) {
-            $file = $request->file('image_2');
-            $filename = time() . '_2_' . $file->getClientOriginalName();
-            $file->move(public_path('survey'), $filename);
-            $imagePaths[] = $filename;
-        }
-        if ($request->hasFile('image_3')) {
-            $file = $request->file('image_3');
-            $filename = time() . '_3_' . $file->getClientOriginalName();
-            $file->move(public_path('survey'), $filename);
-            $imagePaths[] = $filename;
-        }
-
-        // Create the location with the array of image paths
-        $project->surveyLocations()->create([
-            'user_id' => Auth::id(),
-            'nama' => $data['nama'],
-            'deskripsi' => $data['deskripsi'],
-            'geometry' => ['lat' => $data['lat'], 'lng' => $data['lng']],
-            'images' => $imagePaths, // Save the array to the JSON column
-        ]);
-
-        return redirect()->route('projects.show', $project)->with('success', 'Lokasi baru berhasil ditambahkan.');
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'Lokasi baru berhasil ditambahkan.');
     }
 
     /**

@@ -23,4 +23,8 @@ class Layer extends Model
                     'icon_url'
                 ]);
     }
+    public function mapFeatures()
+    {
+        return $this->belongsToMany(\App\Models\MapFeature::class, 'feature_layer', 'layer_id', 'feature_id');
+    }
 }

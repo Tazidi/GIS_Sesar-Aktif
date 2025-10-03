@@ -199,54 +199,25 @@
 
     {{-- Container untuk Layer --}}
     <div class="container" style="max-width: 1000px; margin: 0 auto;">
-        @forelse ($layers as $layer)
-            <div class="layer-card">
-                <h2 class="layer-title">{{ $layer->nama_layer }}</h2>
-                
-                <p class="layer-description">
-                    {{ $layer->deskripsi ?? 'Layer ini berisi kumpulan peta geografis.' }}
-                </p>
-                
-                <div class="layer-meta">
-                    <div class="meta-item">
-                        <span class="meta-count">{{ $layer->maps_count }}</span>
-                        <span>Peta dalam layer</span>
-                    </div>
+        <div class="maps-preview">
+            @forelse($maps as $map)
+                <div class="map-preview-card">
+                <div id="map-{{ $map->id }}" class="preview-map">
+                    <div class="map-loading">Memuat peta...</div>
                 </div>
-                
-                {{-- Preview peta dalam layer --}}
-                @if($layer->maps->count() > 0)
-                    <div class="maps-preview">
-                        @foreach($layer->maps as $map)
-                            <div class="map-preview-card">
-                                {{-- PERBAIKAN 1: Buat ID unik dengan menggabungkan ID layer dan ID peta --}}
-                                <div id="map-{{ $layer->id }}-{{ $map->id }}" class="preview-map">
-                                    <div class="map-loading">Memuat peta...</div>
-                                </div>
-                                <h3 class="preview-title">{{ $map->name }}</h3>
-                                <p class="preview-description">
-                                    {{ Str::limit($map->description ?? 'Peta ini menyajikan informasi geografis penting.', 80) }}
-                                </p>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
-                
-                <a href="{{ route('gallery_maps.showLayer', $layer) }}" class="btn-view">
-                    Lihat Semua Peta dalam Layer
-                </a>
+                <h3 class="preview-title">{{ $map->name }}</h3>
+                <p class="preview-description">{{ Str::limit($map->description ?? '—', 80) }}</p>
+                <a href="{{ route('gallery_maps.show', $map->id) }}" class="btn-view">Lihat Peta</a>
+                </div>
+            @empty
+                <div>Tidak ada peta</div>
+            @endforelse
             </div>
-        @empty
-            <div class="empty-state">
-                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Belum ada layer</h3>
-                <p>Saat ini tidak ada data layer yang dapat ditampilkan.</p>
-            </div>
-        @endforelse
     </div>
 
     {{-- ====== BAGIAN: Proyek Survey ====== --}}
     <div class="project-section">
-        <h2 class="project-title">Proyek Survey</h2>
+        <h2 class="project-title">Proyek</h2>
 
         @forelse($projects as $project)
             <div class="layer-card">
@@ -269,7 +240,7 @@
                         <div class="layer-meta">
                             <div class="meta-item">
                                 <span class="meta-count">{{ $project->survey_locations_count }}</span>
-                                <span>Lokasi survey</span>
+                                <span>Lokasi proyek</span>
                             </div>
                         </div>
 
@@ -357,58 +328,59 @@
 
     {{-- Siapkan data di sisi PHP --}}
     @php
-        $mapsData = $layers->flatMap(function($layer) {
-            // PERBAIKAN 2: Gunakan `use ($layer)` untuk membawa variabel layer ke dalam closure map
-            return $layer->maps->map(function($map) use ($layer) {
-                $pivot = $map->pivot;
-                return [
-                    // Buat ID unik untuk digunakan di JavaScript
-                    'unique_id' => "map-{$layer->id}-{$map->id}",
-                    'id' => $map->id,
-                    'name' => $map->name,
-                    'description' => $map->description,
-                    'image_path' => $map->image_path ? asset($map->image_path) : '',
-                    'layer_type' => $pivot->layer_type ?? $map->layer_type ?? 'marker',
-                    'stroke_color' => $pivot->stroke_color ?? $map->stroke_color ?? '#3388ff',
-                    'fill_color' => $pivot->fill_color ?? $map->fill_color ?? '#3388ff',
-                    'opacity' => $pivot->opacity ?? $map->opacity ?? 0.8,
-                    'weight' => $pivot->weight ?? $map->weight ?? 2,
-                    'radius' => $pivot->radius ?? $map->radius ?? 300,
-                    'icon_url' => $pivot->icon_url ?? $map->icon_url ?? '',
-                    'lat' => $pivot->lat ?? $map->lat ?? 0,
-                    'lng' => $pivot->lng ?? $map->lng ?? 0,
-                    'geometry' => $map->geometry ? (is_string($map->geometry) ? json_decode($map->geometry, true) : $map->geometry) : null,
-                ];
-            });
-        })->values()->toArray();
+        $mapsData = collect($maps)->map(function($map) {
+            return [
+                'unique_id'   => "map-{$map->id}",
+                'id'          => $map->id,
+                'name'        => $map->name,
+                'description' => $map->description,
+                'image_path'  => $map->image_path ? asset($map->image_path) : '',
+                'layer_type'  => $map->layer_type ?? 'marker',
+                'stroke_color'=> $map->stroke_color ?? '#3388ff',
+                'fill_color'  => $map->fill_color ?? '#3388ff',
+                'opacity'     => $map->opacity ?? 0.8,
+                'weight'      => $map->weight ?? 2,
+                'radius'      => $map->radius ?? 300,
+                'icon_url'    => $map->icon_url ?? '',
+                'lat'         => $map->lat ?? null,
+                'lng'         => $map->lng ?? null,
+                'geometry'    => $map->geometry ? (is_string($map->geometry) ? json_decode($map->geometry, true) : $map->geometry) : null,
+            ];
+        })->toArray();
     @endphp
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const mapsData = @json($mapsData);
-        
+
+        // helper: parse technical_info yang mungkin string JSON atau object
+        const parseTechnicalInfo = (val) => {
+            if (!val) return {};
+            if (typeof val === 'object') return val;
+            try {
+                return JSON.parse(val);
+            } catch (e) {
+                return {};
+            }
+        };
+
+        const safeNumber = (v, fallback) => {
+            const n = Number(v);
+            return Number.isFinite(n) ? n : fallback;
+        };
+
         const initPreviewMap = (mapData) => {
-            // PERBAIKAN 3: Gunakan `unique_id` yang baru dibuat untuk menargetkan elemen
-            const mapContainerId = mapData.unique_id;        
+            const mapContainerId = mapData.unique_id;
             const mapContainer = document.getElementById(mapContainerId);
-            
-            // Tambahkan pengecekan untuk memastikan kontainer ada dan belum diinisialisasi
             if (!mapContainer || mapContainer._leaflet_id) {
                 console.log('Map container not found or already initialized:', mapContainerId);
                 return;
             }
-            
-            // Hapus loading indicator
+
             const loadingIndicator = mapContainer.querySelector('.map-loading');
-            if (loadingIndicator) {
-                loadingIndicator.remove();
-            }
-            
-            // Pastikan container memiliki tinggi yang sesuai
-            if (mapContainer.offsetHeight === 0) {
-                mapContainer.style.height = '120px';
-            }
-            
+            if (loadingIndicator) loadingIndicator.remove();
+            if (mapContainer.offsetHeight === 0) mapContainer.style.height = '120px';
+
             const previewMap = L.map(mapContainerId, {
                 zoomControl: false,
                 scrollWheelZoom: false,
@@ -418,88 +390,149 @@
                 boxZoom: false,
                 keyboard: false,
             }).setView([-2.54, 118.01], 5);
-            
+
             L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
                 attribution: '© Google',
                 maxZoom: 20,
             }).addTo(previewMap);
-            
-            const createStyle = (props = {}) => ({
-                color: props.stroke_color || mapData.stroke_color || '#3388ff',
-                fillColor: props.fill_color || mapData.fill_color || '#3388ff',
-                weight: props.weight || mapData.weight || 3,
-                opacity: props.opacity || mapData.opacity || 0.8,
-                fillOpacity: (props.fill_opacity || mapData.fill_opacity || 0.3) * 0.8,
-            });
-            
+
+            const getStyleFrom = (props = {}, tech = {}) => {
+                // kemungkinan field warna bisa bernama stroke_color, fill_color, color, atau color_hex
+                const stroke_color = tech.stroke_color || tech.color || tech.color_hex || props.stroke_color || props.color || mapData.stroke_color || '#3388ff';
+                const fill_color   = tech.fill_color   || tech.color || tech.color_hex || props.fill_color   || props.color || mapData.fill_color   || stroke_color;
+                const weight       = safeNumber(tech.weight ?? props.weight ?? mapData.weight, 3);
+                const opacity      = (typeof tech.opacity !== 'undefined' ? tech.opacity : (typeof props.opacity !== 'undefined' ? props.opacity : (mapData.opacity ?? 0.8)));
+                const fillOpacity  = (typeof tech.fill_opacity !== 'undefined' ? tech.fill_opacity : (typeof props.fill_opacity !== 'undefined' ? props.fill_opacity : (mapData.fill_opacity ?? 0.3)));
+
+                return {
+                    color: stroke_color,
+                    fillColor: fill_color,
+                    weight,
+                    opacity,
+                    fillOpacity: fillOpacity,
+                };
+            };
+
             const renderFeatures = async () => {
                 try {
-                    // ID peta asli tetap digunakan untuk mengambil data GeoJSON
                     const geojsonUrl = `{{ url('maps') }}/${mapData.id}/geojson`;
                     const response = await fetch(geojsonUrl);
                     if (!response.ok) throw new Error('GeoJSON not found');
-                    
+
                     const geojsonData = await response.json();
-                    
+
                     const geoLayer = L.geoJSON(geojsonData, {
                         style: (feature) => {
                             const props = feature.properties || {};
-                            return {
-                                color: props.stroke_color || mapData.stroke_color || '#3388ff',
-                                fillColor: props.fill_color || mapData.fill_color || '#3388ff',
-                                weight: props.weight || mapData.weight || 3,
-                                opacity: props.opacity || mapData.opacity || 0.8,
-                                fillOpacity: (props.fill_opacity || mapData.fill_opacity || 0.3) * 0.8,
-                            };
+                            const tech = parseTechnicalInfo(props.technical_info);
+                            return getStyleFrom(props, tech);
                         },
                         pointToLayer: (feature, latlng) => {
                             const props = feature.properties || {};
-                            const type = props.layer_type || mapData.layer_type;
-                            const style = createStyle(props);
-                            const iconUrl = props.icon_url || mapData.icon_url;
-                            
-                            if (type === 'circle') {
-                                return L.circle(latlng, { 
-                                    ...style, 
-                                    radius: props.radius || mapData.radius || 1000 
+                            const tech = parseTechnicalInfo(props.technical_info);
+
+                            // Tentukan jenis geometri yang diharapkan:
+                            // prioritas: technical_info.geometry_type > props.geometry_type > props.layer_type > mapData.layer_type
+                            const geomTypeRaw = (tech.geometry_type || props.geometry_type || props.layer_type || mapData.layer_type || (feature.geometry && feature.geometry.type === 'Point' ? 'marker' : '')).toString().toLowerCase();
+
+                            // normalisasi beberapa variasi nama
+                            const geomType = geomTypeRaw
+                                .replace('_', '')
+                                .replace('-', '')
+                                .trim(); // contoh: "circle_marker" => "circlemarker"
+
+                            const style = getStyleFrom(props, tech);
+                            const iconUrl = tech.icon_url || props.icon_url || mapData.icon_url || '';
+
+                            const radius = safeNumber(tech.radius ?? props.radius ?? mapData.radius, 300);
+                            const pointRadius = safeNumber(tech.point_radius ?? props.point_radius ?? props.radius ?? mapData.point_radius ?? mapData.radius ?? 5, 5);
+
+                            // Jika explicit 'circle' => gunakan L.circle (dengan radius meter)
+                            if (geomType === 'circle') {
+                                return L.circle(latlng, {
+                                    ...style,
+                                    radius: radius
                                 });
                             }
-                            
-                            if (type === 'marker' && iconUrl && iconUrl.trim() !== '' && !iconUrl.includes('marker-survey.png')) {
-                                const icon = L.icon({ 
-                                    iconUrl: iconUrl, 
-                                    iconSize: [18, 18], 
-                                    iconAnchor: [9, 9] 
+
+                            // Jika explicit 'circlemarker' => gunakan L.circleMarker (radius pixel)
+                            if (geomType === 'circlemarker' || geomType === 'circlemarker' || geomType === 'circlemark') {
+                                return L.circleMarker(latlng, {
+                                    ...style,
+                                    radius: pointRadius
                                 });
-                                return L.marker(latlng, { icon });
                             }
-                            
-                            return L.circleMarker(latlng, { ...style, radius: 5 });
+
+                            // Jika explicit 'marker' => gunakan marker (prefer custom icon bila tersedia)
+                            if (geomType === 'marker' || geomType === 'point') {
+                                if (iconUrl && iconUrl.toString().trim() !== '' && !iconUrl.includes('marker-survey.png')) {
+                                    const icon = L.icon({
+                                        iconUrl: iconUrl,
+                                        iconSize: [18, 18],
+                                        iconAnchor: [9, 9]
+                                    });
+                                    return L.marker(latlng, { icon });
+                                }
+                                // default marker (Leaflet)
+                                return L.marker(latlng);
+                            }
+
+                            // Jika tidak jelas, fall back:
+                            // Jika geometri asli adalah Point -> circleMarker kecil
+                            if (feature.geometry && feature.geometry.type && feature.geometry.type.toLowerCase() === 'point') {
+                                return L.circleMarker(latlng, {
+                                    ...style,
+                                    radius: pointRadius
+                                });
+                            }
+
+                            // fallback safety
+                            return L.marker(latlng);
                         }
                     }).addTo(previewMap);
-                    
-                    if (geoLayer.getBounds().isValid()) {
-                        previewMap.fitBounds(geoLayer.getBounds(), { 
-                            padding: [10, 10], 
-                            maxZoom: 12 
-                        });
+
+                    // set view: coba fit bounds kalau valid, kalau tidak gunakan satu layer center/latlng
+                    try {
+                        const bounds = geoLayer.getBounds();
+                        if (bounds && bounds.isValid && bounds.isValid()) {
+                            previewMap.fitBounds(bounds, { padding: [10, 10], maxZoom: 12 });
+                            setTimeout(() => previewMap.invalidateSize(), 120);
+                            return;
+                        }
+                    } catch (e) {
+                        // ignore
                     }
-                    
+
+                    // jika tidak ada bounds valid (mis. satu titik), ambil layer pertama
+                    const layers = geoLayer.getLayers ? geoLayer.getLayers() : [];
+                    if (layers && layers.length === 1) {
+                        const layer = layers[0];
+                        if (layer.getLatLng) {
+                            previewMap.setView(layer.getLatLng(), 12);
+                        }
+                    }
+
                 } catch (error) {
                     console.error('Error loading GeoJSON for map', mapData.id, ':', error);
+                    // fallback: gunakan lat/lng dari mapData
                     const lat = parseFloat(mapData.lat);
                     const lng = parseFloat(mapData.lng);
-                    
+
                     if (!isNaN(lat) && !isNaN(lng)) {
                         const latlng = L.latLng(lat, lng);
-                        const style = createStyle();
+                        const techFallback = {};
+                        const style = getStyleFrom({}, techFallback);
                         let fallbackLayer;
-                        
-                        if (mapData.layer_type === 'circle') {
-                            fallbackLayer = L.circle(latlng, { ...style, radius: mapData.radius || 1000 });
-                        } else if (mapData.layer_type === 'marker' && mapData.icon_url) {
-                            const icon = L.icon({ iconUrl: mapData.icon_url, iconSize: [18, 18], iconAnchor: [9, 9] });
-                            fallbackLayer = L.marker(latlng, { icon });
+
+                        if ((mapData.layer_type || '').toString().toLowerCase() === 'circle') {
+                            fallbackLayer = L.circle(latlng, { ...style, radius: safeNumber(mapData.radius, 1000) });
+                        } else if ((mapData.layer_type || '').toString().toLowerCase() === 'marker') {
+                            if (mapData.icon_url) {
+                                const icon = L.icon({ iconUrl: mapData.icon_url, iconSize: [18, 18], iconAnchor: [9, 9] });
+                                fallbackLayer = L.marker(latlng, { icon });
+                            } else {
+                                fallbackLayer = L.marker(latlng);
+                            }
                         } else {
                             fallbackLayer = L.circleMarker(latlng, { ...style, radius: 5 });
                         }
@@ -510,13 +543,14 @@
                         previewMap.setView([-2.54, 118.01], 5);
                     }
                 }
-                
-                setTimeout(() => previewMap.invalidateSize(), 100);
+
+                // pastikan ukuran ter-update
+                setTimeout(() => previewMap.invalidateSize(), 150);
             };
-            
+
             renderFeatures();
         };
-        
+
         if (mapsData && mapsData.length > 0) {
             console.log('Initializing', mapsData.length, 'maps');
             mapsData.forEach(initPreviewMap);

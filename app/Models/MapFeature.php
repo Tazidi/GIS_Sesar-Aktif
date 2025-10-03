@@ -39,6 +39,7 @@ class MapFeature extends Model
     protected $casts = [
         'geometry' => 'array',   // Otomatis konversi JSON string ke array/object
         'properties' => 'array', // Otomatis konversi JSON string ke array/object
+        'technical_info' => 'array',
     ];
 
     /**
@@ -48,4 +49,10 @@ class MapFeature extends Model
     {
         return $this->belongsTo(Map::class);
     }
+
+    public function layers()
+    {
+        return $this->belongsToMany(\App\Models\Layer::class, 'feature_layer', 'feature_id', 'layer_id');
+    }
+
 }

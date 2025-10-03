@@ -140,7 +140,7 @@
                                 </div>
                             </td>
                             <td class="px-4 py-2 text-center whitespace-nowrap action-buttons">
-                                <a href="{{ route('map-features.index', ['map' => $map->id]) }}" class="text-green-600 hover:text-green-900 font-medium">Fitur</a>
+                                <a href="{{ route('maps.geometries.index', $map) }}" class="text-blue-600 hover:text-blue-900 font-medium">Geometri</a>
                                 <a href="{{ route('maps.edit', $map) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">Edit</a>
                                 <form action="{{ route('maps.destroy', $map) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus peta ini?');">
                                     @csrf
@@ -177,7 +177,41 @@
             // Data semua peta dari controller
             const mapsData = @json($maps);
 
-            // Fungsi untuk inisialisasi setiap peta pratinjau
+            // Helper functions
+            const safeNumber = (v, fallback) => {
+                const n = Number(v);
+                return Number.isFinite(n) ? n : fallback;
+            };
+
+            // Helper: parse technical_info yang mungkin string JSON atau object
+            const parseTechnicalInfo = (val) => {
+                if (!val) return {};
+                if (typeof val === 'object') return val;
+                try {
+                    return JSON.parse(val);
+                } catch (e) {
+                    return {};
+                }
+            };
+
+            // Helper: get style dari technical_info atau fallback ke map data
+            const getStyleFromTechnicalInfo = (techInfo, mapData, featureProps = {}) => {
+                // Prioritas: technical_info -> feature properties -> map data -> default
+                const stroke_color = techInfo.stroke_color || techInfo.color || featureProps.stroke_color || featureProps.color || mapData.stroke_color || '#3388ff';
+                const fill_color = techInfo.fill_color || techInfo.color || featureProps.fill_color || featureProps.color || mapData.fill_color || stroke_color;
+                const weight = safeNumber(techInfo.weight || featureProps.weight || mapData.weight, 3);
+                const opacity = safeNumber(techInfo.opacity || featureProps.opacity || mapData.opacity, 0.8);
+                const fillOpacity = safeNumber(techInfo.fill_opacity || featureProps.fill_opacity || (mapData.opacity * 0.7), 0.3);
+
+                return {
+                    color: stroke_color,
+                    fillColor: fill_color,
+                    weight,
+                    opacity,
+                    fillOpacity
+                };
+            };
+
             // Fungsi untuk inisialisasi setiap peta pratinjau
             const initPreviewMap = (mapData) => {
                 const mapContainerId = `map-${mapData.id}`;
@@ -185,49 +219,171 @@
                 if (!mapContainer || mapContainer.classList.contains('leaflet-container')) return;
 
                 const previewMap = L.map(mapContainerId, {
-                    zoomControl: false, scrollWheelZoom: false, dragging: false, doubleClickZoom: false,
-                    touchZoom: false, boxZoom: false, keyboard: false
+                    zoomControl: false, 
+                    scrollWheelZoom: false, 
+                    dragging: false, 
+                    doubleClickZoom: false,
+                    touchZoom: false, 
+                    boxZoom: false, 
+                    keyboard: false
                 }).setView([-2.54, 118.01], 4);
 
+                // Base layer
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; OpenStreetMap', maxZoom: 18
+                    attribution: '&copy; OpenStreetMap', 
+                    maxZoom: 18
                 }).addTo(previewMap);
-                
-                const style = {
+
+                // Style dasar dari map data (fallback)
+                const defaultStyle = {
                     color: mapData.stroke_color || '#3388ff',
                     fillColor: mapData.fill_color || '#3388ff',
                     weight: mapData.weight || 3,
-                    opacity: mapData.opacity || 1.0,
+                    opacity: mapData.opacity || 0.8,
                     fillOpacity: (mapData.opacity || 0.2) * 0.7
                 };
 
+                // Coba load GeoJSON
                 const geojsonUrl = `{{ url('maps') }}/${mapData.id}/geojson`;
+                
                 fetch(geojsonUrl)
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) throw new Error('GeoJSON not found');
+                        return response.json();
+                    })
                     .then(geojsonData => {
                         const geoLayer = L.geoJSON(geojsonData, {
-                            style: () => style,
+                            style: (feature) => {
+                                const props = feature.properties || {};
+                                const techInfo = parseTechnicalInfo(props.technical_info);
+                                
+                                return getStyleFromTechnicalInfo(techInfo, mapData, props);
+                            },
                             pointToLayer: (feature, latlng) => {
-                                const layerType = mapData.layer_type || 'marker';
-                                const iconUrl = mapData.icon_url;
+                                const props = feature.properties || {};
+                                const techInfo = parseTechnicalInfo(props.technical_info);
+                                
+                                // Tentukan jenis layer berdasarkan urutan prioritas:
+                                // 1. technical_info.geometry_type
+                                // 2. feature properties layer_type  
+                                // 3. mapData.layer_type
+                                // 4. geometry type asli
+                                const layerType = techInfo.geometry_type || 
+                                                props.layer_type || 
+                                                mapData.layer_type || 
+                                                (feature.geometry && feature.geometry.type === 'Point' ? 'marker' : 'marker');
+                                
+                                const style = getStyleFromTechnicalInfo(techInfo, mapData, props);
+                                const iconUrl = techInfo.icon_url || props.icon_url || mapData.icon_url;
+                                const radius = safeNumber(techInfo.radius || props.radius || mapData.radius, 300);
+                                const pointRadius = safeNumber(techInfo.point_radius || props.point_radius || 6, 6);
+
+                                console.log('Feature:', feature);
+                                console.log('Technical Info:', techInfo);
+                                console.log('Layer Type:', layerType);
+                                console.log('Icon URL:', iconUrl);
+                                console.log('Style:', style);
+
+                                // Tentukan jenis layer berdasarkan tipe yang didapat
                                 if (layerType === 'circle') {
-                                    return L.circle(latlng, { ...style, radius: mapData.radius || 300 });
+                                    return L.circle(latlng, { 
+                                        ...style, 
+                                        radius: radius
+                                    });
                                 }
-                                if (layerType === 'marker' && iconUrl) {
-                                    const icon = L.icon({ iconUrl: iconUrl, iconSize: [28, 28], iconAnchor: [14, 14] });
-                                    return L.marker(latlng, { icon });
+                                else if (layerType === 'circlemarker') {
+                                    return L.circleMarker(latlng, { 
+                                        ...style, 
+                                        radius: pointRadius
+                                    });
                                 }
-                                return L.circleMarker(latlng, { ...style, radius: 6 });
+                                else if (layerType === 'marker') {
+                                    if (iconUrl && iconUrl.trim() !== '') {
+                                        const icon = L.icon({ 
+                                            iconUrl: iconUrl, 
+                                            iconSize: [18, 18], 
+                                            iconAnchor: [9, 9] 
+                                        });
+                                        return L.marker(latlng, { icon });
+                                    }
+                                    // Default marker Leaflet (akan berwarna biru)
+                                    return L.marker(latlng);
+                                }
+                                // Fallback untuk point geometry
+                                else if (feature.geometry && feature.geometry.type === 'Point') {
+                                    return L.circleMarker(latlng, { 
+                                        ...style, 
+                                        radius: pointRadius
+                                    });
+                                }
+                                
+                                // Default fallback
+                                return L.marker(latlng);
                             }
                         }).addTo(previewMap);
 
-                        if (geoLayer.getBounds().isValid()) {
-                            previewMap.fitBounds(geoLayer.getBounds(), { padding: [20, 20], maxZoom: 16 });
+                        // Fit bounds jika valid
+                        const bounds = geoLayer.getBounds();
+                        if (bounds && bounds.isValid()) {
+                            previewMap.fitBounds(bounds, { padding: [10, 10], maxZoom: 12 });
+                        } else {
+                            // Fallback ke koordinat map jika ada
+                            const lat = parseFloat(mapData.lat);
+                            const lng = parseFloat(mapData.lng);
+                            if (!isNaN(lat) && !isNaN(lng)) {
+                                previewMap.setView([lat, lng], 10);
+                            }
                         }
                     })
-                    .catch(error => console.error(`Gagal memuat GeoJSON untuk peta ${mapData.id}:`, error));
-                
-                setTimeout(() => previewMap.invalidateSize(), 100);
+                    .catch(error => {
+                        console.warn(`Tidak dapat memuat GeoJSON untuk peta ${mapData.id}:`, error);
+                        
+                        // Fallback: gunakan koordinat dasar dari map data
+                        const lat = parseFloat(mapData.lat);
+                        const lng = parseFloat(mapData.lng);
+                        
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            const latlng = [lat, lng];
+                            let fallbackLayer;
+                            
+                            // Buat layer berdasarkan tipe
+                            if (mapData.layer_type === 'circle') {
+                                fallbackLayer = L.circle(latlng, { 
+                                    ...defaultStyle, 
+                                    radius: safeNumber(mapData.radius, 1000) 
+                                });
+                            } 
+                            else if (mapData.layer_type === 'circlemarker') {
+                                fallbackLayer = L.circleMarker(latlng, { 
+                                    ...defaultStyle, 
+                                    radius: 6 
+                                });
+                            }
+                            else if (mapData.layer_type === 'marker') {
+                                if (mapData.icon_url && mapData.icon_url.trim() !== '') {
+                                    const icon = L.icon({ 
+                                        iconUrl: mapData.icon_url, 
+                                        iconSize: [18, 18], 
+                                        iconAnchor: [9, 9] 
+                                    });
+                                    fallbackLayer = L.marker(latlng, { icon });
+                                } else {
+                                    fallbackLayer = L.marker(latlng);
+                                }
+                            }
+                            else {
+                                // Default fallback
+                                fallbackLayer = L.circleMarker(latlng, { ...defaultStyle, radius: 6 });
+                            }
+                            
+                            fallbackLayer.addTo(previewMap);
+                            previewMap.setView(latlng, 10);
+                        }
+                    })
+                    .finally(() => {
+                        // Pastikan ukuran peta benar
+                        setTimeout(() => previewMap.invalidateSize(), 150);
+                    });
             };
 
             // Inisialisasi peta untuk setiap data yang ada

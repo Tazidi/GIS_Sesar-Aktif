@@ -24,7 +24,7 @@
         </div>
     @endif
 
-    <form action="{{ route('map-features.update', $mapFeature) }}" method="POST" enctype="multipart/form-data">
+        <form id="map-feature-form" action="{{ route('map-features.update', $mapFeature) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
@@ -35,7 +35,13 @@
                 <div class="space-y-6">
                     <div>
                         <label for="properties" class="block text-sm font-medium text-gray-700">Properties (JSON)</label>
-                        <textarea name="properties" id="properties" rows="8" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 font-mono text-sm">{{ old('properties', json_encode($mapFeature->properties, JSON_PRETTY_PRINT)) }}</textarea>
+                        <div id="properties-editor" class="space-y-2"></div>
+
+                        <textarea name="properties" id="properties-json" class="hidden">{{ old('properties', json_encode($mapFeature->properties, JSON_UNESCAPED_UNICODE)) }}</textarea>
+
+                        <button type="button" id="add-prop-btn" class="text-sm text-blue-600">
+                            + Tambah field
+                        </button>
                         <p class="mt-2 text-xs text-gray-500">Edit properti fitur dalam format JSON.</p>
                     </div>
                     <div>
@@ -81,7 +87,7 @@
                         @if($mapFeature->image_path)
                             <div class="mt-4">
                                 <p class="text-sm font-medium text-gray-600">Gambar Saat Ini:</p>
-                                <img src="{{ asset('map_features/' . $mapFeature->image_path) }}" alt="Gambar Fitur" class="mt-2 w-1/2 rounded-md shadow-sm">
+                                <img src="{{ asset($mapFeature->image_path) }}"  alt="Gambar Fitur" class="mt-2 w-1/2 rounded-md shadow-sm">
                             </div>
                         @endif
                     </div>
@@ -124,47 +130,138 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const map = L.map('map').setView([-2.5, 118], 5); // Center di Indonesia
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+    document.addEventListener('DOMContentLoaded', function () {
+        const map = L.map('map').setView([-2.5, 118], 5); // Center di Indonesia
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
 
-    const geometryInput = document.getElementById('geometry');
-    const initialGeometry = JSON.parse(geometryInput.value);
+        const geometryInput = document.getElementById('geometry');
+        const initialGeometry = JSON.parse(geometryInput.value);
 
-    // Grup untuk menampung layer yang bisa diedit
-    const editableLayers = new L.FeatureGroup();
-    map.addLayer(editableLayers);
+        // Grup untuk menampung layer yang bisa diedit
+        const editableLayers = new L.FeatureGroup();
+        map.addLayer(editableLayers);
 
-    // Tambahkan geometri yang sudah ada ke peta
-    const existingLayer = L.geoJSON(initialGeometry);
-    editableLayers.addLayer(existingLayer.getLayers()[0]); // Ambil layer internalnya
+        // Tambahkan geometri yang sudah ada ke peta
+        const existingLayer = L.geoJSON(initialGeometry);
+        editableLayers.addLayer(existingLayer.getLayers()[0]); // Ambil layer internalnya
 
-    // Zoom ke layer yang ada
-    if (editableLayers.getLayers().length > 0) {
-        map.fitBounds(editableLayers.getBounds().pad(0.1));
-    }
-    
-    // Konfigurasi Leaflet.draw
-    const drawControl = new L.Control.Draw({
-        edit: {
-            featureGroup: editableLayers, // Penting! Tentukan layer mana yang bisa diedit
-            remove: false // Nonaktifkan tombol hapus di toolbar
-        },
-        draw: false // Nonaktifkan toolbar gambar baru, karena kita hanya edit
-    });
-    map.addControl(drawControl);
+        // Zoom ke layer yang ada
+        if (editableLayers.getLayers().length > 0) {
+            map.fitBounds(editableLayers.getBounds().pad(0.1));
+        }
+        
+        // Konfigurasi Leaflet.draw
+        const drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: editableLayers, // Penting! Tentukan layer mana yang bisa diedit
+                remove: false // Nonaktifkan tombol hapus di toolbar
+            },
+            draw: false // Nonaktifkan toolbar gambar baru, karena kita hanya edit
+        });
+        map.addControl(drawControl);
 
-    // Event listener saat layer selesai diedit
-    map.on(L.Draw.Event.EDITED, function (e) {
-        e.layers.eachLayer(function (layer) {
-            const geojson = layer.toGeoJSON().geometry;
-            geometryInput.value = JSON.stringify(geojson);
-            console.log('Geometri diperbarui:', geometryInput.value);
+        // Event listener saat layer selesai diedit
+        map.on(L.Draw.Event.EDITED, function (e) {
+            e.layers.eachLayer(function (layer) {
+                const geojson = layer.toGeoJSON().geometry;
+                geometryInput.value = JSON.stringify(geojson);
+                console.log('Geometri diperbarui:', geometryInput.value);
+            });
         });
     });
-});
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+        const container = document.getElementById('properties-editor');
+        const hiddenInput = document.getElementById('properties-json');
+        const addBtn = document.getElementById('add-prop-btn');
+        const form = document.getElementById('map-feature-form');
+
+        let props = {};
+        try { props = JSON.parse(hiddenInput.value || '{}'); } catch (e) { props = {}; }
+
+        function guessType(valueStr){
+            if(valueStr === 'true') return true;
+            if(valueStr === 'false') return false;
+            if(valueStr !== '' && !isNaN(valueStr)) return (valueStr.includes('.') ? parseFloat(valueStr) : parseInt(valueStr));
+            return valueStr;
+        }
+
+        function createRow(key, val){
+            const row = document.createElement('div');
+            row.className = 'flex gap-2 items-center';
+
+            const keyInput = document.createElement('input');
+            keyInput.value = key;
+            keyInput.className = 'p-2 border rounded w-1/3';
+            keyInput.placeholder = 'Key';
+
+            const valInput = document.createElement('input');
+            valInput.value = (val === null || val === undefined) ? '' : String(val);
+            valInput.className = 'p-2 border rounded flex-1';
+            valInput.placeholder = 'Value';
+
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'text-sm text-red-600';
+            delBtn.textContent = 'Hapus';
+
+            // event listeners
+            keyInput.addEventListener('input', () => {
+            const newKey = keyInput.value.trim();
+            if(!newKey) return;
+            // pindahin value ke key baru
+            props[newKey] = props[key];
+            if(newKey !== key) delete props[key];
+            key = newKey;
+            });
+
+            valInput.addEventListener('input', () => {
+            props[key] = guessType(valInput.value);
+            });
+
+            delBtn.addEventListener('click', () => {
+            delete props[key];
+            row.remove();
+            });
+
+            row.appendChild(keyInput);
+            row.appendChild(valInput);
+            row.appendChild(delBtn);
+            container.appendChild(row);
+        }
+
+        function render(){
+            container.innerHTML = '';
+            if(Object.keys(props).length === 0){
+            const hint = document.createElement('div');
+            hint.className = 'text-sm text-gray-500';
+            hint.innerHTML = 'Tidak ada properties — tambahkan field baru jika perlu.';
+            container.appendChild(hint);
+            } else {
+            Object.entries(props).forEach(([key, val]) => {
+                createRow(key, val);
+            });
+            }
+        }
+
+        addBtn.addEventListener('click', () => {
+            let i = 1;
+            while(props['field_'+i]) i++;
+            const newKey = 'field_'+i;
+            props[newKey] = '';
+            createRow(newKey, '');
+        });
+
+        form.addEventListener('submit', () => {
+            hiddenInput.value = JSON.stringify(props);
+        });
+
+        // pertama kali load
+        render();
+        });
 </script>
 @endsection

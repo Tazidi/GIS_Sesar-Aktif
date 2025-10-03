@@ -125,8 +125,26 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('maps', MapController::class);
     Route::put('/maps/{map}/update-kategori', [MapController::class, 'updateKategori'])
         ->name('maps.updateKategori');
+    
+    // Routes untuk mengelola geometri dalam map
+    Route::get('/maps/{map}/geometries', [App\Http\Controllers\MapGeometryController::class, 'index'])
+        ->name('maps.geometries.index');
+    Route::get('/maps/{map}/geometries/create', [App\Http\Controllers\MapGeometryController::class, 'create'])
+        ->name('maps.geometries.create');
+    Route::post('/maps/{map}/geometries', [App\Http\Controllers\MapGeometryController::class, 'store'])
+        ->name('maps.geometries.store');
+    Route::get('/maps/{map}/geometries/{geometry}/edit', [App\Http\Controllers\MapGeometryController::class, 'edit'])
+        ->name('maps.geometries.edit');
+    Route::put('/maps/{map}/geometries/{geometry}', [App\Http\Controllers\MapGeometryController::class, 'update'])
+        ->name('maps.geometries.update');
+    Route::delete('/maps/{map}/geometries/bulk-destroy', [App\Http\Controllers\MapGeometryController::class, 'bulkDestroy'])
+        ->name('maps.geometries.bulkDestroy');
+    Route::delete('/maps/{map}/geometries/{geometry}', [App\Http\Controllers\MapGeometryController::class, 'destroy'])
+        ->name('maps.geometries.destroy');
+    
     Route::resource('users', UserController::class);
     Route::resource('layers', LayerController::class);
+    Route::get('layers/{layer}', [LayerController::class, 'show'])->name('layers.show');
     Route::get('/maps/{map}/features', [MapFeatureController::class, 'index'])->name('map-features.index');
     Route::get('/map-features/{mapFeature}/edit', [MapFeatureController::class, 'edit'])->name('map-features.edit');
     Route::put('/map-features/{mapFeature}', [MapFeatureController::class, 'update'])->name('map-features.update');

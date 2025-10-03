@@ -43,8 +43,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $feature->geometry['type'] ?? 'N/A' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if ($feature->image_path)
-                                    <img src="{{ asset('map_features/' . $feature->image_path) }}"  alt="Feature Image" class="h-12 w-12 object-cover rounded">
-                                @else
+                                    <img src="{{ asset($feature->image_path) }}" alt="Feature Image" class="h-12 w-12 object-cover rounded">                                @else
                                     <span class="text-xs text-gray-400 italic">Tidak ada</span>
                                 @endif
                             </td>

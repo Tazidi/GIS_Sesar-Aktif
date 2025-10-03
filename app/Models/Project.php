@@ -11,10 +11,15 @@ class Project extends Model
 {
     use HasFactory;
 
+    protected $casts = [
+        'show_in_gallery' => 'boolean',
+    ];
+
     protected $fillable = [
         'user_id',
         'name',
         'description',
+        'show_in_gallery',
     ];
 
     public function user(): BelongsTo

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Layer Baru')
+@section('title', 'Tambah Geometri - ' . $map->name)
 
 @section('styles')
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -23,19 +23,6 @@
         #dynamic-options-container .layer-dependent {
             display: none; /* Hide all options by default */
         }
-        .feature-item {
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            background-color: #f9fafb;
-            margin-bottom: 1rem;
-        }
-        .tech-info-block {
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            background-color: #f9fafb;
-        }
     </style>
 @endsection
 
@@ -54,202 +41,177 @@
                 <li>
                     <div class="flex items-center">
                         <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                        <a href="{{ route('layers.index') }}" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2">Layers</a>
+                        <a href="{{ route('maps.index') }}" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2">Maps</a>
+                    </div>
+                </li>
+                <li>
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                        <a href="{{ route('maps.geometries.index', $map) }}" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2">Kelola Geometri</a>
                     </div>
                 </li>
                 <li aria-current="page">
                     <div class="flex items-center">
                         <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                        <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">Tambah Layer Baru</span>
+                        <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">Tambah Geometri</span>
                     </div>
                 </li>
             </ol>
         </nav>
     </div>
 
-    <div class="max-w-6xl mx-auto">
-        <div class="bg-white p-8 shadow-lg rounded-lg">
-            {{-- Judul Form --}}
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">
-                Buat Layer Baru
-            </h1>
-            <p class="text-sm text-gray-600 mb-6">
-                Isi detail untuk layer baru yang akan Anda buat.
-            </p>
+    <h1 class="text-3xl font-bold mb-4 text-gray-800">Tambah Geometri ke Map</h1>
+    <p class="text-gray-600 mb-6">Map: <strong>{{ $map->name }}</strong></p>
 
-            <hr class="mb-6">
+    <form action="{{ route('maps.geometries.store', $map) }}" method="POST" enctype="multipart/form-data">
+        @csrf
 
-            <form action="{{ route('layers.store') }}" method="POST" enctype="multipart/form-data" id="layer-form">
-                @csrf
+        <div class="bg-white p-6 sm:p-8 rounded-xl shadow-lg border border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {{-- Left Column: Layer Details --}}
-                    <div class="space-y-6">
-                        {{-- Nama Layer --}}
-                        <div>
-                            <label for="nama_layer" class="block text-sm font-medium text-gray-700 mb-1">
-                                Nama Layer <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" id="nama_layer" name="nama_layer"
-                                   value="{{ old('nama_layer') }}" required
-                                   class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400
-                                          focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
-                                          @error('nama_layer') border-red-500 @enderror"
-                                   placeholder="Contoh: Batas Wilayah Kecamatan">
-                            @error('nama_layer')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- Deskripsi --}}
-                        <div>
-                            <label for="deskripsi" class="block text-sm font-medium text-gray-700 mb-1">
-                                Deskripsi (Opsional)
-                            </label>
-                            <textarea id="deskripsi" name="deskripsi" rows="4"
-                                      class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400
-                                             focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
-                                             @error('deskripsi') border-red-500 @enderror"
-                                      placeholder="Jelaskan secara singkat mengenai data yang ada di layer ini...">{{ old('deskripsi') }}</textarea>
-                            @error('deskripsi')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- Pilih Map --}}
-                        <div>
-                            <label for="map_id" class="block text-sm font-medium text-gray-700 mb-1">
-                                Pilih Map <span class="text-red-500">*</span>
-                            </label>
-                            <select id="map_id" name="map_id" required
-                                    class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm
-                                           focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
-                                           @error('map_id') border-red-500 @enderror">
-                                <option value="">-- Pilih Map --</option>
-                                @foreach($maps as $map)
-                                    <option value="{{ $map->id }}" {{ old('map_id') == $map->id ? 'selected' : '' }}>
-                                        {{ $map->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('map_id')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- Dynamic Options Container --}}
-                        <div id="dynamic-options-container" class="space-y-4 pt-4 border-t">
-                            <h3 class="text-lg font-medium text-gray-900">Opsi Styling Default</h3>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div class="layer-dependent" id="icon-field">
-                                    <label for="icon_url" class="block text-sm font-medium text-gray-700">Ikon Marker</label>
-                                    @php
-                                        $selectedIcon = old('icon_url', 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png');
-                                    @endphp
-                                    <select name="icon_url" id="icon_url" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                                        <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png"
-                                            {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png' ? 'selected' : '' }}>
-                                            Biru (Default)
-                                        </option>
-                                        <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png"
-                                            {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png' ? 'selected' : '' }}>
-                                            Hijau
-                                        </option>
-                                        <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png"
-                                            {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png' ? 'selected' : '' }}>
-                                            Kuning
-                                        </option>
-                                        <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png"
-                                            {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png' ? 'selected' : '' }}>
-                                            Merah
-                                        </option>
-                                        <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png"
-                                            {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png' ? 'selected' : '' }}>
-                                            Abu-abu
-                                        </option>
-                                    </select>
-                                </div>
-                                <div class="layer-dependent" id="radius-field">
-                                    <label for="radius" class="block text-sm font-medium text-gray-700">Radius (meter)</label>
-                                    <input type="number" name="radius" id="radius" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" value="{{ old('radius', 200) }}" min="1">
-                                </div>
-                                <div class="layer-dependent" id="stroke-color-field">
-                                    <label for="stroke_color" class="block text-sm font-medium text-gray-700">Warna Garis</label>
-                                    <input type="color" name="stroke_color" id="stroke_color" class="mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm" value="{{ old('stroke_color', '#3388ff') }}">
-                                </div>
-                                <div class="layer-dependent" id="fill-color-field">
-                                    <label for="fill_color" class="block text-sm font-medium text-gray-700">Warna Isi</label>
-                                    <input type="color" name="fill_color" id="fill_color" class="mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm" value="{{ old('fill_color', '#3388ff') }}">
-                                </div>
-                                <div class="layer-dependent" id="weight-field">
-                                    <label for="weight" class="block text-sm font-medium text-gray-700">Ketebalan Garis</label>
-                                    <input type="number" name="weight" id="weight" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" value="{{ old('weight', 3) }}" min="1" max="10">
-                                </div>
-                                 <div class="layer-dependent" id="opacity-field">
-                                    <label for="opacity" class="block text-sm font-medium text-gray-700">Transparansi</label>
-                                    <input type="number" name="opacity" id="opacity" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" value="{{ old('opacity', 0.5) }}" min="0" max="1" step="0.1">
-                                </div>
-                            </div>
-                        </div>
+                {{-- Left Column: Form Fields --}}
+                <div class="space-y-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700">Nama Geometri</label>
+                        <input type="text" name="name" id="name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" value="{{ old('name') }}" placeholder="Contoh: Titik Survey A" required>
                     </div>
 
-                    {{-- Right Column: Map and Drawing Tools --}}
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Peta Interaktif</label>
-                            <div class="mb-2">
-                                <select id="drawing-tool-select" class="block w-full max-w-xs border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option value="" disabled selected>-- Pilih Alat Gambar --</option>
-                                    <option value="marker">Marker / Titik (📍)</option>
-                                    <option value="polyline">Polyline / Garis (〰️)</option>
-                                    <option value="polygon">Polygon / Area (⬠)</option>
-                                    <option value="circle">Circle / Lingkaran (⭕)</option>
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi</label>
+                        <textarea name="description" id="description" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" rows="3" placeholder="Deskripsi singkat tentang geometri ini">{{ old('description') }}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Pilih Layer</label>
+                        <div class="mt-2 space-y-2">
+                            @foreach ($layers as $layer)
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="layer_ids[]" value="{{ $layer->id }}"
+                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        {{ in_array($layer->id, old('layer_ids', [])) ? 'checked' : '' }}>
+                                    <span class="ml-2 text-sm text-gray-700">
+                                        {{ $layer->nama_layer }}
+                                        @if($layer->deskripsi) - {{ $layer->deskripsi }} @endif
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Boleh pilih lebih dari satu layer</p>
+                    </div>
+
+                    {{-- Dynamic Options Container --}}
+                    <div id="dynamic-options-container" class="space-y-4 pt-4 border-t">
+                        <h3 class="text-lg font-medium text-gray-900">Opsi Styling</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="layer-dependent" id="icon-field">
+                                <label for="icon_url" class="block text-sm font-medium text-gray-700">Ikon Marker</label>
+                                @php
+                                    $selectedIcon = old('icon_url', $firstLayer->pivot->icon_url ?? '');
+                                @endphp
+                                <select name="icon_url" id="icon_url" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                    <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png"
+                                        {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png' ? 'selected' : '' }}>
+                                        Biru (Default)
+                                    </option>
+                                    <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png"
+                                        {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png' ? 'selected' : '' }}>
+                                        Hijau
+                                    </option>
+                                    <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png"
+                                        {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png' ? 'selected' : '' }}>
+                                        Kuning
+                                    </option>
+                                    <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png"
+                                        {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png' ? 'selected' : '' }}>
+                                        Merah
+                                    </option>
+                                    <option value="https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png"
+                                        {{ $selectedIcon == 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png' ? 'selected' : '' }}>
+                                        Abu-abu
+                                    </option>
                                 </select>
                             </div>
-                            <div id="map" style="height: 400px; border: 1px solid #ccc; border-radius: 8px;"></div>
-                            <div id="map-notification" class="mt-2 p-3 bg-blue-100 border border-blue-400 text-blue-700 rounded"></div>
+                            <div class="layer-dependent" id="radius-field">
+                                <label for="radius" class="block text-sm font-medium text-gray-700">Radius (meter)</label>
+                                <input type="number" name="radius" id="radius" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" value="200" min="1">
+                            </div>
+                            <div class="layer-dependent" id="stroke-color-field">
+                                <label for="stroke_color" class="block text-sm font-medium text-gray-700">Warna Garis</label>
+                                <input type="color" name="stroke_color" id="stroke_color" class="mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm" value="#3388ff">
+                            </div>
+                            <div class="layer-dependent" id="fill-color-field">
+                                <label for="fill_color" class="block text-sm font-medium text-gray-700">Warna Isi</label>
+                                <input type="color" name="fill_color" id="fill_color" class="mt-1 block w-full h-10 border-gray-300 rounded-md shadow-sm" value="#3388ff">
+                            </div>
+                            <div class="layer-dependent" id="weight-field">
+                                <label for="weight" class="block text-sm font-medium text-gray-700">Ketebalan Garis</label>
+                                <input type="number" name="weight" id="weight" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" value="3" min="1" max="10">
+                            </div>
+                             <div class="layer-dependent" id="opacity-field">
+                                <label for="opacity" class="block text-sm font-medium text-gray-700">Transparansi</label>
+                                <input type="number" name="opacity" id="opacity" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" value="0.5" min="0" max="1" step="0.1">
+                            </div>
                         </div>
-                        <div>
-                            <label for="geojson_file" class="block text-sm font-medium text-gray-700">ATAU Upload GeoJSON</label>
-                            <input type="file" name="geojson_file" id="geojson_file" accept=".geojson,.json" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                        </div>
-                        
-                        {{-- Feature Images Container --}}
-                        <div id="feature-images-container" class="mt-6 space-y-4 hidden">
-                            <label class="block text-sm font-medium text-gray-700">Gambar & Info Fitur</label>
-                            <div id="feature-images-list" class="space-y-3"></div>
-                            <div id="feature-images-showmore" class="mt-2"></div>
-                        </div>
-
-                        {{-- Technical Info Container --}}
-                        <div id="technical-info-wrapper" class="hidden border-t pt-4 space-y-4">
-                            <h3 class="text-lg font-medium text-gray-900 -mb-2">Info Teknis</h3>
-                            <p class="text-sm text-gray-600">Properti teknis berikut diambil dari setiap fitur dalam file GeoJSON Anda.</p>
-                            <div id="technical-info-container" class="space-y-4"></div>
-                            <div id="show-more-container" class="mt-2"></div>
-                        </div>
-
-                        {{-- Hidden Inputs for Geometry Data --}}
-                        <input type="hidden" name="geometry" id="geometry-input" required>
-                        <input type="hidden" name="geometry_type" id="geometry_type_input" required>
-                        <input type="hidden" name="properties" id="properties-input">
                     </div>
+
+                    <div>
+                        <label for="feature_image" class="block text-sm font-medium text-gray-700">Gambar Fitur (opsional)</label>
+                        <input type="file" name="feature_image" id="feature_image" accept="image/*" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+
+                    <div>
+                        <label for="caption" class="block text-sm font-medium text-gray-700">Caption Gambar</label>
+                        <input type="text" name="caption" id="caption" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" value="{{ old('caption') }}" placeholder="Caption untuk gambar fitur">
+                    </div>
+
+                    <div id="technical-info-wrapper" class="hidden border-t pt-4 space-y-4">
+                        <h3 class="text-lg font-medium text-gray-900 -mb-2">Info Teknis</h3>
+                        <p class="text-sm text-gray-600">Properti teknis berikut diambil dari setiap fitur dalam file GeoJSON Anda.</p>
+                        <div id="technical-info-container" class="space-y-4"></div>
+                        <div id="show-more-container" class="mt-2"></div>
+                   </div>
                 </div>
 
-                {{-- Tombol Aksi --}}
-                <div class="flex items-center justify-end pt-6 border-t border-gray-200 mt-6">
-                    <a href="{{ route('layers.index') }}" class="text-sm text-gray-600 hover:text-gray-900 mr-4">
-                        Batal
-                    </a>
-                    <button type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-                        Simpan Layer
-                    </button>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Peta Interaktif</label>
+                        <div class="mb-2">
+                            <select id="drawing-tool-select" class="block w-full max-w-xs border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="" disabled selected>-- Pilih Alat Gambar --</option>
+                                <option value="marker">Marker / Titik (📍)</option>
+                                <option value="polyline">Polyline / Garis (〰️)</option>
+                                <option value="polygon">Polygon / Area (⬠)</option>
+                                <option value="circle">Circle / Lingkaran (⭕)</option>
+                            </select>
+                        </div>
+                        <div id="map" style="height: 400px; border: 1px solid #ccc; border-radius: 8px;"></div>
+                        <div id="map-notification" class="mt-2 p-3 bg-blue-100 border border-blue-400 text-blue-700 rounded"></div>
+                    </div>
+                    <div>
+                        <label for="geojson_file" class="block text-sm font-medium text-gray-700">ATAU Upload GeoJSON</label>
+                        <input type="file" name="geojson_file" id="geojson_file" accept=".geojson,.json" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+                    <div id="feature-images-container" class="mt-6 space-y-4 hidden">
+                        <label class="block text-sm font-medium text-gray-700">Gambar & Info Fitur</label>
+                        <div id="feature-images-list" class="space-y-3"></div>
+                        <div id="feature-images-showmore" class="mt-2"></div>
+                    </div>
+                    <input type="hidden" name="geometry" id="geometry-input" required>
+                    <input type="hidden" name="geometry_type" id="geometry_type_input" required>
+                    <input type="hidden" name="properties" id="properties-input">
                 </div>
-            </form>
+            </div>
+
+            <div class="mt-8 flex justify-end space-x-3">
+                <a href="{{ route('maps.geometries.index', $map) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Batal
+                </a>
+                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                    Simpan Geometri
+                </button>
+            </div>
         </div>
-    </div>
+    </form>
 </div>
 @endsection
 
@@ -267,20 +229,16 @@ document.addEventListener('DOMContentLoaded', function() {
     let drawnLayer = null;
     let currentDrawingLayer = null;
     let polygonPoints = [];
-    let currentTool = null;
-    let layerRefs = [];
 
-    const form = document.getElementById('layer-form');
+    const form = document.querySelector('form');
     const geometryInput = document.getElementById('geometry-input');
     const geometryTypeInput = document.getElementById('geometry_type_input');
     const propertiesInput = document.getElementById('properties-input');
+    const toolbarButtons = document.querySelectorAll('.draw-tool-btn');
     const geojsonFileInput = document.getElementById('geojson_file');
     const techInfoWrapper = document.getElementById('technical-info-wrapper');
     const techInfoContainer = document.getElementById('technical-info-container');
     const showMoreContainer = document.getElementById('show-more-container');
-    const featureImagesContainer = document.getElementById('feature-images-container');
-    const featureImagesList = document.getElementById('feature-images-list');
-    const featureImagesShowmore = document.getElementById('feature-images-showmore');
 
     const optionsContainer = document.getElementById('dynamic-options-container');
     const dynamicFields = { 
@@ -349,15 +307,21 @@ document.addEventListener('DOMContentLoaded', function() {
         techInfoContainer.innerHTML = '';
         showMoreContainer.innerHTML = '';
         techInfoWrapper.classList.add('hidden');
-        featureImagesList.innerHTML = '';
-        featureImagesShowmore.innerHTML = '';
-        featureImagesContainer.classList.add('hidden');
-        layerRefs = [];
+    }
+
+    function setActiveTool(tool) {
+        clearDrawing();
+        currentTool = tool;
+        geometryTypeInput.value = tool;
+        toolbarButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.type === tool));
+        toggleFormFields(tool);
+        showNotification(`Mode gambar <strong>${tool}</strong> aktif. Klik di peta untuk memulai.`);
     }
 
     function updateActiveToolUI(tool) {
         currentTool = tool;
         geometryTypeInput.value = tool;
+        toolbarButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.type === tool));
         toggleFormFields(tool);
     }
 
@@ -372,12 +336,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         currentTool = this.value;
         geometryTypeInput.value = currentTool;
-        toggleFormFields(currentTool);
+        toggleFormFields(currentTool); // fungsi ini tetap berguna
         if (currentTool) {
             showNotification(`Mode gambar <strong>${currentTool}</strong> aktif. Klik di peta untuk memulai.`);
         }
     });
-    
     map.on('click', function (e) {
         if (!currentTool) return;
         const style = getStyleOptions();
@@ -445,6 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
         geometryInput.value = JSON.stringify(geojsonToSet);
     });
 
+
     map.on('dblclick', function(e) {
         if (currentDrawingLayer && ['polygon', 'polyline'].includes(currentTool)) {
             // Hapus layer temporer
@@ -468,6 +432,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    form.addEventListener('submit', function(e) {
+        // Jika ada gambar polyline/polygon yang belum diselesaikan, finalize dulu
+        if (currentDrawingLayer && ['polygon', 'polyline'].includes(currentTool)) {
+            finalizeDrawing();
+        }
+        // Update geometryInput dengan drawnItems GeoJSON terbaru
+        geometryInput.value = JSON.stringify(drawnItems.toGeoJSON());
+        // Panggil fungsi prepareAndSubmitData untuk set properties dll
+        prepareAndSubmitData();
+    });
+    
     geojsonFileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -507,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // render geojson ke peta (tetap pakai geoJSON group supaya fitBounds mudah)
                 if (drawnLayer) map.removeLayer(drawnLayer);
-                layerRefs = [];
+                let layerRefs = [];
                 drawnLayer = L.geoJSON(geojson, {
                     style: getStyleOptions,
                     pointToLayer: function(feature, latlng) {
@@ -543,7 +518,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // set geometry hidden input (kita kirim seluruh FeatureCollection ke backend)
                 geometryInput.value = JSON.stringify(geojson);
 
-                // Generate per-feature image & caption & technical inputs
+                // --- NEW: Generate per-feature image & caption & technical inputs ---
+                const featureImagesContainer = document.getElementById('feature-images-container');
+                const featureImagesList = document.getElementById('feature-images-list');
+                const featureImagesShowmore = document.getElementById('feature-images-showmore');
+
                 featureImagesList.innerHTML = '';
                 featureImagesShowmore.innerHTML = '';
                 featureImagesContainer.classList.remove('hidden');
@@ -552,7 +531,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const props = feature.properties || {};
                     const featureLabel = props.PopupInfo || props.Name || props.name || `Fitur #${index + 1}`;
                     const div = document.createElement('div');
-                    div.className = 'feature-item';
+                    div.className = 'feature-item flex flex-col mb-4 p-3 border border-gray-300 rounded-lg bg-gray-50';
                     div.id = `feature-input-${index}`;
                     if (index > 0) div.classList.add('hidden', 'extra-feature-input');
 
@@ -600,16 +579,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Jika GeoJSON memiliki properti name di fitur pertama, isi nama form
                 if (geojson.features[0].properties) {
-                    document.getElementById('nama_layer').value = geojson.features[0].properties.name || document.getElementById('nama_layer').value;
+                    document.getElementById('name').value = geojson.features[0].properties.name || document.getElementById('name').value;
                 }
 
-                // Tampilkan info teknis
+                // tetap tampilkan info teknis (yang sudah ada di kode kamu)
                 let techInfoHtml = '';
                 geojson.features.forEach((feature, index) => {
                     const props = feature.properties || {};
                     const extraClasses = index > 0 ? 'hidden extra-tech-info' : '';
                     techInfoHtml += `
-                        <div class="tech-info-block ${extraClasses}">
+                        <div class="tech-info-block p-4 border rounded-md bg-gray-50 shadow-sm ${extraClasses}">
                             <p class="text-sm font-semibold text-gray-800 mb-2">Info Teknis untuk Fitur #${index + 1}</p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div><label for="panjang_sesar_${index}" class="block text-sm font-medium text-gray-700">Panjang Sesar</label><input type="text" name="technical_info[${index}][panjang_sesar]" id="panjang_sesar_${index}" value="${props.panjang_sesar || ''}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></div>
@@ -673,48 +652,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    function prepareAndSubmitData(e) {
-        const mapId = document.getElementById('map_id').value;
-        if (!mapId) {
-            e.preventDefault();
-            showNotification('Error: Harap pilih map terlebih dahulu!', 5000);
-            document.getElementById('map_id').focus();
-            return false;
-        }
-
-        // Selesaikan gambar manual yang mungkin belum selesai
-        if (currentDrawingLayer && ['polygon', 'polyline'].includes(currentTool)) {
-            map.removeLayer(currentDrawingLayer);
-            currentDrawingLayer = null;
-            const finalLayer = (currentTool === 'polygon')
-                ? L.polygon(polygonPoints, getStyleOptions())
-                : L.polyline(polygonPoints, getStyleOptions());
-            drawnItems.addLayer(finalLayer);
-            polygonPoints = [];
-        }
-
-        // PERBAIKAN: HANYA update geometry input dari gambar manual JIKA tidak ada file GeoJSON yang diupload.
-        // Jika ada file GeoJSON, input tersebut sudah diisi oleh event listener file.
-        if (!geojsonFileInput.files || geojsonFileInput.files.length === 0) {
-            const drawnGeoJSON = drawnItems.toGeoJSON();
-            // Pastikan tidak mengirim data kosong jika tidak ada yang digambar
-            if (drawnGeoJSON.features.length > 0) {
-                geometryInput.value = JSON.stringify(drawnGeoJSON);
-            }
-        }
-        
-        // Pastikan geometry tidak kosong sebelum submit
-        if (!geometryInput.value || geometryInput.value === '{"type":"FeatureCollection","features":[]}') {
-            e.preventDefault();
-            showNotification('Error: Anda harus menggambar di peta atau mengunggah file GeoJSON!', 5000);
-            return false;
-        }
-
+    function prepareAndSubmitData() {
         let properties = {
-            nama_layer: document.getElementById('nama_layer').value,
-            deskripsi: document.getElementById('deskripsi').value,
+            name: document.getElementById('name').value,
+            description: document.getElementById('description').value,
+            layer_id: document.getElementById('layer_id').value,
         };
         
+        // Add styling properties based on geometry type
         const geometryType = document.getElementById('geometry_type_input').value;
         
         if (geometryType === 'marker') {
@@ -736,9 +681,62 @@ document.addEventListener('DOMContentLoaded', function() {
             properties.opacity = document.querySelector('[name="opacity"]').value;
         }
         
-        propertiesInput.value = JSON.stringify(properties);
+        // Collect technical info only if user has entered values
+        const technicalInfo = [];
+        document.querySelectorAll('.tech-info-block').forEach((block, index) => {
+            const panjangSesar = block.querySelector(`[name="technical_info[${index}][panjang_sesar]"]`).value;
+            const lebarSesar = block.querySelector(`[name="technical_info[${index}][lebar_sesar]"]`).value;
+            const tipe = block.querySelector(`[name="technical_info[${index}][tipe]"]`).value;
+            const mmax = block.querySelector(`[name="technical_info[${index}][mmax]"]`).value;
+            
+            // Only add if at least one field has a value
+            if (panjangSesar || lebarSesar || tipe || mmax) {
+                technicalInfo.push({
+                    panjang_sesar: panjangSesar,
+                    lebar_sesar: lebarSesar,
+                    tipe: tipe,
+                    mmax: mmax,
+                });
+            }
+        });
+        
+        // Add technical info to form data if it exists
+        if (technicalInfo.length > 0) {
+            // Create hidden input for technical info
+            let techInfoInput = document.createElement('input');
+            techInfoInput.type = 'hidden';
+            techInfoInput.name = 'technical_info';
+            techInfoInput.value = JSON.stringify(technicalInfo);
+            form.appendChild(techInfoInput);
+        }
 
-        return true;
+        document.querySelectorAll('#dynamic-options-container input, #dynamic-options-container select')
+            .forEach(el => {
+                el.addEventListener('change', () => {
+                    drawnItems.eachLayer(layer => {
+                        if (layer.setStyle) {
+                            // untuk circle, polygon, polyline
+                            layer.setStyle(getStyleOptions());
+                        } else if (layer.setIcon) {
+                            // untuk marker
+                            const iconUrl = document.querySelector('[name="icon_url"]').value;
+                            const icon = L.icon({ iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
+                            layer.setIcon(icon);
+                        }
+                    });
+                    geometryInput.value = JSON.stringify(drawnItems.toGeoJSON());
+                });
+            });
+        
+        propertiesInput.value = JSON.stringify(properties);
+    }
+
+    function appendHidden(name, value) {
+        let input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
     }
 
     form.addEventListener('submit', prepareAndSubmitData);

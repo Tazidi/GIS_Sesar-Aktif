@@ -6,7 +6,7 @@
     {{-- Header Halaman --}}
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-800">
-            Daftar Proyek Survey
+            Daftar Proyek
         </h1>
         {{-- Tombol ini mengarah ke form pembuatan proyek baru --}}
         <a href="{{ route('projects.create') }}"
@@ -37,6 +37,9 @@
                         <th scope="col" class="px-6 py-3">Nama Proyek</th>
                         <th scope="col" class="px-6 py-3">Deskripsi</th>
                         <th scope="col" class="px-6 py-3 text-center">Jumlah Lokasi</th>
+                        @if(auth()->user()->role === 'admin')
+                            <th scope="col" class="px-6 py-3 text-center">Tampilkan di Galeri</th>
+                        @endif
                         <th scope="col" class="px-6 py-3 text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -52,17 +55,33 @@
                                 {{ $project->description ?? '-' }}
                             </td>
                             <td class="px-6 py-4 text-center">
-                                {{-- Pastikan Anda menggunakan withCount('surveyLocations') di controller --}}
                                 <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full">
                                     {{ $project->survey_locations_count }}
                                 </span>
                             </td>
+                            @if(auth()->user()->role === 'admin')
+                                <td class="px-6 py-4 text-center">
+                                    <form action="{{ route('projects.update', $project) }}" method="POST" id="form-show-gallery-{{ $project->id }}">
+                                        @csrf
+                                        @method('PUT')
+                                        {{-- Kirim juga name dan description agar validasi terpenuhi --}}
+                                        <input type="hidden" name="name" value="{{ $project->name }}">
+                                        <input type="hidden" name="description" value="{{ $project->description }}">
+                                        <div class="inline-flex space-x-4 justify-center">
+                                            <label class="inline-flex items-center space-x-1 cursor-pointer">
+                                                <input type="radio" name="show_in_gallery" value="1" onchange="document.getElementById('form-show-gallery-{{ $project->id }}').submit()" {{ $project->show_in_gallery ? 'checked' : '' }}>
+                                                <span>Ya</span>
+                                            </label>
+                                            <label class="inline-flex items-center space-x-1 cursor-pointer">
+                                                <input type="radio" name="show_in_gallery" value="0" onchange="document.getElementById('form-show-gallery-{{ $project->id }}').submit()" {{ !$project->show_in_gallery ? 'checked' : '' }}>
+                                                <span>Tidak</span>
+                                            </label>
+                                        </div>
+                                    </form>
+                                </td>
+                            @endif
                             <td class="px-6 py-4 text-center whitespace-nowrap space-x-2">
-                                {{-- Tombol untuk melihat detail proyek (peta dan daftar lokasi) --}}
-                                {{-- Semua boleh lihat --}}
                                 <a href="{{ route('projects.show', $project) }}" class="px-3 py-1 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">Lihat</a>
-                                
-                                {{-- Edit/Hapus hanya pemilik atau admin --}}
                                 @if(Auth::user()->id === $project->user_id || Auth::user()->role === 'admin')
                                     <a href="{{ route('projects.edit', $project) }}" class="px-3 py-1 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">Edit</a>
                                     <form action="{{ route('projects.destroy', $project) }}" method="POST" class="inline" onsubmit="return confirm('Anda yakin ingin menghapus proyek ini beserta semua lokasinya?');">
@@ -75,7 +94,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ auth()->user()->role === 'admin' ? 6 : 5 }}" class="text-center py-16 text-gray-500">
+                            <td colspan="{{ auth()->user()->role === 'admin' ? 7 : 5 }}" class="text-center py-16 text-gray-500">
                                 <h3 class="text-lg font-semibold">Belum Ada Proyek</h3>
                                 <p class="text-sm mt-1">Silakan klik tombol "Tambah Proyek Baru" untuk memulai.</p>
                             </td>
