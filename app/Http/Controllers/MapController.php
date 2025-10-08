@@ -13,15 +13,13 @@ class MapController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Map::with('layers');
+        $query = Map::with('layers'); // Cukup load relasi layers
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('maps.name', 'like', "%$search%")
-                  ->orWhereHas('layers', function ($layerQuery) use ($search) {
-                      $layerQuery->where('nama_layer', 'like', "%$search%");
-                  });
+                $q->where('name', 'like', "%$search%")
+                  ->orWhere('description', 'like', "%$search%");
             });
         }
 
@@ -31,28 +29,8 @@ class MapController extends Controller
 
         $maps = $query->latest()->get();
         
-        foreach ($maps as $map) {
-            $firstLayer = $map->layers->first();
-            
-            if ($firstLayer) {
-                $map->layer_type   = $firstLayer->pivot->layer_type;
-                $map->stroke_color = $firstLayer->pivot->stroke_color;
-                $map->fill_color   = $firstLayer->pivot->fill_color;
-                $map->weight       = $firstLayer->pivot->weight;
-                $map->opacity      = $firstLayer->pivot->opacity;
-                $map->radius       = $firstLayer->pivot->radius;
-                $map->icon_url     = $firstLayer->pivot->icon_url;
-                
-                if ($map->geometry) {
-                    $geometry = json_decode($map->geometry, true);
-                    $center = $this->extractCenterFromGeometry($geometry);
-                    if ($center) {
-                        $map->lat = $center['lat'];
-                        $map->lng = $center['lng'];
-                    }
-                }
-            }
-        }
+        // Logika loop untuk mengambil style dari pivot DIHAPUS.
+        // Tampilan di-handle oleh view masing-masing.
         
         return view('maps.index', compact('maps'));
     }
@@ -60,91 +38,43 @@ class MapController extends Controller
     public function create()
     {
         $map = new Map();
-        $layers = Layer::all();
+        $layers = Layer::orderBy('nama_layer')->get();
         return view('maps.form', compact('map', 'layers'));
     }
 
-    // app/Http/Controllers/MapController.php
+    public function store(Request $request)
+    {
+        // Hapus 'kategori' dari validasi
+        $data = $request->validate([
+            'name'        => 'required|string|max:100',
+            'description' => 'nullable|string',
+            'layer_ids'   => 'nullable|array',
+            'layer_ids.*' => 'exists:layers,id',
+            'image_path'  => 'nullable|image|max:2048',
+        ]);
 
-public function store(Request $request)
-{
-    // 1. KEMBALIKAN VALIDASI KE VERSI SEDERHANA (tanpa field gaya)
-    $data = $request->validate([
-        'name'        => 'required|string|max:100',
-        'description' => 'nullable|string',
-        'layer_ids'   => 'nullable|array',
-        'layer_ids.*' => 'exists:layers,id',
-        'image_path'  => 'nullable|image|max:2048',
-        'kategori'    => 'required|in:Ya,Tidak',
-    ]);
+        $data['kategori'] = 'Tidak';
 
-    if ($request->hasFile('image_path')) {
-        $file = $request->file('image_path');
-        $filename = time() . '_' . $file->getClientOriginalName();
-        $file->move(public_path('map_images'), $filename);
-        $data['image_path'] = $filename;
-    }
-    
-    $data['map_type'] = 'multi_layer';
-    $map = Map::create($data);
-
-    if (!empty($data['layer_ids'])) {
-        foreach ($data['layer_ids'] as $layerId) {
-            
-            $layer = Layer::with('mapFeatures')->find($layerId);
-            if (!$layer) continue;
-
-            $firstFeature = $layer->mapFeatures->first();
-
-            $styleData = [
-                'layer_type'   => null, 'stroke_color' => null, 'fill_color' => null,
-                'weight'       => null, 'opacity'      => null, 'radius'     => null, 'icon_url' => null,
-            ];
-
-            if ($firstFeature && $firstFeature->pivot) {
-                $styleData['layer_type']   = $firstFeature->pivot->layer_type;
-                $styleData['stroke_color'] = $firstFeature->pivot->stroke_color;
-                $styleData['fill_color']   = $firstFeature->pivot->fill_color;
-                $styleData['weight']       = $firstFeature->pivot->weight;
-                $styleData['opacity']      = $firstFeature->pivot->opacity;
-                $styleData['radius']       = $firstFeature->pivot->radius;
-                $styleData['icon_url']     = $firstFeature->pivot->icon_url;
-            }
-
-            $map->layers()->attach($layerId, $styleData);
+        if ($request->hasFile('image_path')) {
+            $file = $request->file('image_path');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('map_images'), $filename);
+            $data['image_path'] = $filename;
         }
-    }
+        
+        $map = Map::create($data);
 
-    return redirect()->route('maps.index')->with('success', 'Map berhasil dibuat!');
-}
+        if (!empty($data['layer_ids'])) {
+            $map->layers()->sync($data['layer_ids']);
+        }
+
+        return redirect()->route('maps.index')->with('success', 'Peta baru berhasil dibuat!');
+    }
 
     public function edit(Map $map)
     {
-        $layers = Layer::all();
-        $map->load('features');
-
-        $firstLayer = $map->layers->first();
-        if ($firstLayer) {
-            $map->layer_type = $firstLayer->pivot->layer_type;
-            $map->stroke_color = $firstLayer->pivot->stroke_color;
-            $map->fill_color = $firstLayer->pivot->fill_color;
-            $map->weight = $firstLayer->pivot->weight;
-            $map->opacity = $firstLayer->pivot->opacity;
-            $map->radius = $firstLayer->pivot->radius;
-            $map->icon_url = $firstLayer->pivot->icon_url;
-            
-            if ($firstLayer->pivot->lat && $firstLayer->pivot->lng) {
-                $map->lat = $firstLayer->pivot->lat;
-                $map->lng = $firstLayer->pivot->lng;
-            } elseif ($map->geometry) {
-                $geometry = json_decode($map->geometry, true);
-                $center = $this->extractCenterFromGeometry($geometry);
-                if ($center) {
-                    $map->lat = $center['lat'];
-                    $map->lng = $center['lng'];
-                }
-            }
-        }
+        $layers = Layer::orderBy('nama_layer')->get();
+        $map->load('layers'); // Cukup load relasi layers
         
         return view('maps.form', compact('map', 'layers'));
     }
@@ -152,19 +82,11 @@ public function store(Request $request)
     public function update(Request $request, Map $map)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:100',
+            'name'        => 'required|string|max:100',
             'description' => 'nullable|string',
-            'layer_ids' => 'nullable|array',
+            'layer_ids'   => 'nullable|array',
             'layer_ids.*' => 'exists:layers,id',
-            'image_path' => 'nullable|image|max:2048',
-            'layer_type' => 'nullable|string|max:50',
-            'geometry' => 'nullable|json',
-            'kategori' => 'required|in:Ya,Tidak',
-            'fill_color' => 'nullable|string|max:7',
-            'weight' => 'nullable|numeric',
-            'opacity' => 'nullable|numeric|min:0|max:1',
-            'radius' => 'nullable|numeric',
-            'icon_url' => 'nullable|string|max:255',
+            'image_path'  => 'nullable|image|max:2048',
         ]);
 
         if ($request->hasFile('image_path')) {
@@ -180,139 +102,34 @@ public function store(Request $request)
 
         $map->update($data);
 
-        if ($request->has('layer_ids')) {
-            $pivotData = [];
-            $styleData = [
-                'layer_type'   => $request->layer_type,
-                'stroke_color' => $request->stroke_color,
-                'fill_color'   => $request->fill_color,
-                'weight'       => $request->weight,
-                'opacity'      => $request->opacity,
-                'radius'       => $request->radius,
-                'icon_url'     => $request->icon_url,
-            ];
+        $map->layers()->sync($request->input('layer_ids', []));
 
-            if ($request->filled('geometry')) {
-                $geometry = json_decode($request->geometry, true);
-                $center = $this->extractCenterFromGeometry($geometry);
-                if ($center) {
-                    $styleData['lat'] = $center['lat'];
-                    $styleData['lng'] = $center['lng'];
-                }
-            } else {
-                $firstLayer = $map->layers->first();
-                if ($firstLayer && $firstLayer->pivot->lat && $firstLayer->pivot->lng) {
-                    $styleData['lat'] = $firstLayer->pivot->lat;
-                    $styleData['lng'] = $firstLayer->pivot->lng;
-                }
-            }
-
-            foreach ($request->input('layer_ids') as $layerId) {
-                $pivotData[$layerId] = $styleData;
-            }
-
-            $map->layers()->sync($pivotData);
-        } else {
-            $map->layers()->detach();
-        }
-        
-        if ($request->filled('geometry')) {
-            $geojson = json_decode($request->geometry, true);
-
-            if (isset($geojson['features'])) {
-                foreach ($geojson['features'] as $index => $feature) {
-                    $featureId = $request->input("feature_ids.$index"); 
-
-                    if ($featureId) {
-                        $mapFeature = $map->features()->find($featureId);
-                    } else {
-                        $mapFeature = new MapFeature(['map_id' => $map->id]);
-                    }
-
-                    $imagePath = $mapFeature->image_path;
-                    if ($request->hasFile("feature_images.$index")) {
-                        $imageFile = $request->file("feature_images.$index");
-                        $imagePath = time() . "_{$index}_" . $imageFile->getClientOriginalName();
-                        $imageFile->move(public_path('map_features'), $imagePath);
-                    }
-
-                    $technicalInfo = null;
-                    if ($request->has("feature_properties.$index")) {
-                        $technicalInfo = json_encode($request->input("feature_properties.$index"));
-                    }
-
-                    $mapFeature->geometry = $feature['geometry'] ?? null;
-                    $mapFeature->properties = $feature['properties'] ?? [];
-                    $mapFeature->image_path = $imagePath;
-                    $mapFeature->caption = $request->input("feature_captions.$index") 
-                                        ?? ($feature['properties']['caption'] ?? null);
-                    $mapFeature->technical_info = $technicalInfo 
-                                                ?? ($feature['properties']['technical_info'] ?? null);
-
-                    $mapFeature->save();
-                }
-
-                $validIds = collect($request->input('feature_ids', []))->filter()->all();
-                $map->features()->whereNotIn('id', $validIds)->delete();
-            }
-        } else {
-            if ($request->has('feature_ids')) {
-                foreach ($request->input('feature_ids') as $index => $featureId) {
-                    $mapFeature = $map->features()->find($featureId);
-                    if (!$mapFeature) continue;
-
-                    $imagePath = $mapFeature->image_path;
-                    if ($request->hasFile("feature_images.$index")) {
-                        $imageFile = $request->file("feature_images.$index");
-                        $imagePath = time() . "_{$index}_" . $imageFile->getClientOriginalName();
-                        $imageFile->move(public_path('map_features'), $imagePath);
-                    }
-
-                    $technicalInfo = null;
-                    if ($request->has("feature_properties.$index")) {
-                        $technicalInfo = json_encode($request->input("feature_properties.$index"));
-                    }
-
-                    $mapFeature->image_path = $imagePath;
-                    $mapFeature->caption = $request->input("feature_captions.$index", $mapFeature->caption);
-                    $mapFeature->technical_info = $technicalInfo ?? $mapFeature->technical_info;
-
-                    $mapFeature->save();
-                }
-            }
-        }
-        
         return redirect()->route('maps.index')->with('success', 'Peta berhasil diperbarui!');
     }
 
     public function show(Map $map)
     {
-        $map->load('features', 'layers');
-        
-        $firstLayer = $map->layers->first();
-        if ($firstLayer) {
-            $map->layer_type = $firstLayer->pivot->layer_type;
-            $map->stroke_color = $firstLayer->pivot->stroke_color;
-            $map->fill_color = $firstLayer->pivot->fill_color;
-            $map->weight = $firstLayer->pivot->weight;
-            $map->opacity = $firstLayer->pivot->opacity;
-            $map->radius = $firstLayer->pivot->radius;
-            $map->icon_url = $firstLayer->pivot->icon_url;
-        }
+        // Load relasi layers, dan di dalam setiap layer, load mapFeatures-nya.
+        $map->load('layers.mapFeatures');
         
         return view('maps.show', compact('map'));
     }
 
     public function destroy(Map $map)
     {
+        // Hapus relasi di tabel pivot
         $map->layers()->detach();
-        $map->features()->delete();
 
+        // Hapus thumbnail peta
         if ($map->image_path && File::exists(public_path('map_images/' . $map->image_path))) {
             File::delete(public_path('map_images/' . $map->image_path));
         }
 
+        // Hapus peta itu sendiri
         $map->delete();
+
+        // TIDAK ADA LAGI ->features()->delete()
+
         return redirect()->route('maps.index')->with('success', 'Peta berhasil dihapus!');
     }
 
@@ -322,8 +139,9 @@ public function store(Request $request)
 
         $activeLayerIds = $mapsForLegend->pluck('layers')->flatten()->pluck('id')->unique();
 
-        $features = MapFeature::with('layers')
-            ->whereHas('layers', function ($query) use ($activeLayerIds) {
+        // --- PERBAIKAN DIMULAI DI SINI ---
+        $features = MapFeature::with('layer') // Ganti ke singular: 'layer'
+            ->whereHas('layer', function ($query) use ($activeLayerIds) { // Ganti ke singular: 'layer'
                 $query->whereIn('layers.id', $activeLayerIds);
             })
             ->get()
@@ -341,6 +159,10 @@ public function store(Request $request)
                     $imagePath = asset($imagePath);
                 }
 
+                // Karena fitur sekarang hanya milik 1 layer, kita ambil ID-nya
+                // dan masukkan ke dalam array agar struktur data untuk JS tetap sama.
+                $layerIds = $feature->layer_id ? [$feature->layer_id] : [];
+
                 return [
                     'type' => 'Feature',
                     'geometry' => $geometry,
@@ -348,9 +170,10 @@ public function store(Request $request)
                     'image_path' => $imagePath,
                     'caption' => $feature->caption ?? '',
                     'technical_info' => $technical_info,
-                    'layer_ids' => $feature->layers->pluck('id')->toArray(),
+                    'layer_ids' => $layerIds, // Gunakan variabel yang sudah diperbaiki
                 ];
             });
+        // --- AKHIR DARI PERBAIKAN ---
 
         return view('visualisasi.index', [
             'maps' => $mapsForLegend,
@@ -360,63 +183,34 @@ public function store(Request $request)
     
     public function geojson(Map $map)
     {
-        if ($map->features()->exists()) {
-            $features = $map->features->map(function ($feature) {
-                $properties = $feature->properties ?? [];
-                if (is_string($properties)) {
-                    $decoded = json_decode($properties, true);
-                    $properties = is_array($decoded) ? $decoded : [];
-                }
+        $map->load('layers.mapFeatures');
 
-                $properties['image_path'] = $feature->image_path ? asset($feature->image_path) : null;
-                $properties['caption'] = $feature->caption;
-                $properties['technical_info'] = $feature->technical_info;
-                $properties['layer_ids'] = $feature->layers->pluck('id')->toArray();
+        $allFeatures = $map->layers->flatMap(function ($layer) {
+            return $layer->mapFeatures;
+        });
 
-                $geometry = $feature->geometry;
-                if (is_string($geometry)) {
-                    $geometry = json_decode($geometry, true);
-                }
-                if (isset($geometry['lat'], $geometry['lng'])) {
-                    $geometry = [
-                        'type' => 'Point',
-                        'coordinates' => [(float) $geometry['lng'], (float) $geometry['lat']],
-                    ];
-                }
+        $features = $allFeatures->map(function ($feature) {
+            $properties = $feature->properties ?? [];
+            if (is_string($properties)) $properties = json_decode($properties, true) ?: [];
 
-                return [
-                    'type' => 'Feature',
-                    'geometry' => $geometry,
-                    'properties' => $properties,
-                ];
-            });
+            $properties['image_path'] = $feature->image_path ? asset($feature->image_path) : null;
+            $properties['caption'] = $feature->caption;
+            $properties['technical_info'] = $feature->technical_info;
+            $properties['layer_id'] = $feature->layer_id; // Kirim layer_id agar frontend tahu asalnya
 
-            return response()->json([
-                'type' => 'FeatureCollection',
-                'features' => $features,
-            ]);
-        }
+            $geometry = $feature->geometry;
+            if (is_string($geometry)) $geometry = json_decode($geometry, true);
+            
+            return [
+                'type' => 'Feature',
+                'geometry' => $geometry,
+                'properties' => $properties,
+            ];
+        });
 
         return response()->json([
             'type' => 'FeatureCollection',
-            'features' => [],
-        ]);
-    }
-
-    public function updateKategori(Request $request, Map $map)
-    {
-        $request->validate([
-            'kategori' => 'required|in:Ya,Tidak'
-        ]);
-
-        $map->update([
-            'kategori' => $request->kategori
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Kategori berhasil diperbarui',
-            'kategori' => $map->kategori
+            'features' => $features,
         ]);
     }
     
@@ -451,5 +245,25 @@ public function store(Request $request)
         }
         
         return null;
+    }
+
+    public function setActive(Request $request, Map $map)
+    {
+        try {
+            // Gunakan transaksi database untuk memastikan kedua operasi berhasil
+            DB::transaction(function () use ($map) {
+                // 1. Set semua peta menjadi 'Tidak'
+                Map::query()->update(['kategori' => 'Tidak']);
+                
+                // 2. Set peta yang dipilih menjadi 'Ya'
+                $map->update(['kategori' => 'Ya']);
+            });
+
+            return response()->json(['success' => true, 'message' => 'Peta utama berhasil diatur.']);
+
+        } catch (\Exception $e) {
+            // Kirim response error jika transaksi gagal
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui peta.'], 500);
+        }
     }
 }

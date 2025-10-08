@@ -116,7 +116,7 @@
                             @enderror
                         </div>
 
-                        {{-- Pilih Map --}}
+                        {{-- Pilih Map
                         <div>
                             <label for="map_id" class="block text-sm font-medium text-gray-700 mb-1">
                                 Pilih Map <span class="text-red-500">*</span>
@@ -135,7 +135,7 @@
                             @error('map_id')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
-                        </div>
+                        </div> --}}
 
                         {{-- Dynamic Options Container --}}
                         <div id="dynamic-options-container" class="space-y-4 pt-4 border-t">

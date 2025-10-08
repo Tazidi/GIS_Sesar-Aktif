@@ -31,8 +31,6 @@ return new class extends Migration
                 'public/marker/marker_kuning.png',
                 'public/marker/marker_merah.png'
             ])->nullable(); // ENUM, dibuat nullable jika tidak selalu wajib
-
-            $table->timestamp('created_at')->useCurrent(); // TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         });
     }
 

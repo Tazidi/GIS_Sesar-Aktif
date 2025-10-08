@@ -26,37 +26,25 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Pilih Layer (Opsional)</label>
-                <p class="text-sm text-gray-500 mb-2">Pilih satu atau lebih layer, atau biarkan kosong</p>
+                <p class="text-sm text-gray-500 mb-2">Pilih satu atau lebih layer yang akan ditampilkan pada peta ini.</p>
                 <div class="mt-2 space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md p-4">
-                    @if($layers->count() > 0)
-                        @foreach ($layers as $layer)
-                            <label class="inline-flex items-center mb-2">
-                                <input type="checkbox" name="layer_ids[]" value="{{ $layer->id }}"
-                                    class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
-                                    @if(is_array(old('layer_ids')) && in_array($layer->id, old('layer_ids')))
-                                        checked
-                                    @elseif($map->exists && $map->layers->contains($layer->id))
-                                        checked
-                                    @endif>
-                                <span class="ml-2 text-gray-700">
-                                    {{ $layer->nama_layer }}
-                                    @if($layer->deskripsi) - <span class="text-gray-500 text-sm">{{ $layer->deskripsi }}</span> @endif
-                                </span>
-                            </label>
-                        @endforeach
-                    @else
-                        <p class="text-sm text-gray-500">Tidak ada layer tersedia</p>
-                    @endif
+                    @forelse ($layers as $layer)
+                        <label class="flex items-center mb-2">
+                            <input type="checkbox" name="layer_ids[]" value="{{ $layer->id }}"
+                                class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                                @if(in_array($layer->id, old('layer_ids', $map->layers->pluck('id')->toArray()))) checked @endif>
+                            <span class="ml-2 text-gray-700">
+                                {{ $layer->nama_layer }}
+                                @if($layer->deskripsi) - <span class="text-gray-500 text-sm">{{ $layer->deskripsi }}</span> @endif
+                            </span>
+                        </label>
+                    @empty
+                        <p class="text-sm text-gray-500">Tidak ada layer tersedia. <a href="{{ route('layers.create') }}" class="text-blue-600 hover:underline">Buat layer baru</a></p>
+                    @endforelse
                 </div>
             </div>
-
-            <div>
-                <label for="kategori" class="block text-sm font-medium text-gray-700">Tampil di Peta Sisiraja?</label>
-                <select name="kategori" id="kategori" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
-                    <option value="Ya" {{ old('kategori', $map->kategori) == 'Ya' ? 'selected' : '' }}>Ya</option>
-                    <option value="Tidak" {{ old('kategori', $map->kategori) == 'Tidak' ? 'selected' : '' }}>Tidak</option>
-                </select>
-            </div>
+            
+            {{-- BAGIAN KATEGORI DIHAPUS DARI SINI --}}
 
             <div>
                 <label for="image_path" class="block text-sm font-medium text-gray-700">Upload Gambar (Thumbnail)</label>

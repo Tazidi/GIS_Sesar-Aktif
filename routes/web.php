@@ -123,8 +123,7 @@ Route::middleware(['auth', 'role:admin,editor'])->group(function () {
 */
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::resource('maps', MapController::class);
-    Route::put('/maps/{map}/update-kategori', [MapController::class, 'updateKategori'])
-        ->name('maps.updateKategori');
+    Route::post('/maps/{map}/set-active', [MapController::class, 'setActive'])->name('maps.setActive');
     
     // Routes untuk mengelola geometri dalam map
     Route::get('/maps/{map}/geometries', [App\Http\Controllers\MapGeometryController::class, 'index'])

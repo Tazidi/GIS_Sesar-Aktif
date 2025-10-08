@@ -260,92 +260,87 @@
                 });
             });
             
-mapsData.layers.forEach(layerInfo => {
-    const layerName = layerInfo.name;
-    const groupData = featuresByLayerName[layerName];
+            mapsData.layers.forEach(layerInfo => {
+                const layerName = layerInfo.name;
+                const groupData = featuresByLayerName[layerName];
 
-    const features = groupData ? groupData.features : [];
-    const mapData = groupData ? groupData.mapData : mapsData.maps[0];
+                const features = groupData ? groupData.features : [];
+                const mapData = groupData ? groupData.mapData : mapsData.maps[0];
 
-    const geoJsonLayer = L.geoJSON(features, {
-    style: function(feature) {
-        if (feature.geometry.type === "Point") {
-            return {};
-        }
+                const geoJsonLayer = L.geoJSON(features, {
+                    style: function(feature) {
+                        if (feature.geometry.type === "Point") {
+                            return {}; // Points are handled by pointToLayer
+                        }
 
-        let individualStyle = {};
-        try {
-            const techInfo = typeof feature.technical_info === "string" 
-                ? JSON.parse(feature.technical_info || "{}") 
-                : (feature.technical_info || {});
-            individualStyle = {
-                color: techInfo.stroke_color || layerInfo.stroke_color || mapData.default_stroke_color,
-                fillColor: techInfo.fill_color || layerInfo.fill_color || mapData.default_fill_color,
-                weight: techInfo.weight || layerInfo.weight || mapData.default_weight,
-                opacity: techInfo.opacity ?? layerInfo.opacity ?? mapData.default_opacity,
-                fillOpacity: techInfo.fill_opacity ?? (techInfo.opacity || mapData.default_opacity) * 0.7
-            };
-        } catch (e) { }
-        return { ...createLayerStyle(layerInfo, mapData), ...individualStyle };
-    },
+                        const props = feature.properties || {};
+                        const baseStyle = createLayerStyle(layerInfo, mapData);
 
-    pointToLayer: (feature, latlng) => {
-        let techInfo = {};
-        try {
-            techInfo = typeof feature.technical_info === "string" 
-                ? JSON.parse(feature.technical_info || "{}") 
-                : (feature.technical_info || {});
-        } catch (e) { }
+                        return {
+                            color: props.stroke_color || baseStyle.color,
+                            fillColor: props.fill_color || baseStyle.fillColor,
+                            weight: props.weight || baseStyle.weight,
+                            opacity: props.opacity ?? baseStyle.opacity,
+                            fillOpacity: props.fill_opacity ?? props.opacity ?? baseStyle.fillOpacity
+                        };
+                    },
 
-        const layerInfo = mapsData.layers.find(l => feature.layer_ids.includes(l.id)) || {};
-        const mapData = mapsData.maps[0];
+                    pointToLayer: (feature, latlng) => {
+                        const props = feature.properties || {};
+                        const layerInfo = mapsData.layers.find(l => feature.layer_ids.includes(l.id)) || {};
+                        const mapData = mapsData.maps[0];
 
-        const finalIconUrl = feature.properties.icon_url || techInfo.icon_url || layerInfo.icon_url || mapData.default_icon_url || '';
-        if (finalIconUrl) {
-            return L.marker(latlng, {
-                icon: L.icon({
-                    iconUrl: finalIconUrl,
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34]
-                })
+                        // **FIX 1: Prioritize icon_url from properties**
+                        const finalIconUrl = props.icon_url || layerInfo.icon_url || mapData.default_icon_url || '';
+                        
+                        if (finalIconUrl) {
+                            return L.marker(latlng, {
+                                icon: L.icon({
+                                    iconUrl: finalIconUrl,
+                                    iconSize: [25, 41],
+                                    iconAnchor: [12, 41],
+                                    popupAnchor: [1, -34]
+                                })
+                            });
+                        }
+
+                        // **FIX 2: Check geometry_type from properties first**
+                        let layerType = (props.geometry_type || layerInfo.type || 'marker').toLowerCase();
+                        
+                        const baseStyle = createLayerStyle(layerInfo, mapData);
+                        const featureStyle = {
+                            color: props.stroke_color || baseStyle.color,
+                            fillColor: props.fill_color || baseStyle.fillColor,
+                            weight: props.weight || baseStyle.weight,
+                            opacity: props.opacity ?? baseStyle.opacity,
+                            fillOpacity: props.fill_opacity ?? props.opacity ?? baseStyle.fillOpacity
+                        };
+
+                        if (layerType === 'circle') {
+                            // **FIX 3: Prioritize radius from properties**
+                            const radius = props.radius || layerInfo.radius || mapData.default_radius || 300;
+                            return L.circle(latlng, { ...featureStyle, radius: parseFloat(radius) });
+                        }
+
+                        if (layerType === 'circlemarker') {
+                            const radius = props.point_radius || 6;
+                            return L.circleMarker(latlng, { ...featureStyle, radius });
+                        }
+
+                        // Fallback to a default marker if no other type is specified
+                        return L.marker(latlng);
+                    },
+
+                    onEachFeature: function(feature, layer) {
+                        layer.bindPopup(createPopupContent(feature, mapData));
+                    }
+                });
+
+                layerGroups[layerName] = geoJsonLayer;
+                if (features.length > 0) {
+                    allBounds.push(geoJsonLayer);
+                }
             });
-        }
-
-        let layerType = (techInfo.geometry_type || feature.properties?.geometry_type || layerInfo.type || 'marker').toLowerCase();
-        
-        const baseStyle = createLayerStyle(layerInfo, mapData);
-        const featureStyle = {
-            color: feature.properties.stroke_color || techInfo.stroke_color || baseStyle.color,
-            fillColor: feature.properties.fill_color || techInfo.fill_color || baseStyle.fillColor,
-            weight: feature.properties.weight || techInfo.weight || baseStyle.weight,
-            opacity: feature.properties.opacity ?? techInfo.opacity ?? baseStyle.opacity,
-            fillOpacity: feature.properties.fill_opacity ?? techInfo.fill_opacity ?? ((feature.properties.opacity ?? techInfo.opacity ?? baseStyle.opacity) * 0.7)
-        };
-
-        if (layerType === 'circle') {
-            const radius = feature.properties.radius || techInfo.radius || layerInfo.radius || mapData.default_radius || 300;
-            return L.circle(latlng, { ...featureStyle, radius: parseFloat(radius) });
-        }
-
-        if (layerType === 'circlemarker') {
-            const radius = techInfo.point_radius || 6;
-            return L.circleMarker(latlng, { ...featureStyle, radius });
-        }
-
-        return L.marker(latlng);
-    },
-
-    onEachFeature: function(feature, layer) {
-        layer.bindPopup(createPopupContent(feature, mapData));
-    }
-});
-
-    layerGroups[layerName] = geoJsonLayer;
-    if (features.length > 0) {
-        allBounds.push(geoJsonLayer);
-    }
-});
 
             layerGroups['BMKG: 15 Gempa'] = L.layerGroup();
             
@@ -430,14 +425,14 @@ mapsData.layers.forEach(layerInfo => {
         }
         
         function createLayerStyle(layerInfo, mapData) {
-              const opacity = parseFloat(layerInfo.opacity);
-              return {
-                  color: layerInfo.stroke_color || mapData.default_stroke_color || '#000000',
-                  fillColor: layerInfo.fill_color || mapData.default_fill_color || '#ff0000',
-                  weight: parseInt(layerInfo.weight) || mapData.default_weight || 2,
-                  opacity: isNaN(opacity) ? (mapData.default_opacity || 0.8) : opacity,
-                  fillOpacity: (isNaN(opacity) ? (mapData.default_opacity || 0.8) : opacity) * 0.7
-              };
+             const opacity = parseFloat(layerInfo.opacity);
+             return {
+                 color: layerInfo.stroke_color || mapData.default_stroke_color || '#000000',
+                 fillColor: layerInfo.fill_color || mapData.default_fill_color || '#ff0000',
+                 weight: parseInt(layerInfo.weight) || mapData.default_weight || 2,
+                 opacity: isNaN(opacity) ? (mapData.default_opacity || 0.8) : opacity,
+                 fillOpacity: (isNaN(opacity) ? (mapData.default_opacity || 0.8) : opacity) * 0.7
+             };
         }
 
         function createPopupContent(feature, mapData) {

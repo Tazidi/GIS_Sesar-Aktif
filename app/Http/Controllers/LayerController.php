@@ -35,17 +35,16 @@ class LayerController extends Controller
 
     public function store(Request $request)
     {
+        // 1. Validasi disederhanakan: 'map_id' dihapus
         $request->validate([
             'nama_layer' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
-            'map_id' => 'required|exists:maps,id',
             'geometry' => 'required|json',
             'geometry_type' => 'required|in:marker,circle,polyline,polygon',
             'geojson_file' => 'nullable|file|mimes:json,geojson',
             'feature_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'feature_captions.*' => 'nullable|string|max:255',
             'feature_properties.*' => 'nullable|array',
-            'technical_info.*' => 'nullable|array',
             'stroke_color' => 'nullable|string|max:7',
             'fill_color' => 'nullable|string|max:7',
             'weight' => 'nullable|numeric',
@@ -57,162 +56,57 @@ class LayerController extends Controller
         DB::beginTransaction();
 
         try {
+            // 2. Buat Layer baru tanpa referensi ke map
             $layer = Layer::create([
                 'nama_layer' => $request->nama_layer,
                 'deskripsi' => $request->deskripsi,
             ]);
 
-            $map = Map::find($request->map_id);
-
-        if ($map) {
-            $map->layers()->attach($layer->id, [
-                'layer_type'   => $request->geometry_type,
-                'stroke_color' => $request->stroke_color,
-                'fill_color'   => $request->fill_color,
-                'weight'       => $request->weight,
-                'opacity'      => $request->opacity,
-                'radius'       => $request->radius,
-                'icon_url'     => $request->icon_url,
-            ]);
-        }
+            // 3. Logika untuk attach layer ke map DIHAPUS dari sini
 
             $geometryData = json_decode($request->geometry, true);
             
-            if (empty($geometryData) && $request->hasFile('geojson_file')) {
+            if (empty($geometryData['features']) && $request->hasFile('geojson_file')) {
                 $geometryData = json_decode(file_get_contents($request->file('geojson_file')->getPathname()), true);
             }
 
-            if (empty($geometryData) || !isset($geometryData['type'])) {
-                throw new \Exception('Data geometri tidak valid atau kosong.');
+            if (empty($geometryData) || !isset($geometryData['features'])) {
+                throw new \Exception('Data GeoJSON harus berupa FeatureCollection yang valid dan tidak kosong.');
             }
-
-            $properties = [
-                'name' => $request->nama_layer,
-                'description' => $request->deskripsi,
+            
+            // 4. Siapkan properti default dari request utama untuk setiap fitur
+            $defaultProperties = [
+                'icon_url' => $request->icon_url,
+                'radius' => $request->radius,
+                'stroke_color' => $request->stroke_color,
+                'fill_color' => $request->fill_color,
+                'weight' => $request->weight,
+                'opacity' => $request->opacity,
             ];
 
-            if ($request->geometry_type === 'marker') {
-                $properties['icon_url'] = $request->icon_url;
-            } elseif ($request->geometry_type === 'polyline') {
-                $properties['stroke_color'] = $request->stroke_color;
-                $properties['weight'] = $request->weight;
-                $properties['opacity'] = $request->opacity;
-            } elseif ($request->geometry_type === 'polygon') {
-                $properties['stroke_color'] = $request->stroke_color;
-                $properties['fill_color'] = $request->fill_color;
-                $properties['weight'] = $request->weight;
-                $properties['opacity'] = $request->opacity;
-            } elseif ($request->geometry_type === 'circle') {
-                $properties['radius'] = $request->radius;
-                $properties['stroke_color'] = $request->stroke_color;
-                $properties['fill_color'] = $request->fill_color;
-                $properties['weight'] = $request->weight;
-                $properties['opacity'] = $request->opacity;
-            }
-
-            if (isset($geometryData['type']) && $geometryData['type'] === 'FeatureCollection' && isset($geometryData['features'])) {
-                foreach ($geometryData['features'] as $index => $feature) {
-                    $featureProperties = $feature['properties'] ?? [];
-                    
-                    $technicalKeys = ['panjang_sesar', 'lebar_sesar', 'tipe', 'mmax'];
-                    $geojsonTechnicalInfo = [];
-                    foreach ($technicalKeys as $key) {
-                        if (array_key_exists($key, $featureProperties)) {
-                            $geojsonTechnicalInfo[$key] = $featureProperties[$key];
-                            unset($featureProperties[$key]);
-                        }
-                    }
-
-                    $finalName = $featureProperties['name'] ?? $request->nama_layer . " - Fitur #" . ($index + 1);
-                    $finalDescription = $featureProperties['description'] ?? $request->deskripsi ?? '';
-
-                    $imagePath = null;
-                    if ($request->hasFile("feature_images.{$index}")) {
-                        $file = $request->file("feature_images.{$index}");
-                        $filename = time() . "_{$index}_" . $file->getClientOriginalName();
-                        $file->move(public_path('map_features'), $filename);
-                        $imagePath = 'map_features/' . $filename;
-                    }
-
-                    $caption = $request->input("feature_captions.{$index}") ?? $finalName;
-
-                    $formTechnicalInfo = $request->input("technical_info.{$index}", []);
-                    $featurePropertiesInput = $request->input("feature_properties.{$index}", []);
-
-                    $mergedTechnicalInfo = array_merge(
-                        $geojsonTechnicalInfo,
-                        is_array($formTechnicalInfo) ? $formTechnicalInfo : [],
-                        is_array($featurePropertiesInput) ? $featurePropertiesInput : [],
-                        [
-                            'geometry_type' => $request->geometry_type,
-                        ]
-                    );
-
-                    $mergedProperties = array_merge(
-                        $properties,
-                        $featureProperties,
-                        [
-                            'name' => $finalName,
-                            'description' => $finalDescription,
-                        ]
-                    );
-
-                    $mapFeature = MapFeature::create([
-                        'map_id' => $request->map_id,
-                        'geometry' => json_encode($feature['geometry']),
-                        'properties' => json_encode($mergedProperties),
-                        'image_path' => $imagePath,
-                        'caption' => $caption,
-                        'technical_info' => !empty($mergedTechnicalInfo) ? json_encode($mergedTechnicalInfo) : null,
-                    ]);
-
-                    $mapFeature->layers()->attach($layer->id, [
-                        'layer_type' => $request->geometry_type,
-                        'stroke_color' => $request->stroke_color,
-                        'fill_color' => $request->fill_color,
-                        'weight' => $request->weight,
-                        'opacity' => $request->opacity,
-                        'radius' => $request->radius,
-                        'icon_url' => $request->icon_url,
-                    ]);
-                }
-            } else {
-                $geometry = $geometryData;
+            // Loop untuk setiap fitur dalam GeoJSON
+            foreach ($geometryData['features'] as $index => $feature) {
+                $featureProperties = $feature['properties'] ?? [];
                 
-                if (isset($geometryData['type']) && $geometryData['type'] === 'Feature') {
-                    $geometry = $geometryData['geometry'];
-                    $featureProperties = $geometryData['properties'] ?? [];
-                } else {
-                    $featureProperties = [];
-                }
-
-                $finalName = $featureProperties['name'] ?? $request->nama_layer;
+                // Menentukan nama dan deskripsi final untuk fitur ini
+                $finalName = $featureProperties['name'] ?? $request->nama_layer . " - Fitur #" . ($index + 1);
                 $finalDescription = $featureProperties['description'] ?? $request->deskripsi ?? '';
 
+                // Proses upload gambar jika ada
                 $imagePath = null;
-                if ($request->hasFile('feature_image')) {
-                    $file = $request->file('feature_image');
-                    $filename = time() . '_' . $file->getClientOriginalName();
+                if ($request->hasFile("feature_images.{$index}")) {
+                    $file = $request->file("feature_images.{$index}");
+                    $filename = time() . "_{$index}_" . $file->getClientOriginalName();
+                    // Simpan ke public path agar mudah diakses
                     $file->move(public_path('map_features'), $filename);
                     $imagePath = 'map_features/' . $filename;
                 }
 
-                $caption = $request->caption ?? $finalName;
+                $caption = $request->input("feature_captions.{$index}") ?? $finalName;
 
-                $formTechnicalInfo = $request->input('technical_info.0', []);
-                $featurePropertiesInput = $request->input('feature_properties.0', []);
-
-                $mergedTechnicalInfo = array_merge(
-                    $this->extractTechnicalInfoFromProperties($featureProperties),
-                    is_array($formTechnicalInfo) ? $formTechnicalInfo : [],
-                    is_array($featurePropertiesInput) ? $featurePropertiesInput : [],
-                    [
-                        'geometry_type' => $request->geometry_type,
-                    ]
-                );
-
+                // Gabungkan semua properti: dari form utama, dari file geojson, dan nama final
                 $mergedProperties = array_merge(
-                    $properties,
+                    $defaultProperties,
                     $featureProperties,
                     [
                         'name' => $finalName,
@@ -220,33 +114,34 @@ class LayerController extends Controller
                     ]
                 );
 
-                $mapFeature = MapFeature::create([
-                    'map_id' => $request->map_id,
-                    'geometry' => json_encode($geometry),
+                // Gabungkan technical info jika ada
+                $formTechnicalInfo = $request->input("feature_properties.{$index}", []);
+                $mergedTechnicalInfo = array_merge(
+                    is_array($formTechnicalInfo) ? $formTechnicalInfo : [],
+                    ['geometry_type' => $request->geometry_type]
+                );
+                
+                // 5. Buat MapFeature dan langsung kaitkan dengan 'layer_id'
+                MapFeature::create([
+                    'layer_id' => $layer->id, // <- Perubahan Kunci: Menggunakan layer_id
+                    'geometry' => json_encode($feature['geometry']),
                     'properties' => json_encode($mergedProperties),
                     'image_path' => $imagePath,
                     'caption' => $caption,
                     'technical_info' => !empty($mergedTechnicalInfo) ? json_encode($mergedTechnicalInfo) : null,
                 ]);
 
-                $mapFeature->layers()->attach($layer->id, [
-                    'layer_type' => $request->geometry_type,
-                    'stroke_color' => $request->stroke_color,
-                    'fill_color' => $request->fill_color,
-                    'weight' => $request->weight,
-                    'opacity' => $request->opacity,
-                    'radius' => $request->radius,
-                    'icon_url' => $request->icon_url,
-                ]);
+                // 6. Logika untuk 'attach' ke pivot table DIHAPUS karena relasi sudah langsung
             }
 
             DB::commit();
 
             return redirect()->route('layers.index')
-                ->with('success', 'Layer dan fitur peta berhasil dibuat!');
+                ->with('success', 'Layer dan fitur-fiturnya berhasil dibuat!');
 
         } catch (\Exception $e) {
             DB::rollBack();
+            // Memberikan pesan error yang lebih spesifik
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
         }
     }

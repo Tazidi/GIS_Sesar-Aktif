@@ -7,33 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 class Layer extends Model
 {
     protected $fillable = ['nama_layer', 'deskripsi'];
-    
+
+    // Relasi ini tetap (Layer bisa ada di banyak Map)
     public function maps()
     {
         return $this->belongsToMany(Map::class, 'layer_map')
-        ->withPivot([
-                    'layer_type',
-                    'lat',
-                    'lng',
-                    'stroke_color',
-                    'fill_color',
-                    'weight',
-                    'opacity',
-                    'radius',
-                    'icon_url'
-                ]);
+            ->withPivot([
+                // styling default bisa tetap disini
+                'layer_type', 'stroke_color', 'fill_color', 'weight', 'opacity', 'radius', 'icon_url'
+            ]);
     }
+
+    // Relasi ini berubah menjadi hasMany
     public function mapFeatures()
-{
-    return $this->belongsToMany(MapFeature::class, 'feature_layer', 'layer_id', 'feature_id')
-        ->withPivot([
-            'layer_type',
-            'stroke_color',
-            'fill_color',
-            'weight',
-            'opacity',
-            'radius',
-            'icon_url'
-        ]);
-}
+    {
+        // Sebuah Layer memiliki banyak MapFeature
+        return $this->hasMany(MapFeature::class);
+    }
 }

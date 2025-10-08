@@ -46,6 +46,41 @@
             margin-right: 0.5rem; /* 8px */
             padding-right: 2rem !important; /* Memberi ruang untuk ikon panah */
         }
+
+        /* Style untuk radio button yang lebih modern */
+        .sisiraja-radio {
+            cursor: pointer;
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #cbd5e1;
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .sisiraja-radio:checked {
+            border-color: #2563eb; /* blue-600 */
+            background-color: #2563eb;
+        }
+        .sisiraja-radio:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0.5rem;
+            height: 0.5rem;
+            background-color: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .sisiraja-radio-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .sisiraja-radio-label span {
+            margin-left: 0.5rem;
+        }
     </style>
 @endsection
 
@@ -69,10 +104,9 @@
         </div>
 
         <form method="GET" action="{{ route('maps.index') }}" class="mb-4 flex items-center gap-2">
-            <select name="kategori" class="border-gray-300 rounded-md shadow-sm w-full sm:w-48">
-                <option value="">Semua</option>
-                <option value="Ya" {{ request('kategori') == 'Ya' ? 'selected' : '' }}>Tampil di Peta Sisiraja (Ya)</option>
-                <option value="Tidak" {{ request('kategori') == 'Tidak' ? 'selected' : '' }}>Tampil di Peta Sisiraja (Tidak)</option>
+            <select name="kategori" class="border-gray-300 rounded-md shadow-sm w-full sm:w-64">
+                <option value="">Semua Peta</option>
+                <option value="Ya" {{ request('kategori') == 'Ya' ? 'selected' : '' }}>Hanya Peta Sisiraja Aktif</option>
             </select>
             <button type="submit"
                 class="bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700 transition">Cari</button>
@@ -83,13 +117,9 @@
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50">
                     <tr>
                         <th scope="col" class="px-4 py-3">Nama Peta</th>
-                        <th scope="col" class="px-4 py-3">Jenis Fitur</th>
-                        <th scope="col" class="px-4 py-3">Koordinat</th>
-                        <th scope="col" class="px-4 py-3">Radius</th>
-                        <th scope="col" class="px-4 py-3">Aset Visual</th>
                         <th scope="col" class="px-4 py-3">GeoJSON</th>
                         <th scope="col" class="px-4 py-3 min-w-[150px]">Pratinjau Peta</th>
-                        <th scope="col" class="px-4 py-3">Kategori</th>
+                        <th scope="col" class="px-4 py-3 text-center">Peta Sisiraja Aktif</th>
                         <th scope="col" class="px-4 py-3 text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -97,25 +127,8 @@
                     @foreach ($maps as $map)
                         <tr class="bg-white border-b hover:bg-gray-50">
                             <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">{{ $map->name }}</td>
-                            <td class="px-4 py-2">{{ ucfirst($map->layer_type) }}</td>
-                            <td class="px-4 py-2">{{ $map->lat && $map->lng ? $map->lat . ', ' . $map->lng : '-' }}</td>
-                            <td class="px-4 py-2">{{ $map->layer_type == 'circle' ? ($map->radius ?? '-') . ' m' : '-' }}</td>
                             <td class="px-4 py-2">
-                                @if ($map->icon_url || $map->image_path)
-                                    <div class="flex items-center gap-1">
-                                        @if ($map->icon_url)
-                                            <img src="{{ asset($map->icon_url) }}" alt="Ikon untuk {{ $map->name }}" title="Ikon: {{ basename($map->icon_url) }}" class="map-thumbnail">
-                                        @endif
-                                        @if ($map->image_path)
-                                            <img src="{{ asset($map->image_path) }}" alt="Gambar untuk {{ $map->name }}" title="Gambar: {{ basename($map->image_path) }}" class="map-thumbnail">
-                                        @endif
-                                    </div>
-                                @else
-                                    <span class="text-gray-400 italic">Tidak ada</span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-2">
-                                @if($map->features->isNotEmpty() || $map->geometry)
+                                @if($map->layers->isNotEmpty())
                                     <a href="{{ route('maps.geojson', $map) }}" target="_blank" class="text-blue-600 hover:underline">Lihat File</a>
                                 @else
                                     <span class="text-gray-400 italic">Tidak ada</span>
@@ -124,23 +137,19 @@
                             <td class="px-4 py-2">
                                 <div id="map-{{ $map->id }}" class="preview-map"></div>
                             </td>
-                            <td class="px-4 py-2">
-                                <div class="flex flex-col gap-1">
-                                    @foreach (['Ya', 'Tidak'] as $label)
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" 
-                                                name="kategori_{{ $map->id }}" 
-                                                value="{{ $label }}"
-                                                {{ $map->kategori == $label ? 'checked' : '' }}
-                                                class="kategori-radio"
-                                                data-id="{{ $map->id }}">
-                                            <span class="ml-2">Tampil di Peta Sisiraja {{ $label }}</span>
-                                        </label>
-                                    @endforeach
-                                </div>
+                            <td class="px-4 py-2 text-center">
+                                <label for="sisiraja_map_{{ $map->id }}" class="sisiraja-radio-label justify-center">
+                                    <input type="radio" 
+                                        id="sisiraja_map_{{ $map->id }}"
+                                        name="active_sisiraja_map" 
+                                        value="{{ $map->id }}"
+                                        {{ $map->kategori == 'Ya' ? 'checked' : '' }}
+                                        class="sisiraja-radio set-active-map"
+                                        data-id="{{ $map->id }}">
+                                    <span class="ml-2 text-gray-700">{{ $map->kategori == 'Ya' ? 'Aktif' : 'Jadikan Aktif' }}</span>
+                                </label>
                             </td>
                             <td class="px-4 py-2 text-center whitespace-nowrap action-buttons">
-                                <a href="{{ route('maps.geometries.index', $map) }}" class="text-blue-600 hover:text-blue-900 font-medium">Geometri</a>
                                 <a href="{{ route('maps.edit', $map) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">Edit</a>
                                 <form action="{{ route('maps.destroy', $map) }}" method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus peta ini?');">
                                     @csrf
@@ -390,25 +399,42 @@
             mapsData.forEach(initPreviewMap);
 
             // --- SCRIPT TAMBAHAN UNTUK UPDATE RADIO BUTTON ---
-            document.querySelectorAll('.kategori-radio').forEach(radio => {
+            document.querySelectorAll('.set-active-map').forEach(radio => {
                 radio.addEventListener('change', function() {
                     const mapId = this.dataset.id;
-                    const kategori = this.value;
+                    const allRadioLabels = document.querySelectorAll('.sisiraja-radio-label span');
+                    
+                    // Update UI sementara sebelum fetch selesai
+                    allRadioLabels.forEach(label => label.textContent = 'Jadikan Aktif');
+                    this.nextElementSibling.textContent = 'Menyimpan...';
 
-                    const formData = new FormData();
-                    formData.append('_method', 'PUT');
-                    formData.append('_token', '{{ csrf_token() }}');
-                    formData.append('kategori', kategori);
-
-                    fetch(`/maps/${mapId}/update-kategori`, {
-                        method: 'POST', // Laravel akan baca sebagai PUT karena _method diisi
-                        body: formData
+                    fetch(`/maps/${mapId}/set-active`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        }
                     })
-                    .then(res => res.json())
+                    .then(res => {
+                        if (!res.ok) throw new Error('Network response was not ok');
+                        return res.json();
+                    })
                     .then(data => {
-                        console.log('Kategori diperbarui:', data);
+                        if(data.success) {
+                            console.log(data.message);
+                            // Update UI setelah berhasil
+                            this.nextElementSibling.textContent = 'Aktif';
+                        } else {
+                            // Kembalikan teks jika gagal
+                            this.nextElementSibling.textContent = 'Gagal!';
+                        }
                     })
-                    .catch(err => console.error(err));
+                    .catch(err => {
+                        console.error('Error:', err);
+                        // Kembalikan teks jika ada error
+                        this.nextElementSibling.textContent = 'Error!';
+                        alert('Terjadi kesalahan saat memperbarui peta.');
+                    });
                 });
             });
         });

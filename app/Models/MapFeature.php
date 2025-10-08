@@ -22,7 +22,7 @@ class MapFeature extends Model
      * @var array
      */
     protected $fillable = [
-        'map_id',
+        'layer_id', // PENTING: map_id diganti menjadi layer_id
         'geometry',
         'properties',
         'image_path',
@@ -32,27 +32,23 @@ class MapFeature extends Model
 
     /**
      * Atribut yang harus di-cast ke tipe data tertentu.
-     * Ini sangat penting untuk menangani kolom JSON.
      *
      * @var array
      */
     protected $casts = [
-        'geometry' => 'array',   // Otomatis konversi JSON string ke array/object
-        'properties' => 'array', // Otomatis konversi JSON string ke array/object
+        'geometry' => 'array',
+        'properties' => 'array',
         'technical_info' => 'array',
     ];
 
     /**
-     * Mendapatkan data peta (map) yang memiliki fitur ini.
+     * Mendapatkan data layer yang memiliki fitur ini.
+     * Setiap fitur sekarang dimiliki oleh SATU layer.
      */
-    public function map()
+    public function layer()
     {
-        return $this->belongsTo(Map::class);
+        return $this->belongsTo(Layer::class);
     }
 
-    public function layers()
-    {
-        return $this->belongsToMany(\App\Models\Layer::class, 'feature_layer', 'feature_id', 'layer_id');
-    }
-
+    // Fungsi map() dan layers() yang lama dihapus.
 }

@@ -12,52 +12,49 @@ class GalleryMapsController extends Controller
     
     public function galeriPeta()
     {
-        $maps = \App\Models\Map::with(['layers', 'features.layers'])->get(); // Tambah .layers untuk pivot data
+        // 1. Eager load relasi yang benar: Map -> layers -> mapFeatures
+        $maps = \App\Models\Map::with('layers.mapFeatures')->get();
 
-        // Transform seperti di show() untuk inject data lengkap ke features
-        $maps->transform(function ($map) {
-            $map->features->transform(function ($feature) {
-                $feature->feature_image_path = $feature->image_path
-                    ? asset($feature->image_path)
-                    : null;
-                $feature->caption = $feature->caption ?? null;
-                $feature->technical_info = $feature->technical_info ?? null;
-                // Inject layer_ids dari pivot
-                $feature->layer_ids = $feature->layers->pluck('id')->toArray();
-                return $feature;
-            });
-            return $map;
-        });
-
+        // Project query sudah benar
         $projects = \App\Models\Project::with('surveyLocations')
             ->withCount('surveyLocations')
-            ->where('show_in_gallery', 1) // Hanya proyek yang ditandai untuk ditampilkan di galeri
+            ->where('show_in_gallery', 1)
             ->get();
+
+        // Tidak perlu transform di sini karena view gallery_maps.index
+        // hanya menampilkan preview dan tidak memerlukan detail feature.
+        // Jika Anda memerlukannya, gunakan pola flatMap seperti di method geojson().
 
         return view('gallery_maps.index', compact('maps', 'projects'));
     }
 
     public function show($id)
     {
-        $map = Map::with([
-            'layers',
-            'features.layers' // 👈 ambil juga layer dari setiap feature
-        ])->findOrFail($id);
+        // 1. Eager load relasi yang benar
+        $map = Map::with('layers.mapFeatures')->findOrFail($id);
 
-        $map->features->transform(function ($feature) {
+        // 2. Kumpulkan semua features dari semua layers menjadi satu collection
+        $allFeatures = $map->layers->flatMap(function ($layer) {
+            return $layer->mapFeatures;
+        });
+
+        // 3. Lakukan transform pada collection features yang sudah digabung
+        $allFeatures->transform(function ($feature) {
             $feature->feature_image_path = $feature->image_path
                 ? asset($feature->image_path)
                 : null;
             $feature->caption = $feature->caption ?? null;
             $feature->technical_info = $feature->technical_info ?? null;
-            // inject layer_ids array biar bisa dipakai di Blade/JS
-            $feature->layer_ids = $feature->layers->pluck('id')->toArray();
+            // Feature sekarang hanya milik 1 layer, jadi kita pakai layer_id
+            $feature->layer_ids = [$feature->layer_id];
             return $feature;
         });
 
-        $maps = collect([$map]);
+        // 4. Tambahkan collection features yang sudah di-transform ke objek map
+        //    agar bisa diakses di view dengan mudah (misal: $map->all_features)
+        $map->all_features = $allFeatures;
 
-        return view('gallery_maps.show', compact('map', 'maps'));
+        return view('gallery_maps.show', compact('map'));
     }
 
     public function showLayer(\App\Models\Layer $layer)
@@ -85,38 +82,34 @@ class GalleryMapsController extends Controller
 
     public function geojson($id)
     {
-        $map = \App\Models\Map::with(['features.layers'])->findOrFail($id);
+        // 1. Load relasi yang benar
+        $map = Map::with('layers.mapFeatures')->findOrFail($id);
 
-        $features = $map->features->map(function ($feature) {
-            $geometry = $feature->geometry;
+        // 2. Gabungkan (flatMap) semua fitur dari semua layer terkait
+        $allFeatures = $map->layers->flatMap(function ($layer) {
+            return $layer->mapFeatures;
+        });
 
-            // pastikan geometry jadi array
-            if (is_string($geometry)) {
-                $geometry = json_decode($geometry, true);
-            }
+        // 3. Proses collection gabungan tersebut
+        $features = $allFeatures->map(function ($feature) {
+            $geometry = is_string($feature->geometry) ? json_decode($feature->geometry, true) : $feature->geometry;
+            
+            // Pastikan format properties konsisten
+            $properties = $feature->properties ?? [];
+            if (is_string($properties)) $properties = json_decode($properties, true) ?: [];
 
-            // konversi kalau cuma lat/lng biasa
-            if (isset($geometry['lat']) && isset($geometry['lng'])) {
-                $geometry = [
-                    'type' => 'Point',
-                    'coordinates' => [
-                        (float) $geometry['lng'],
-                        (float) $geometry['lat'],
-                    ],
-                ];
-            }
+            $properties['id'] = $feature->id;
+            $properties['name'] = $feature->name ?? null;
+            $properties['caption'] = $feature->caption ?? null;
+            $properties['image'] = $feature->image_path ? asset($feature->image_path) : null;
+            $properties['technical_info'] = $feature->technical_info;
+            // Kirim ID layer asal dari feature ini
+            $properties['layer_id'] = $feature->layer_id; 
 
             return [
                 'type' => 'Feature',
                 'geometry' => $geometry,
-                'properties' => [
-                    'id' => $feature->id,
-                    'name' => $feature->name ?? null,
-                    'caption' => $feature->caption ?? null,
-                    'image' => $feature->image_path ? asset($feature->image_path) : null,
-                    'technical_info' => $feature->technical_info,
-                    'layer_ids' => $feature->layers->pluck('id')->toArray(),
-                ],
+                'properties' => $properties,
             ];
         });
 
