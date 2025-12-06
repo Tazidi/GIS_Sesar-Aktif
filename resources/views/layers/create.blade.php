@@ -349,7 +349,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const toolSelect = document.getElementById('drawing-tool-select');
     toolSelect.addEventListener('change', function() {
-        // Reset gambar yang sedang berlangsung (jika ada) saat ganti alat
         if (currentDrawingLayer) {
             map.removeLayer(currentDrawingLayer);
             currentDrawingLayer = null;
@@ -374,49 +373,39 @@ document.addEventListener('DOMContentLoaded', function() {
             const icon = L.icon({ iconUrl: iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
             newLayer = L.marker(e.latlng, { icon });
             
-            // Langsung tambahkan ke grup utama
             drawnItems.addLayer(newLayer);
 
-            // Reset polygonPoints karena bukan polyline/polygon
             polygonPoints = [];
 
         } else if (currentTool === 'circle') {
             newLayer = L.circle(e.latlng, style);
             
-            // Langsung tambahkan ke grup utama
             drawnItems.addLayer(newLayer);
 
-            // Reset polygonPoints karena bukan polyline/polygon
             polygonPoints = [];
 
         } else if (['polygon', 'polyline'].includes(currentTool)) {
             polygonPoints.push(e.latlng);
             
-            // Hapus layer temporer yang lama
             if (currentDrawingLayer) {
                 map.removeLayer(currentDrawingLayer);
             }
             
-            // Buat layer temporer yang baru dengan titik tambahan
-            if (polygonPoints.length > 1) { // Hanya gambar jika ada minimal 2 titik
+            if (polygonPoints.length > 1) {
                 currentDrawingLayer = (currentTool === 'polygon') 
                     ? L.polygon(polygonPoints, style).addTo(map) 
                     : L.polyline(polygonPoints, style).addTo(map);
             }
-            
-            // Beri tahu pengguna cara menyelesaikan gambar
+        
             if (polygonPoints.length === 1) {
                 showNotification('Titik pertama ditambahkan. Klik lagi untuk menambah titik, klik dua kali (double-click) pada titik terakhir untuk selesai.');
             }
         }
 
-        // Update geometry_type_input setiap klik
         geometryTypeInput.value = currentTool;
 
-        // Update geometryInput dengan drawnItems + currentDrawingLayer jika ada
         let geojsonToSet;
         if (currentDrawingLayer && ['polygon', 'polyline'].includes(currentTool)) {
-            // Gabungkan drawnItems + currentDrawingLayer ke GeoJSON FeatureCollection
             const drawnGeoJSON = drawnItems.toGeoJSON();
             const currentGeoJSON = currentDrawingLayer.toGeoJSON();
             if (drawnGeoJSON.type === 'FeatureCollection') {
@@ -433,21 +422,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     map.on('dblclick', function(e) {
         if (currentDrawingLayer && ['polygon', 'polyline'].includes(currentTool)) {
-            // Hapus layer temporer
+
             map.removeLayer(currentDrawingLayer);
             currentDrawingLayer = null;
 
-            // Buat layer final dan tambahkan ke grup utama
+
             const finalLayer = (currentTool === 'polygon')
                 ? L.polygon(polygonPoints, getStyleOptions())
                 : L.polyline(polygonPoints, getStyleOptions());
             
             drawnItems.addLayer(finalLayer);
 
-            // Reset untuk gambar berikutnya
             polygonPoints = [];
             
-            // Update hidden input
             geometryInput.value = JSON.stringify(drawnItems.toGeoJSON());
             geometryTypeInput.value = currentTool;
             showNotification(`Gambar <strong>${currentTool}</strong> selesai.`);
@@ -491,7 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 updateActiveToolUI(detectedToolType);
 
-                // render geojson ke peta (tetap pakai geoJSON group supaya fitBounds mudah)
+
                 if (drawnLayer) map.removeLayer(drawnLayer);
                 layerRefs = [];
                 drawnLayer = L.geoJSON(geojson, {
@@ -512,7 +499,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         const index = geojson.features.indexOf(feature);
                         layerRefs[index] = layer;
 
-                        // klik layer → scroll ke input
                         layer.on('click', () => {
                             const targetDiv = document.getElementById(`feature-input-${index}`);
                             if (targetDiv) {
@@ -526,51 +512,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 try { map.fitBounds(drawnLayer.getBounds()); } catch(e){ /* ignore */ }
 
-                // set geometry hidden input (kita kirim seluruh FeatureCollection ke backend)
+
                 geometryInput.value = JSON.stringify(geojson);
 
-                // Generate per-feature image & caption & technical inputs
                 featureImagesList.innerHTML = '';
                 featureImagesShowmore.innerHTML = '';
                 featureImagesContainer.classList.remove('hidden');
 
-                geojson.features.forEach((feature, index) => {
-                    const props = feature.properties || {};
-                    const featureLabel = props.PopupInfo || props.Name || props.name || `Fitur #${index + 1}`;
-                    const div = document.createElement('div');
-                    div.className = 'feature-item';
-                    div.id = `feature-input-${index}`;
-                    if (index > 0) div.classList.add('hidden', 'extra-feature-input');
-
-                    div.innerHTML = `
-                        <label class="text-sm font-medium text-gray-700 mb-1">Gambar untuk: ${featureLabel}</label>
-                        <input type="file" name="feature_images[${index}]" accept="image/*" class="form-input mb-2">
-                        <input type="text" name="feature_captions[${index}]" placeholder="Caption foto (opsional)" class="mb-2 block w-full text-sm border-gray-300 rounded-md shadow-sm">
-                        <div class="mt-2 border-t pt-2">
-                            <label class="block text-xs text-gray-600">Panjang Sesar</label>
-                            <input type="text" name="feature_properties[${index}][panjang_sesar]" value="${props.panjang_sesar || ''}" class="mb-2 w-full text-sm border-gray-300 rounded-md shadow-sm">
-                            <label class="block text-xs text-gray-600">Lebar Sesar</label>
-                            <input type="text" name="feature_properties[${index}][lebar_sesar]" value="${props.lebar_sesar || ''}" class="mb-2 w-full text-sm border-gray-300 rounded-md shadow-sm">
-                            <label class="block text-xs text-gray-600">Tipe</label>
-                            <input type="text" name="feature_properties[${index}][tipe]" value="${props.tipe || ''}" class="mb-2 w-full text-sm border-gray-300 rounded-md shadow-sm">
-                            <label class="block text-xs text-gray-600">MMAX</label>
-                            <input type="text" name="feature_properties[${index}][mmax]" value="${props.mmax || ''}" class="mb-2 w-full text-sm border-gray-300 rounded-md shadow-sm">
-                            <button type="button" class="hapus-fitur text-xs text-red-600 hover:text-red-800">Hapus fitur ini</button>
-                        </div>
-                    `;
-                    featureImagesList.appendChild(div);
-                    div.querySelector('.hapus-fitur').addEventListener('click', () => {
-                        // hapus input
-                        div.remove();
-                        // hapus layer dari peta
-                        if (layerRefs[index]) {
-                            map.removeLayer(layerRefs[index]);
-                            delete geojson.features[index]; // optional: hilangkan dari geojson juga
-                        }
-                    });
-                });
-
-                // jika lebih dari 1 fitur, buat tombol "Tampilkan n data lainnya"
                 if (geojson.features.length > 1) {
                     const remaining = geojson.features.length - 1;
                     const showMoreBtn = document.createElement('button');
@@ -584,7 +532,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     featureImagesShowmore.appendChild(showMoreBtn);
                 }
 
-                // Jika GeoJSON memiliki properti name di fitur pertama, isi nama form
                 if (geojson.features[0].properties) {
                     document.getElementById('nama_layer').value = geojson.features[0].properties.name || document.getElementById('nama_layer').value;
                 }
@@ -608,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (layer.setStyle) {
                 layer.setStyle(newStyles);
             }
-            // Untuk marker, update icon jika diganti
+
             if (layer instanceof L.Marker && iconUrl) {
                 const newIcon = L.icon({ iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
                 layer.setIcon(newIcon);
@@ -640,39 +587,30 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function prepareAndSubmitData(e) {
-        const mapId = document.getElementById('map_id').value;
-        if (!mapId) {
-            e.preventDefault();
-            showNotification('Error: Harap pilih map terlebih dahulu!', 5000);
-            document.getElementById('map_id').focus();
-            return false;
-        }
 
-        // Selesaikan gambar manual yang mungkin belum selesai
         if (currentDrawingLayer && ['polygon', 'polyline'].includes(currentTool)) {
             map.removeLayer(currentDrawingLayer);
             currentDrawingLayer = null;
-            const finalLayer = (currentTool === 'polygon')
-                ? L.polygon(polygonPoints, getStyleOptions())
+            const finalLayer = (currentTool === 'polygon') 
+                ? L.polygon(polygonPoints, getStyleOptions()) 
                 : L.polyline(polygonPoints, getStyleOptions());
             drawnItems.addLayer(finalLayer);
             polygonPoints = [];
         }
 
-        // PERBAIKAN: HANYA update geometry input dari gambar manual JIKA tidak ada file GeoJSON yang diupload.
-        // Jika ada file GeoJSON, input tersebut sudah diisi oleh event listener file.
-        if (!geojsonFileInput.files || geojsonFileInput.files.length === 0) {
-            const drawnGeoJSON = drawnItems.toGeoJSON();
-            // Pastikan tidak mengirim data kosong jika tidak ada yang digambar
-            if (drawnGeoJSON.features.length > 0) {
-                geometryInput.value = JSON.stringify(drawnGeoJSON);
-            }
+        const drawnGeoJSON = drawnItems.toGeoJSON();
+        const hasManualDrawing = drawnGeoJSON.features.length > 0;
+
+        if (hasManualDrawing) {
+            geometryInput.value = JSON.stringify(drawnGeoJSON);
         }
-        
-        // Pastikan geometry tidak kosong sebelum submit
-        if (!geometryInput.value || geometryInput.value === '{"type":"FeatureCollection","features":[]}') {
+
+        const currentGeometry = geometryInput.value;
+        const isEmpty = !currentGeometry || currentGeometry === '{"type":"FeatureCollection","features":[]}';
+
+        if (isEmpty) {
             e.preventDefault();
-            showNotification('Error: Anda harus menggambar di peta atau mengunggah file GeoJSON!', 5000);
+            showNotification('Error: Data kosong! Silakan gambar di peta atau upload file GeoJSON.', 5000);
             return false;
         }
 
@@ -680,35 +618,32 @@ document.addEventListener('DOMContentLoaded', function() {
             nama_layer: document.getElementById('nama_layer').value,
             deskripsi: document.getElementById('deskripsi').value,
         };
-        
+
         const geometryType = document.getElementById('geometry_type_input').value;
-        
+
+
         if (geometryType === 'marker') {
-            properties.icon_url = document.querySelector('[name="icon_url"]').value;
+            const iconSelect = document.querySelector('[name="icon_url"]');
+            if(iconSelect) properties.icon_url = iconSelect.value;
         } else if (geometryType === 'polyline') {
             properties.stroke_color = document.querySelector('[name="stroke_color"]').value;
             properties.weight = document.querySelector('[name="weight"]').value;
             properties.opacity = document.querySelector('[name="opacity"]').value;
-        } else if (geometryType === 'polygon') {
+        } else if (geometryType === 'polygon' || geometryType === 'circle') { // Gabung logic polygon & circle karena mirip
             properties.stroke_color = document.querySelector('[name="stroke_color"]').value;
             properties.fill_color = document.querySelector('[name="fill_color"]').value;
             properties.weight = document.querySelector('[name="weight"]').value;
             properties.opacity = document.querySelector('[name="opacity"]').value;
-        } else if (geometryType === 'circle') {
-            properties.radius = document.querySelector('[name="radius"]').value;
-            properties.stroke_color = document.querySelector('[name="stroke_color"]').value;
-            properties.fill_color = document.querySelector('[name="fill_color"]').value;
-            properties.weight = document.querySelector('[name="weight"]').value;
-            properties.opacity = document.querySelector('[name="opacity"]').value;
+            if(geometryType === 'circle') properties.radius = document.querySelector('[name="radius"]').value;
         }
-        
+
         propertiesInput.value = JSON.stringify(properties);
 
         return true;
     }
 
     form.addEventListener('submit', prepareAndSubmitData);
-    toggleFormFields(null); // Hide all fields on initial load
+    toggleFormFields(null); 
 });
 </script>
 @endsection
