@@ -394,12 +394,22 @@
         </header>
 
         @php
-            // KUNCI PERBAIKAN: Filter layer di sisi server.
-            $activeLayerIds = $map->features->pluck('layers')->flatten()->pluck('id')->unique();
+            // PERBAIKAN: Cara aman mengambil ID layer aktif
+            $activeLayerIds = collect();
+
+            if ($map->features) {
+                foreach ($map->features as $feature) {
+                    if (!empty($feature->layer_id)) {
+                        $activeLayerIds->push($feature->layer_id);
+                    }
+                }
+            }
+
+            $activeLayerIds = $activeLayerIds->unique();
+            
             $rawActiveLayers = $map->layers->whereIn('id', $activeLayerIds);
             
-            // PERBAIKAN BARU: Pastikan layer unik berdasarkan nama untuk tampilan di Blade.
-            // Ini mencegah duplikasi di legenda jika ada >1 layer dengan nama yang sama.
+            // Pastikan layer unik berdasarkan nama
             $activeLayers = $rawActiveLayers->unique(function ($item) {
                 return $item['nama_layer'] ?? $item['name'];
             });
@@ -453,7 +463,7 @@
                                     </div>
                                 </div>
                             @empty
-                                @if($map->features->isNotEmpty())
+                                @if($map->features && $map->features->count() > 0)
                                 <div class="legend-item" data-legend-layer="Fitur Peta">
                                     <div class="legend-symbol" style="background-color: {{ $map->fill_color ?? '#ff0000' }}; border-color: {{ $map->stroke_color ?? '#000000' }};"></div>
                                     <div class="legend-text">
@@ -563,39 +573,70 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-    @if(isset($map))
-        {{-- Siapkan data di sisi PHP --}}
+    @if(isset($map) && $map)
         @php
-            $mapsData = collect([$map])->map(function($mapItem) {
+            // SAFETY: Pastikan map dianggap array kosong jika null
+            // Kita bungkus dalam array dulu agar collect() aman
+            $sourceData = $map ? [$map] : [];
+            
+            // Definisikan variabel luar agar bisa dipakai di dalam fungsi (use)
+            $safeFeatures = $map->features ?? collect([]);
+            $safeLayers   = $map->layers ?? collect([]);
+
+            $mapsData = collect($sourceData)->map(function($mapItem) use ($safeFeatures, $safeLayers) {
+                // SAFETY CHECK: Jika mapItem null, kembalikan array kosong agar tidak error
+                if (!$mapItem) return [];
+
                 return [
-                    'unique_id'   => "map-{$mapItem->id}",
-                    'id'          => $mapItem->id,
-                    'name'        => $mapItem->name,
-                    'description' => $mapItem->description,
-                    'image_path'  => $mapItem->image_path ? asset($mapItem->image_path) : '',
-                    'layer_type'  => $mapItem->layer_type ?? 'marker',
-                    'stroke_color'=> $mapItem->stroke_color ?? '#3388ff',
-                    'fill_color'  => $mapItem->fill_color ?? '#3388ff',
-                    'opacity'     => $mapItem->opacity ?? 0.8,
-                    'weight'      => $mapItem->weight ?? 2,
-                    'radius'      => $mapItem->radius ?? 300,
-                    'icon_url'    => $mapItem->icon_url ?? '',
-                    'lat'         => $mapItem->lat ?? null,
-                    'lng'         => $mapItem->lng ?? null,
-                    'geometry'    => $mapItem->geometry ? (is_string($mapItem->geometry) ? json_decode($mapItem->geometry, true) : $mapItem->geometry) : null,
-                    'caption'     => $mapItem->caption ?? '',
-                    'technical_info' => $mapItem->technical_info ?? '',
-                    'features'    => $mapItem->features->map(function($feature) {
+                    'unique_id'    => "map-" . ($mapItem->id ?? uniqid()),
+                    'id'           => $mapItem->id ?? 0,
+                    'name'         => $mapItem->name ?? 'Tanpa Nama',
+                    'description'  => $mapItem->description ?? '',
+                    'image_path'   => ($mapItem->image_path ?? false) ? asset($mapItem->image_path) : '',
+                    
+                    // PERBAIKAN UTAMA ANDA ADA DI SINI (Gunakan optional)
+                    'technical_info' => optional($mapItem)->technical_info ?? '', 
+                    'caption'      => optional($mapItem)->caption ?? '',
+
+                    'layer_type'   => $mapItem->layer_type ?? 'marker',
+                    'stroke_color' => $mapItem->stroke_color ?? '#3388ff',
+                    'fill_color'   => $mapItem->fill_color ?? '#3388ff',
+                    'opacity'      => $mapItem->opacity ?? 0.8,
+                    'weight'       => $mapItem->weight ?? 2,
+                    'radius'       => $mapItem->radius ?? 300,
+                    'icon_url'     => $mapItem->icon_url ?? '',
+                    'lat'          => $mapItem->lat ?? null,
+                    'lng'          => $mapItem->lng ?? null,
+                    'geometry'     => ($mapItem->geometry ?? false) ? (is_string($mapItem->geometry) ? json_decode($mapItem->geometry, true) : $mapItem->geometry) : null,
+                    
+                    // FEATURES
+                    'features' => $safeFeatures->map(function($feature) {
+                        // decode geometry & properties dari string JSON
+                        $geometry = $feature->geometry
+                            ? (is_string($feature->geometry) ? json_decode($feature->geometry, true) : $feature->geometry)
+                            : null;
+
+                        $properties = $feature->properties
+                            ? (is_string($feature->properties) ? json_decode($feature->properties, true) : $feature->properties)
+                            : null;
+
+                        $layerIds = [];
+                        if (!empty($feature->layer_id)) {
+                            $layerIds = [(int) $feature->layer_id]; // SATU layer per feature
+                        }
+
                         return [
-                            'geometry' => $feature->geometry ? (is_string($feature->geometry) ? json_decode($feature->geometry, true) : $feature->geometry) : null,
-                            'properties' => $feature->properties ? (is_string($feature->properties) ? json_decode($feature->properties, true) : $feature->properties) : null,
-                            'image_path' => $feature->image_path ? asset($feature->image_path) : '',
-                            'caption' => $feature->caption ?? '',
+                            'geometry'       => $geometry,
+                            'properties'     => $properties,
+                            'image_path'     => $feature->image_path ? asset($feature->image_path) : '',
+                            'caption'        => $feature->caption ?? '',
                             'technical_info' => $feature->technical_info ?? '',
-                            'layer_ids' => $feature->layers->pluck('id')->toArray()
+                            'layer_ids'      => $layerIds,
                         ];
                     })->toArray(),
-                    'layers'      => $mapItem->layers->map(function($layer) {
+
+                    // LAYERS
+                    'layers' => $safeLayers->map(function($layer) {
                         return [
                             'id' => $layer->id,
                             'name' => $layer->nama_layer ?? $layer->name ?? 'Layer '.$layer->id,

@@ -221,7 +221,7 @@
 </div>
 
 {{-- Modal untuk Detail Layer --}}
-<div id="layerDetailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+<div id="layerDetailModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 overflow-y-auto h-full w-full hidden z-[9999] backdrop-blur-sm transition-opacity">
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <div class="flex justify-between items-center mb-4">
@@ -245,9 +245,10 @@
 <script>
 // Data layer untuk JavaScript
 const layersData = @json($layers->keyBy('id'));
+let modalMap = null; // map khusus modal
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Inisialisasi peta pratinjau untuk setiap layer
+    // Inisialisasi peta pratinjau untuk setiap layer (di dalam kartu)
     @foreach($layers as $layer)
         @if($layer->map_features_count > 0)
             initPreviewMap({{ $layer->id }}, @json($layer->mapFeatures));
@@ -257,6 +258,151 @@ document.addEventListener('DOMContentLoaded', function() {
     @endforeach
 });
 
+/**
+ * Helper: tambah 1 fitur geojson ke featureGroup
+ */
+function addFeatureToGroup(featureGroup, feature) {
+    try {
+        const geometry = typeof feature.geometry === 'string' ?
+            JSON.parse(feature.geometry) : feature.geometry;
+        const properties = typeof feature.properties === 'string' ?
+            JSON.parse(feature.properties) : (feature.properties || {});
+        const technicalInfo = feature.technical_info ?
+            (typeof feature.technical_info === 'string' ?
+                JSON.parse(feature.technical_info) : feature.technical_info) : {};
+
+        if (!geometry || !geometry.type) return;
+
+        let layer;
+
+        switch (geometry.type.toLowerCase()) {
+            case 'point': {
+
+                const geometryType = technicalInfo.geometry_type || properties.geometry_type || 'marker';
+                const lat = geometry.coordinates[1];
+                const lng = geometry.coordinates[0];
+
+                // ====== CIRCLE POINT ======
+                if (geometryType === 'circle') {
+
+                    const radius = technicalInfo.radius || properties.radius || 50;
+
+                    const circleStyle = {
+                        color: technicalInfo.stroke_color || properties.stroke_color || '#3388ff',
+                        fillColor: technicalInfo.fill_color || properties.fill_color || '#3388ff',
+                        weight: technicalInfo.weight || properties.weight || 2,
+                        opacity: technicalInfo.opacity || properties.opacity || 0.8,
+                        fillOpacity: technicalInfo.fillOpacity || properties.fillOpacity || 0.3
+                    };
+
+                    layer = L.circle([lat, lng], {
+                        radius: radius,
+                        ...circleStyle
+                    });
+                    break;
+                }
+
+                // ====== MARKER POINT ======
+                if (geometryType === 'marker') {
+
+                    const iconUrl = technicalInfo.icon_url || properties.icon_url ||
+                        'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
+
+                    const icon = L.icon({
+                        iconUrl: iconUrl,
+                        iconSize: [20, 32],
+                        iconAnchor: [10, 32],
+                        popupAnchor: [0, -32]
+                    });
+
+                    layer = L.marker([lat, lng], { icon });
+                    break;
+                }
+
+                break;
+            }
+
+            case 'multipoint': {
+                const iconUrlMulti = technicalInfo.icon_url || properties.icon_url ||
+                    'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
+                const iconMulti = L.icon({
+                    iconUrl: iconUrlMulti,
+                    iconSize: [15, 25],
+                    iconAnchor: [7, 25],
+                    popupAnchor: [0, -25]
+                });
+                geometry.coordinates.forEach(coord => {
+                    featureGroup.addLayer(L.marker([coord[1], coord[0]], { icon: iconMulti }));
+                });
+                break;
+            }
+
+            case 'linestring': {
+                const polylineStyle = {
+                    color: technicalInfo.stroke_color || properties.stroke_color || '#3388ff',
+                    weight: technicalInfo.weight || properties.weight || 3,
+                    opacity: technicalInfo.opacity || properties.opacity || 0.7
+                };
+                const lineCoords = geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                layer = L.polyline(lineCoords, polylineStyle);
+                break;
+            }
+
+            case 'multilinestring': {
+                const multiPolylineStyle = {
+                    color: technicalInfo.stroke_color || properties.stroke_color || '#3388ff',
+                    weight: technicalInfo.weight || properties.weight || 3,
+                    opacity: technicalInfo.opacity || properties.opacity || 0.7
+                };
+                const multiLineCoords = geometry.coordinates.map(line =>
+                    line.map(coord => [coord[1], coord[0]])
+                );
+                layer = L.polyline(multiLineCoords, multiPolylineStyle);
+                break;
+            }
+
+            case 'polygon': {
+                const polygonStyle = {
+                    color: technicalInfo.stroke_color || properties.stroke_color || '#3388ff',
+                    fillColor: technicalInfo.fill_color || properties.fill_color || '#3388ff',
+                    weight: technicalInfo.weight || properties.weight || 2,
+                    opacity: technicalInfo.opacity || properties.opacity || 0.7,
+                    fillOpacity: technicalInfo.opacity || properties.opacity || 0.2
+                };
+                const polyCoords = geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
+                layer = L.polygon(polyCoords, polygonStyle);
+                break;
+            }
+
+            case 'multipolygon': {
+                const multiPolygonStyle = {
+                    color: technicalInfo.stroke_color || properties.stroke_color || '#3388ff',
+                    fillColor: technicalInfo.fill_color || properties.fill_color || '#3388ff',
+                    weight: technicalInfo.weight || properties.weight || 2,
+                    opacity: technicalInfo.opacity || properties.opacity || 0.7,
+                    fillOpacity: technicalInfo.opacity || properties.opacity || 0.2
+                };
+                const multiPolyCoords = geometry.coordinates.map(polygon =>
+                    polygon.map(ring =>
+                        ring.map(coord => [coord[1], coord[0]])
+                    )
+                );
+                layer = L.polygon(multiPolyCoords, multiPolygonStyle);
+                break;
+            }
+        }
+
+        if (layer) {
+            featureGroup.addLayer(layer);
+        }
+    } catch (error) {
+        console.error('Error rendering feature:', error);
+    }
+}
+
+/**
+ * Peta kecil di kartu (index)
+ */
 function initPreviewMap(layerId, features) {
     const map = L.map(`preview-map-${layerId}`, {
         zoomControl: false,
@@ -267,135 +413,25 @@ function initPreviewMap(layerId, features) {
         boxZoom: false
     }).setView([-6.9175, 107.6191], 10);
 
-    // Tambahkan tile layer
+    // Tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Grup untuk menampung semua fitur
     const featureGroup = L.featureGroup().addTo(map);
 
-    // Render setiap fitur
-    features.forEach(feature => {
-        try {
-            const geometry = typeof feature.geometry === 'string' ? 
-                JSON.parse(feature.geometry) : feature.geometry;
-            const properties = typeof feature.properties === 'string' ? 
-                JSON.parse(feature.properties) : (feature.properties || {});
-            const technicalInfo = feature.technical_info ? 
-                (typeof feature.technical_info === 'string' ? 
-                    JSON.parse(feature.technical_info) : feature.technical_info) : {};
+    features.forEach(feature => addFeatureToGroup(featureGroup, feature));
 
-            if (geometry && geometry.type) {
-                let layer;
-
-                switch (geometry.type.toLowerCase()) {
-                    case 'point':
-                        const radius = technicalInfo.radius || properties.radius;
-                        if (radius) {
-                            const circleStyle = {
-                                color: technicalInfo.stroke_color || properties.stroke_color || '#3388ff',
-                                fillColor: technicalInfo.fill_color || properties.fill_color || '#3388ff',
-                                weight: technicalInfo.weight || properties.weight || 2,
-                                opacity: technicalInfo.opacity || properties.opacity || 0.7,
-                                fillOpacity: technicalInfo.opacity || properties.opacity || 0.2
-                            };
-                            layer = L.circle([geometry.coordinates[1], geometry.coordinates[0]], { ...circleStyle, radius });
-                        } else {
-                            const iconUrl = technicalInfo.icon_url || properties.icon_url || 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
-                            const icon = L.icon({
-                                iconUrl: iconUrl,
-                                iconSize: [15, 25],
-                                iconAnchor: [7, 25],
-                                popupAnchor: [0, -25]
-                            });
-                            layer = L.marker([geometry.coordinates[1], geometry.coordinates[0]], { icon });
-                        }
-                        break;
-
-                    case 'multipoint':
-                        const iconUrlMulti = technicalInfo.icon_url || properties.icon_url || 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png';
-                        const iconMulti = L.icon({
-                            iconUrl: iconUrlMulti,
-                            iconSize: [15, 25],
-                            iconAnchor: [7, 25],
-                            popupAnchor: [0, -25]
-                        });
-                        geometry.coordinates.forEach(coord => {
-                            featureGroup.addLayer(L.marker([coord[1], coord[0]], { icon: iconMulti }));
-                        });
-                        break;
-
-                    case 'linestring':
-                        const polylineStyle = {
-                            color: technicalInfo.stroke_color || properties.stroke_color || '#3388ff',
-                            weight: technicalInfo.weight || properties.weight || 3,
-                            opacity: technicalInfo.opacity || properties.opacity || 0.7
-                        };
-                        const lineCoords = geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                        layer = L.polyline(lineCoords, polylineStyle);
-                        break;
-
-                    case 'multilinestring':
-                        const multiPolylineStyle = {
-                            color: technicalInfo.stroke_color || properties.stroke_color || '#3388ff',
-                            weight: technicalInfo.weight || properties.weight || 3,
-                            opacity: technicalInfo.opacity || properties.opacity || 0.7
-                        };
-                        const multiLineCoords = geometry.coordinates.map(line => 
-                            line.map(coord => [coord[1], coord[0]])
-                        );
-                        // PERBAIKAN: Gunakan L.polyline (bukan L.multiPolyline)
-                        layer = L.polyline(multiLineCoords, multiPolylineStyle);
-                        break;
-
-                    case 'polygon':
-                        const polygonStyle = {
-                            color: technicalInfo.stroke_color || properties.stroke_color || '#3388ff',
-                            fillColor: technicalInfo.fill_color || properties.fill_color || '#3388ff',
-                            weight: technicalInfo.weight || properties.weight || 2,
-                            opacity: technicalInfo.opacity || properties.opacity || 0.7,
-                            fillOpacity: technicalInfo.opacity || properties.opacity || 0.2
-                        };
-                        const polyCoords = geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
-                        layer = L.polygon(polyCoords, polygonStyle);
-                        break;
-                        
-                    case 'multipolygon':
-                        const multiPolygonStyle = {
-                            color: technicalInfo.stroke_color || properties.stroke_color || '#3388ff',
-                            fillColor: technicalInfo.fill_color || properties.fill_color || '#3388ff',
-                            weight: technicalInfo.weight || properties.weight || 2,
-                            opacity: technicalInfo.opacity || properties.opacity || 0.7,
-                            fillOpacity: technicalInfo.opacity || properties.opacity || 0.2
-                        };
-                        const multiPolyCoords = geometry.coordinates.map(polygon => 
-                            polygon.map(ring => 
-                                ring.map(coord => [coord[1], coord[0]])
-                            )
-                        );
-                        // PERBAIKAN: Gunakan L.polygon (bukan L.multiPolygon)
-                        layer = L.polygon(multiPolyCoords, multiPolygonStyle);
-                        break;
-                }
-
-                if (layer) {
-                    featureGroup.addLayer(layer);
-                }
-            }
-        } catch (error) {
-            console.error('Error rendering feature:', error);
-        }
-    });
-
-    // Fit bounds ke semua fitur
     if (featureGroup.getLayers().length > 0) {
-        map.fitBounds(featureGroup.getBounds(), { padding: [5, 5] });
+        map.fitBounds(featureGroup.getBounds(), { padding: [20, 20], maxZoom: 15 });
     } else {
         map.setView([-6.9175, 107.6191], 5);
     }
 }
 
+/**
+ * Peta kosong di kartu ketika tidak ada geometri
+ */
 function initEmptyMap(layerId) {
     const map = L.map(`preview-map-${layerId}`, {
         zoomControl: false,
@@ -408,17 +444,77 @@ function initEmptyMap(layerId) {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    // Tambahkan marker dengan ikon khusus untuk layer kosong
     const emptyIcon = L.divIcon({
         html: '<div class="text-center text-gray-500 text-xs"><svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>Tidak ada geometri</div>',
         className: 'empty-map-label',
         iconSize: [100, 40],
         iconAnchor: [50, 20]
     });
-    
+
     L.marker([-6.9175, 107.6191], {icon: emptyIcon}).addTo(map);
 }
 
+/**
+ * Peta di dalam modal (hanya untuk layer yang dipilih)
+ */
+function initModalPreviewMap(features) {
+    // Hapus map sebelumnya kalau ada
+    if (modalMap) {
+        modalMap.remove();
+        modalMap = null;
+    }
+
+    modalMap = L.map('modal-preview-map', {
+        zoomControl: true,
+        attributionControl: false
+    }).setView([-6.9175, 107.6191], 10);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(modalMap);
+
+    const featureGroup = L.featureGroup().addTo(modalMap);
+
+    features.forEach(feature => addFeatureToGroup(featureGroup, feature));
+
+    if (featureGroup.getLayers().length > 0) {
+        modalMap.fitBounds(featureGroup.getBounds(), { padding: [30, 30], maxZoom: 16 });
+    } else {
+        modalMap.setView([-6.9175, 107.6191], 5);
+    }
+}
+
+/**
+ * Peta kosong di modal (kalau layer tidak punya fitur)
+ */
+function initEmptyModalMap() {
+    if (modalMap) {
+        modalMap.remove();
+        modalMap = null;
+    }
+
+    modalMap = L.map('modal-preview-map', {
+        zoomControl: false,
+        attributionControl: false
+    }).setView([-6.9175, 107.6191], 5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(modalMap);
+
+    const emptyIcon = L.divIcon({
+        html: '<div class="text-center text-gray-500 text-xs"><svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>Tidak ada geometri</div>',
+        className: 'empty-map-label',
+        iconSize: [100, 40],
+        iconAnchor: [50, 20]
+    });
+
+    L.marker([-6.9175, 107.6191], {icon: emptyIcon}).addTo(modalMap);
+}
+
+/**
+ * Buka modal detail + preview peta layer yang dipilih
+ */
 function showLayerDetails(layerId) {
     const layer = layersData[layerId];
     if (!layer) return;
@@ -428,12 +524,12 @@ function showLayerDetails(layerId) {
     const modalContent = document.getElementById('modalContent');
 
     modalTitle.textContent = `Detail: ${layer.nama_layer}`;
-    
-    let content = `
+
+    modalContent.innerHTML = `
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                <p class="mt-1 text-sm text-gray-900">${layer.deskripsi || 'Tidak ada deskripsi'}</p>
+                <p class="mt-1 text-sm text-gray-900">${layer.deskripsi ?? 'Tidak ada deskripsi'}</p>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Jumlah Fitur</label>
@@ -441,20 +537,33 @@ function showLayerDetails(layerId) {
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Dibuat Pada</label>
-                <p class="mt-1 text-sm text-gray-900">${new Date(layer.created_at).toLocaleDateString('id-ID')}</p>
+                <p class="mt-1 text-sm text-gray-900">
+                    ${new Date(layer.created_at).toLocaleDateString('id-ID')}
+                </p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Preview Peta</label>
+                <div id="modal-preview-map" class="mt-2 h-64 border border-gray-200 rounded-lg"></div>
             </div>
         </div>
     `;
 
-    modalContent.innerHTML = content;
     modal.classList.remove('hidden');
+
+    const features = layer.map_features || [];
+    if (features.length > 0) {
+        initModalPreviewMap(features);
+    } else {
+        initEmptyModalMap();
+    }
 }
 
 function closeLayerDetails() {
-    document.getElementById('layerDetailModal').classList.add('hidden');
+    const modal = document.getElementById('layerDetailModal');
+    modal.classList.add('hidden');
 }
 
-// Tutup modal ketika klik di luar
+// Tutup modal ketika klik di luar area konten
 window.onclick = function(event) {
     const modal = document.getElementById('layerDetailModal');
     if (event.target === modal) {

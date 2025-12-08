@@ -286,11 +286,49 @@
                     },
 
                     pointToLayer: (feature, latlng) => {
+                        // 1. Setup Variabel Dasar
                         const props = feature.properties || {};
                         const layerInfo = mapsData.layers.find(l => feature.layer_ids.includes(l.id)) || {};
                         const mapData = mapsData.maps[0];
 
-                        // **FIX 1: Prioritize icon_url from properties**
+                        // 2. Parse technical_info (PENTING: Cek ini paling awal)
+                        let techInfo = feature.technical_info || {};
+                        if (typeof techInfo === 'string') {
+                            try {
+                                techInfo = JSON.parse(techInfo);
+                            } catch (e) {
+                                techInfo = {}; 
+                            }
+                        }
+
+                        // 3. Tentukan Tipe Geometri TERLEBIH DAHULU
+                        // Prioritas: technical_info > properties > layer setting > default 'marker'
+                        let layerType = (techInfo.geometry_type || props.geometry_type || layerInfo.type || 'marker').toLowerCase();
+
+                        // 4. Siapkan Style
+                        const baseStyle = createLayerStyle(layerInfo, mapData);
+                        const featureStyle = {
+                            color: props.stroke_color || baseStyle.color,
+                            fillColor: props.fill_color || baseStyle.fillColor,
+                            weight: props.weight || baseStyle.weight,
+                            opacity: props.opacity ?? baseStyle.opacity,
+                            fillOpacity: props.fill_opacity ?? props.opacity ?? baseStyle.fillOpacity
+                        };
+
+                        // 5. EKSEKUSI CIRCLE (Sebelum cek icon)
+                        // Jika tipe adalah circle, LANGSUNG return circle, jangan cek icon url
+                        if (layerType === 'circle') {
+                            const radius = techInfo.radius || props.radius || layerInfo.radius || mapData.default_radius || 300;
+                            return L.circle(latlng, { ...featureStyle, radius: parseFloat(radius) });
+                        }
+
+                        if (layerType === 'circlemarker') {
+                            const radius = techInfo.point_radius || props.point_radius || 6;
+                            return L.circleMarker(latlng, { ...featureStyle, radius });
+                        }
+
+                        // 6. EKSEKUSI MARKER (Baru cek icon di sini)
+                        // Jika bukan circle, baru kita lihat apakah ada icon custom
                         const finalIconUrl = props.icon_url || layerInfo.icon_url || mapData.default_icon_url || '';
                         
                         if (finalIconUrl) {
@@ -304,30 +342,7 @@
                             });
                         }
 
-                        // **FIX 2: Check geometry_type from properties first**
-                        let layerType = (props.geometry_type || layerInfo.type || 'marker').toLowerCase();
-                        
-                        const baseStyle = createLayerStyle(layerInfo, mapData);
-                        const featureStyle = {
-                            color: props.stroke_color || baseStyle.color,
-                            fillColor: props.fill_color || baseStyle.fillColor,
-                            weight: props.weight || baseStyle.weight,
-                            opacity: props.opacity ?? baseStyle.opacity,
-                            fillOpacity: props.fill_opacity ?? props.opacity ?? baseStyle.fillOpacity
-                        };
-
-                        if (layerType === 'circle') {
-                            // **FIX 3: Prioritize radius from properties**
-                            const radius = props.radius || layerInfo.radius || mapData.default_radius || 300;
-                            return L.circle(latlng, { ...featureStyle, radius: parseFloat(radius) });
-                        }
-
-                        if (layerType === 'circlemarker') {
-                            const radius = props.point_radius || 6;
-                            return L.circleMarker(latlng, { ...featureStyle, radius });
-                        }
-
-                        // Fallback to a default marker if no other type is specified
+                        // Fallback ke marker standar Leaflet (biru)
                         return L.marker(latlng);
                     },
 
@@ -437,33 +452,27 @@
 
         function createPopupContent(feature, mapData) {
             const props = feature.properties || {};
-            const isGeoJSON = Object.keys(props).length > 0;
-            let dataForModal;
-            let title;
-            let quickInfoHTML = '';
+            const geomType = feature.geometry?.type || '';
+            const coords = feature.geometry?.coordinates || null;
 
-            if (isGeoJSON) {
-                title = props.Name || props.name || props.title || props.nama || 'Informasi';
-                dataForModal = { ...props, dataSource: 'geojson', ...feature };
-                
-                const keys = Object.keys(props).filter(key => key !== 'geometry' && key !== 'timestamp' && props[key] && props[key].toString().trim() !== '');
-                const topThree = keys.slice(0, 3);
-                topThree.forEach(key => {
-                    quickInfoHTML += `<div class="popup-info-item"><b>${formatLabel(key)}:</b> ${props[key]}</div>`;
-                });
+            const latlng = extractLatLng(geomType, coords);
+            const title = props.Name || props.name || props.title || props.nama || 'Informasi';
 
-            } else {
-                title = mapData.name || 'Informasi';
-                dataForModal = { dataSource: 'manual', name: mapData.name, description: mapData.description, photo: mapData.image_path, caption: mapData.caption || '' };
-                if (dataForModal.description) {
-                    quickInfoHTML = `<div class="popup-info-item">${dataForModal.description.substring(0, 70)}...</div>`;
-                }
-            }
+            const payload = {
+                dataSource: 'geojson',
+                geometryType: geomType,
+                latlng: latlng,
+                radius: props.radius || feature.radius || null,
+                properties: props,
+                technical_info: feature.technical_info,
+                image_path: feature.image_path,
+                caption: feature.caption
+            };
 
-            const encodedData = encodeURIComponent(JSON.stringify(dataForModal));
+            const encodedData = encodeURIComponent(JSON.stringify(payload));
+
             return `
                 <div class="popup-header">${title}</div>
-                <div class="popup-info">${quickInfoHTML || ''}</div>
                 <button class="btn-detail open-detail-btn" data-feature='${encodedData}'>
                     Selengkapnya
                 </button>
@@ -483,84 +492,167 @@
             return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         }
 
+        function extractLatLng(geometry) {
+            if (!geometry || !geometry.type || !geometry.coordinates) {
+                return null;
+            }
+
+            const type = geometry.type;
+            const coords = geometry.coordinates;
+
+            // --- POINT ---
+            if (type === "Point") {
+                return {
+                    lat: parseFloat(coords[1]),
+                    lng: parseFloat(coords[0])
+                };
+            }
+
+            // --- LINESTRING: [[lng, lat, z], [lng, lat, z], ...] ---
+            if (type === "LineString") {
+                if (coords.length > 0) {
+                    return {
+                        lat: parseFloat(coords[0][1]),
+                        lng: parseFloat(coords[0][0])
+                    };
+                }
+            }
+
+            // --- MULTILINESTRING: [[[lng, lat, z], ...], [...]] ---
+            if (type === "MultiLineString") {
+                if (coords.length > 0 && coords[0].length > 0) {
+                    return {
+                        lat: parseFloat(coords[0][0][1]),
+                        lng: parseFloat(coords[0][0][0])
+                    };
+                }
+            }
+
+            // --- POLYGON: [[[lng, lat, z], ...]] ---
+            if (type === "Polygon") {
+                if (coords.length > 0 && coords[0].length > 0) {
+                    return {
+                        lat: parseFloat(coords[0][0][1]),
+                        lng: parseFloat(coords[0][0][0])
+                    };
+                }
+            }
+
+            // --- MULTIPOLYGON: [[[[lng, lat, z], ...]]]
+            if (type === "MultiPolygon") {
+                if (coords.length > 0 && coords[0].length > 0 && coords[0][0].length > 0) {
+                    return {
+                        lat: parseFloat(coords[0][0][0][1]),
+                        lng: parseFloat(coords[0][0][0][0])
+                    };
+                }
+            }
+
+            return null;
+        }
+
         function displayDetailContent(featureData) {
             const detailContent = document.getElementById('detail-content');
             const modalTitleElement = document.querySelector('#detail-modal .modal-title');
-            let content = '';
-            let modalTitle = 'Detail Informasi';
 
-            if (featureData.dataSource === 'manual') {
-                modalTitle = featureData.name || 'Tidak ada nama';
-                content += `<div class="detail-item"><div class="detail-label">Deskripsi</div><div class="detail-value">${featureData.description || '<i>Tidak ada</i>'}</div></div>`;
-                if (featureData.photo) {
-                    content += `<div class="detail-item"><div class="detail-label">Foto</div><div class="detail-value"><img src="${featureData.photo}" alt="Foto" style="max-width: 100%; border-radius: 8px;"></div></div>`;
+            const props = featureData.properties || {};
+            const geomType = (featureData.geometryType || "").toLowerCase();
+
+            let content = "";
+            let modalTitle = props.Name || props.name || props.title || props.nama || "Detail Informasi";
+
+            // === Latitude & Longitude ===
+            if (featureData.latlng) {
+                content += `
+                    <div class="detail-item">
+                        <div class="detail-label">Latitude</div>
+                        <div class="detail-value">${featureData.latlng.lat}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Longitude</div>
+                        <div class="detail-value">${featureData.latlng.lng}</div>
+                    </div>
+                `;
+            }
+
+            // === Radius khusus Circle ===
+            if (geomType === "circle" || geomType === "circlemarker") {
+                content += `
+                    <div class="detail-item">
+                        <div class="detail-label">Radius</div>
+                        <div class="detail-value">${featureData.radius || props.radius || '-'}</div>
+                    </div>
+                `;
+            }
+
+            // === Name ===
+            if (modalTitle) {
+                content += `
+                    <div class="detail-item">
+                        <div class="detail-label">Name</div>
+                        <div class="detail-value">${modalTitle}</div>
+                    </div>
+                `;
+            }
+
+            // === Description ===
+            if (props.description || props.Deskripsi) {
+                content += `
+                    <div class="detail-item">
+                        <div class="detail-label">Description</div>
+                        <div class="detail-value">${props.description || props.Deskripsi}</div>
+                    </div>
+                `;
+            }
+
+            // === Info Teknis ===
+            if (featureData.technical_info) {
+                let tech = featureData.technical_info;
+                if (typeof tech === "string") {
+                    try { tech = JSON.parse(tech); } catch {}
                 }
-            } else if (featureData.dataSource === 'geojson') {
-                modalTitle = featureData.properties.Name || featureData.properties.name || featureData.properties.title || featureData.properties.nama || 'Detail Fitur';
-                
-                const properties = { ...featureData.properties };
-                
-                Object.entries(properties).forEach(([key, value]) => {
-                    if (value) {
-                        content += `<div class="detail-item"><div class="detail-label">${formatLabel(key)}</div><div class="detail-value">${value}</div></div>`;
+
+                if (typeof tech === "object" && tech !== null) {
+                    let techList = "<ul>";
+                    for (const [k, v] of Object.entries(tech)) {
+                        if (v) techList += `<li><strong>${k}:</strong> ${v}</li>`;
                     }
-                });
+                    techList += "</ul>";
 
-                let techInfo = featureData.technical_info;
-                let isValidTechInfo = false;
-
-                if (techInfo) {
-                    if (typeof techInfo === 'string') {
-                        if (techInfo.trim() !== '' && techInfo !== '{}' && techInfo !== 'null' && techInfo !== 'undefined') {
-                            isValidTechInfo = true;
-                        }
-                    } else if (typeof techInfo === 'object' && techInfo !== null) {
-                        const entries = Object.entries(techInfo).filter(([k, v]) => v !== null && v !== '' && v !== 'null' && v !== undefined && k.toLowerCase() !== 'icon_url');
-                        if (entries.length > 0) {
-                            isValidTechInfo = true;
-                        }
-                    }
-                }
-
-                if (isValidTechInfo) {
-                    try {
-                        if (typeof techInfo === 'string') {
-                            techInfo = JSON.parse(techInfo);
-                        }
-                        
-                        if (techInfo && typeof techInfo === 'object') {
-                            const validEntries = Object.entries(techInfo).filter(([k, v]) => v !== null && v !== '' && v !== 'null' && v !== undefined && k.toLowerCase() !== 'icon_url');
-                            if (validEntries.length > 0) {
-                                let list = '<ul>';
-                                validEntries.forEach(([k, v]) => {
-                                    list += `<li><strong>${formatLabel(k)}:</strong> ${v}</li>`;
-                                });
-                                list += '</ul>';
-                                content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${list}</div></div>`;
-                            }
-                        }
-                    } catch (e) {
-                        console.warn('Gagal parse technical_info:', e, techInfo);
-                        if (typeof featureData.technical_info === 'string' && featureData.technical_info !== 'null') {
-                            content += `<div class="detail-item"><div class="detail-label">Info Teknis</div><div class="detail-value">${featureData.technical_info}</div></div>`;
-                        }
-                    }
-                }
-
-                const image_path = featureData.image_path || featureData.feature_image_path;
-                if (image_path) {
-                    content += `<div class="detail-item"><div class="detail-label">Foto</div><div class="detail-value"><img src="${image_path}" style="width:100%; border-radius:8px;"></div></div>`;
-                } else {
-                    content += `<div class="detail-item"><div class="detail-label">Foto</div><div class="detail-value"><i>Tidak ada foto</i></div></div>`;
-                }
-
-                if (featureData.caption) {
-                    content += `<div class="detail-item"><div class="detail-label">Caption</div><div class="detail-value">${featureData.caption}</div></div>`;
+                    content += `
+                        <div class="detail-item">
+                            <div class="detail-label">Info Teknis</div>
+                            <div class="detail-value">${techList}</div>
+                        </div>
+                    `;
                 }
             }
-            
-            if (modalTitleElement) modalTitleElement.textContent = modalTitle;
-            detailContent.innerHTML = content || '<p>Tidak ada detail untuk ditampilkan.</p>';
+
+            // === Foto ===
+            if (featureData.image_path) {
+                content += `
+                    <div class="detail-item">
+                        <div class="detail-label">Foto</div>
+                        <div class="detail-value">
+                            <img src="${featureData.image_path}" style="width:100%; border-radius:8px;">
+                        </div>
+                    </div>
+                `;
+            }
+
+            // === Caption ===
+            if (featureData.caption) {
+                content += `
+                    <div class="detail-item">
+                        <div class="detail-label">Caption</div>
+                        <div class="detail-value">${featureData.caption}</div>
+                    </div>
+                `;
+            }
+
+            // Render
+            modalTitleElement.textContent = modalTitle;
+            detailContent.innerHTML = content || "<p>Tidak ada detail.</p>";
         }
     </script>
 @endsection
