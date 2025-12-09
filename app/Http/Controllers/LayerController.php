@@ -160,79 +160,165 @@ public function update(Request $request, Layer $layer)
 {
     $validated = $request->validate([
         'nama_layer' => 'required|string|max:255',
-        'deskripsi' => 'nullable|string',
-        'features' => 'nullable|array',
-        'features.*.id' => 'required|exists:map_features,id',
-        'features.*.name' => 'nullable|string|max:255',
-        'features.*.description' => 'nullable|string',
-        'features.*.geometry' => 'nullable|string',
+        'deskripsi'  => 'nullable|string',
+
+        // Lokasi peta (optional, bisa kamu bikin required kalau memang wajib)
+        'map_id'     => 'nullable|exists:maps,id',
+
+        'features'              => 'nullable|array',
+        'features.*.id'         => 'required|exists:map_features,id',
+        'features.*.name'       => 'nullable|string|max:255',
+        'features.*.description'=> 'nullable|string',
+        'features.*.geometry'   => 'nullable|string',
+        'features.*.geometry_type' => 'nullable|in:marker,circle,polyline,polygon',
+
+        // styling per fitur
         'features.*.stroke_color' => 'nullable|string|max:7',
-        'features.*.fill_color' => 'nullable|string|max:7',
-        'features.*.weight' => 'nullable|numeric',
-        'features.*.opacity' => 'nullable|numeric|min:0|max:1',
-        'features.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        'features.*.fill_color'   => 'nullable|string|max:7',
+        'features.*.weight'       => 'nullable|numeric',
+        'features.*.opacity'      => 'nullable|numeric|min:0|max:1',
+        'features.*.radius'       => 'nullable|numeric',
+        'features.*.icon_url'     => 'nullable|string|max:255',
+
+        // gambar
+        'features.*.image'        => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         'features.*.remove_image' => 'nullable|boolean',
     ]);
 
     DB::beginTransaction();
 
     try {
+        // 1. Update data layer utama
         $layer->update([
             'nama_layer' => $validated['nama_layer'],
-            'deskripsi' => $validated['deskripsi'] ?? null,
+            'deskripsi'  => $validated['deskripsi'] ?? null,
         ]);
 
-        if ($request->has('features')) {
-            foreach ($request->features as $featureId => $featureData) {
-                $mapFeature = \App\Models\MapFeature::findOrFail($featureId);
+        // 2. Update relasi layer <-> map (lokasi peta)
+        if (!empty($validated['map_id'])) {
+            // layer hanya ada di satu map → sync
+            $layer->maps()->sync([$validated['map_id']]);
+        } else {
+            // kalau map_id kosong dan kamu ingin lepas semua map:
+            $layer->maps()->detach();
+        }
 
-                // ... (logika update properties, geometry, image biarkan seperti aslinya)
-                $props = json_decode($mapFeature->properties, true) ?: [];
-                $props['name'] = $featureData['name'] ?? $props['name'] ?? '';
-                $props['description'] = $featureData['description'] ?? $props['description'] ?? '';
+        // 3. Update tiap fitur
+        if (!empty($validated['features'])) {
+            foreach ($validated['features'] as $featureKey => $featureData) {
 
+                // Ambil ID fitur (bisa dari key array atau dari field id)
+                $featureId   = $featureData['id'] ?? $featureKey;
+                /** @var \App\Models\MapFeature $mapFeature */
+                $mapFeature  = MapFeature::findOrFail($featureId);
+
+                // Opsional: pastikan memang milik layer ini
+                if ($mapFeature->layer_id != $layer->id) {
+                    // Kalau mau aman banget:
+                    // throw new \Exception("Fitur #{$mapFeature->id} bukan milik layer ini.");
+                }
+
+                // --- PROPERTIES (name, description, styling) ---
+                $props = json_decode($mapFeature->properties ?? '[]', true);
+                if (!is_array($props)) {
+                    $props = [];
+                }
+
+                // Nama & deskripsi
+                if (array_key_exists('name', $featureData)) {
+                    $props['name'] = $featureData['name'];
+                }
+                if (array_key_exists('description', $featureData)) {
+                    $props['description'] = $featureData['description'];
+                }
+
+                // Tipe geometri
+                $geometryType = $featureData['geometry_type']
+                    ?? ($props['geometry_type'] ?? null);
+
+                if ($geometryType) {
+                    $props['geometry_type'] = $geometryType;
+                }
+
+                // Styling sesuai tipe geometri
+                if ($geometryType === 'marker') {
+                    if (!empty($featureData['icon_url'])) {
+                        $props['icon_url'] = $featureData['icon_url'];
+                    }
+                } elseif ($geometryType === 'polyline') {
+                    if (!empty($featureData['stroke_color'])) {
+                        $props['stroke_color'] = $featureData['stroke_color'];
+                    }
+                    if (isset($featureData['weight'])) {
+                        $props['weight'] = $featureData['weight'];
+                    }
+                    if (isset($featureData['opacity'])) {
+                        $props['opacity'] = $featureData['opacity'];
+                    }
+                } elseif (in_array($geometryType, ['polygon', 'circle'])) {
+                    if (!empty($featureData['stroke_color'])) {
+                        $props['stroke_color'] = $featureData['stroke_color'];
+                    }
+                    if (!empty($featureData['fill_color'])) {
+                        $props['fill_color'] = $featureData['fill_color'];
+                    }
+                    if (isset($featureData['weight'])) {
+                        $props['weight'] = $featureData['weight'];
+                    }
+                    if (isset($featureData['opacity'])) {
+                        $props['opacity'] = $featureData['opacity'];
+                    }
+                    if ($geometryType === 'circle' && isset($featureData['radius'])) {
+                        $props['radius'] = $featureData['radius'];
+                    }
+                }
+
+                // --- GEOMETRY ---
                 if (!empty($featureData['geometry'])) {
+                    // di Blade kita kirim geometry per fitur sebagai JSON geometry saja
                     $mapFeature->geometry = $featureData['geometry'];
                 }
 
-                if (isset($featureData['remove_image']) && $featureData['remove_image']) {
-                    if ($mapFeature->image_path && file_exists(public_path($mapFeature->image_path))) {
-                        unlink(public_path($mapFeature->image_path));
-                    }
-                    $mapFeature->image_path = null;
-                } elseif (isset($featureData['image']) && $featureData['image'] instanceof \Illuminate\Http\UploadedFile) {
-                    $file = $featureData['image'];
-                    $filename = time() . '_' . $file->getClientOriginalName();
-                    $file->move(public_path('map_features'), $filename);
-                    $mapFeature->image_path = 'map_features/' . $filename;
+                // --- TECHNICAL INFO (simpan geometry_type/radius di sini juga kalau mau) ---
+                $tech = json_decode($mapFeature->technical_info ?? '[]', true);
+                if (!is_array($tech)) {
+                    $tech = [];
                 }
 
+                if ($geometryType) {
+                    $tech['geometry_type'] = $geometryType;
+                }
+                if (!empty($featureData['radius'])) {
+                    $tech['radius'] = $featureData['radius'];
+                }
+
+                $mapFeature->technical_info = !empty($tech) ? json_encode($tech) : null;
+
+                // --- GAMBAR ---
+                $imageKey = "features.$featureKey.image";
+
+                if ($request->hasFile($imageKey)) {
+                    // Hapus gambar lama jika ada
+                    if ($mapFeature->image_path && file_exists(public_path($mapFeature->image_path))) {
+                        @unlink(public_path($mapFeature->image_path));
+                    }
+
+                    $file = $request->file($imageKey);
+                    $filename = time().'_'.$file->getClientOriginalName();
+                    $file->move(public_path('map_features'), $filename);
+                    $mapFeature->image_path = 'map_features/'.$filename;
+
+                } elseif (!empty($featureData['remove_image'])) {
+                    if ($mapFeature->image_path && file_exists(public_path($mapFeature->image_path))) {
+                        @unlink(public_path($mapFeature->image_path));
+                    }
+                    $mapFeature->image_path = null;
+                }
+
+                // Simpan kembali properties
                 $mapFeature->properties = json_encode($props);
                 $mapFeature->save();
-
-                // update pivot styling antara Layer dan MapFeature (sudah benar)
-                $layer->mapFeatures()->updateExistingPivot($mapFeature->id, [
-                    'stroke_color' => $featureData['stroke_color'] ?? '#3388ff',
-                    'fill_color' => $featureData['fill_color'] ?? '#3388ff',
-                    'weight' => $featureData['weight'] ?? 3,
-                    'opacity' => $featureData['opacity'] ?? 0.5,
-                ]);
             }
-        }
-
-        $map = $layer->maps()->first(); 
-
-        if ($map && $request->has('features')) {
-            $firstFeatureData = \Illuminate\Support\Arr::first($request->features);
-            
-            $styleData = [
-                'stroke_color' => $firstFeatureData['stroke_color'] ?? null,
-                'fill_color'   => $firstFeatureData['fill_color'] ?? null,
-                'weight'       => $firstFeatureData['weight'] ?? null,
-                'opacity'      => $firstFeatureData['opacity'] ?? null,
-            ];
-            
-            $map->layers()->updateExistingPivot($layer->id, $styleData);
         }
 
         DB::commit();
@@ -240,7 +326,9 @@ public function update(Request $request, Layer $layer)
         return redirect()->route('layers.index')->with('success', 'Layer berhasil diperbarui!');
     } catch (\Exception $e) {
         DB::rollBack();
-        return back()->with('error', 'Terjadi kesalahan: '.$e->getMessage())->withInput();
+        return back()
+            ->with('error', 'Terjadi kesalahan: '.$e->getMessage())
+            ->withInput();
     }
 }
 

@@ -256,8 +256,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const drawnItems = new L.FeatureGroup().addTo(map);
 
-    let drawnLayer = null;
-    let currentDrawingLayer = null;
+    let drawnLayer = null;              // GeoJSON hasil upload
+    let currentDrawingLayer = null;     // garis/polygon sementara saat digambar
     let polygonPoints = [];
     let currentTool = null;
     let layerRefs = [];
@@ -331,6 +331,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function clearDrawing() {
         if (drawnLayer) map.removeLayer(drawnLayer);
         drawnLayer = null;
+
+        // BERSIHKAN semua gambar manual juga
+        drawnItems.clearLayers();
+
+        if (currentDrawingLayer) {
+            map.removeLayer(currentDrawingLayer);
+            currentDrawingLayer = null;
+        }
+
         polygonPoints = [];
         geometryInput.value = '';
         geojsonFileInput.value = '';
@@ -362,7 +371,60 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification(`Mode gambar <strong>${currentTool}</strong> aktif. Klik di peta untuk memulai.`);
         }
     });
-    
+
+    // ===== Helper: apply style ke satu layer (dipakai di semua tempat) =====
+    function applyStyleToLayer(layer, styles, iconUrl) {
+        if (!layer) return;
+
+        if (layer instanceof L.Marker) {
+            if (iconUrl) {
+                const icon = L.icon({ iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
+                layer.setIcon(icon);
+            }
+        } else if (layer instanceof L.Circle) {
+            layer.setStyle({
+                color: styles.color,
+                weight: styles.weight,
+                opacity: styles.opacity,
+                fillColor: styles.fillColor,
+                fillOpacity: styles.fillOpacity
+            });
+            if (styles.radius) {
+                layer.setRadius(styles.radius);
+            }
+        } else if (layer.setStyle) {
+            const { radius, ...lineStyles } = styles;
+            layer.setStyle(lineStyles);
+        }
+    }
+
+    // ===== Realtime: update SEMUA layer (manual & upload) saat style berubah =====
+    function updateAllLayerStyles() {
+        const styles = getStyleOptions();
+        const iconUrl = document.querySelector('[name="icon_url"]').value;
+
+        // semua yang ada di drawnItems (gambar manual)
+        drawnItems.eachLayer(function(layer) {
+            applyStyleToLayer(layer, styles, iconUrl);
+        });
+
+        // layer hasil upload GeoJSON
+        if (drawnLayer) {
+            if (drawnLayer.eachLayer) {
+                drawnLayer.eachLayer(function(layer) {
+                    applyStyleToLayer(layer, styles, iconUrl);
+                });
+            } else {
+                applyStyleToLayer(drawnLayer, styles, iconUrl);
+            }
+        }
+
+        // garis/polygon sementara yang sedang digambar
+        if (currentDrawingLayer) {
+            applyStyleToLayer(currentDrawingLayer, styles, iconUrl);
+        }
+    }
+
     map.on('click', function (e) {
         if (!currentTool) return;
         const style = getStyleOptions();
@@ -374,14 +436,11 @@ document.addEventListener('DOMContentLoaded', function() {
             newLayer = L.marker(e.latlng, { icon });
             
             drawnItems.addLayer(newLayer);
-
             polygonPoints = [];
 
         } else if (currentTool === 'circle') {
             newLayer = L.circle(e.latlng, style);
-            
             drawnItems.addLayer(newLayer);
-
             polygonPoints = [];
 
         } else if (['polygon', 'polyline'].includes(currentTool)) {
@@ -426,13 +485,11 @@ document.addEventListener('DOMContentLoaded', function() {
             map.removeLayer(currentDrawingLayer);
             currentDrawingLayer = null;
 
-
             const finalLayer = (currentTool === 'polygon')
                 ? L.polygon(polygonPoints, getStyleOptions())
                 : L.polyline(polygonPoints, getStyleOptions());
             
             drawnItems.addLayer(finalLayer);
-
             polygonPoints = [];
             
             geometryInput.value = JSON.stringify(drawnItems.toGeoJSON());
@@ -478,17 +535,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 updateActiveToolUI(detectedToolType);
 
+                const styles = getStyleOptions();
+                const iconUrl = document.querySelector('[name="icon_url"]').value;
 
-                if (drawnLayer) map.removeLayer(drawnLayer);
                 layerRefs = [];
                 drawnLayer = L.geoJSON(geojson, {
-                    style: getStyleOptions,
+                    style: function() {
+                        const { radius, ...lineStyles } = styles;
+                        return lineStyles;
+                    },
                     pointToLayer: function(feature, latlng) {
                         if (detectedToolType === 'circle') {
-                            const radius = (feature.properties && feature.properties.radius) || getStyleOptions().radius;
-                            return L.circle(latlng, { ...getStyleOptions(), radius: radius });
+                            const radius = (feature.properties && feature.properties.radius) || styles.radius;
+                            return L.circle(latlng, { ...styles, radius: radius });
                         }
-                        const iconUrl = document.querySelector('[name="icon_url"]').value;
                         if (iconUrl) {
                             const icon = L.icon({ iconUrl: iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
                             return L.marker(latlng, { icon: icon });
@@ -511,7 +571,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }).addTo(map);
 
                 try { map.fitBounds(drawnLayer.getBounds()); } catch(e){ /* ignore */ }
-
 
                 geometryInput.value = JSON.stringify(geojson);
 
@@ -545,30 +604,7 @@ document.addEventListener('DOMContentLoaded', function() {
         reader.readAsText(file);
     });
 
-    function updateLayerStyle() {
-        if (!drawnLayer) return;
-
-        const newStyles = getStyleOptions();
-        const iconUrl = document.querySelector('[name="icon_url"]').value;
-
-        const applyStyle = (layer) => {
-            if (layer.setStyle) {
-                layer.setStyle(newStyles);
-            }
-
-            if (layer instanceof L.Marker && iconUrl) {
-                const newIcon = L.icon({ iconUrl, iconSize: [25, 41], iconAnchor: [12, 41] });
-                layer.setIcon(newIcon);
-            }
-        };
-
-        if (drawnLayer.eachLayer) {
-            drawnLayer.eachLayer(applyStyle);
-        } else {
-            applyStyle(drawnLayer);
-        }
-    }
-    
+    // ====== HUBUNGKAN INPUT STYLING DENGAN PEMBARUAN REALTIME ======
     const styleInputs = [
         'input[name="stroke_color"]',
         'input[name="fill_color"]',
@@ -582,15 +618,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const input = document.querySelector(selector);
         if (input) {
             const eventType = input.tagName.toLowerCase() === 'select' ? 'change' : 'input';
-            input.addEventListener(eventType, updateLayerStyle);
+            input.addEventListener(eventType, updateAllLayerStyles);
         }
     });
 
     function prepareAndSubmitData(e) {
-
+        // Kalau masih ada garis/polygon sementara, finalize dulu
         if (currentDrawingLayer && ['polygon', 'polyline'].includes(currentTool)) {
             map.removeLayer(currentDrawingLayer);
             currentDrawingLayer = null;
+
             const finalLayer = (currentTool === 'polygon') 
                 ? L.polygon(polygonPoints, getStyleOptions()) 
                 : L.polyline(polygonPoints, getStyleOptions());
@@ -621,7 +658,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const geometryType = document.getElementById('geometry_type_input').value;
 
-
         if (geometryType === 'marker') {
             const iconSelect = document.querySelector('[name="icon_url"]');
             if(iconSelect) properties.icon_url = iconSelect.value;
@@ -629,7 +665,7 @@ document.addEventListener('DOMContentLoaded', function() {
             properties.stroke_color = document.querySelector('[name="stroke_color"]').value;
             properties.weight = document.querySelector('[name="weight"]').value;
             properties.opacity = document.querySelector('[name="opacity"]').value;
-        } else if (geometryType === 'polygon' || geometryType === 'circle') { // Gabung logic polygon & circle karena mirip
+        } else if (geometryType === 'polygon' || geometryType === 'circle') {
             properties.stroke_color = document.querySelector('[name="stroke_color"]').value;
             properties.fill_color = document.querySelector('[name="fill_color"]').value;
             properties.weight = document.querySelector('[name="weight"]').value;
